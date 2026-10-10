@@ -519,6 +519,9 @@ async function fetchRealRoadRoute(start, end) {
 // 5. Leaflet Map Initialization & Controls
 // ----------------------------------------------------------------------------
 function initMap() {
+  const container = document.getElementById('map');
+  if (!container || map) return;
+
   map = L.map('map', {
     center: [userLocation.lat, userLocation.lng],
     zoom: 13,
@@ -534,6 +537,10 @@ function initMap() {
 
   pandalMarkersLayer = L.layerGroup().addTo(map);
   navRouteLayer = L.layerGroup().addTo(map);
+
+  // Invalidate size to guarantee immediate full rendering on mobile screens
+  setTimeout(() => { if (map) map.invalidateSize(); }, 150);
+  setTimeout(() => { if (map) map.invalidateSize(); }, 500);
 
   // Map click handler (Drops manual pin)
   map.on('click', (e) => {

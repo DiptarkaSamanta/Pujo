@@ -73,9 +73,9 @@ Then open `http://localhost:3000/` in your browser.
 
 ---
 
-## 📁 File Structure
-- `index.html`: Main static web page.
-- `styles.css`: Complete festive styling & radar beacon animations.
-- `app.js`: Pure Vanilla JavaScript logic (GPS watcher, Leaflet map, distance sorting, routing).
-- `render.yaml`: Render blueprint for instant 1-click deployment.
-- `index-react.html`: Original React version entrypoint backup.
+## 📁 File Structure (Minimal & Pure Static)
+- `index.html`: Main web app with Leaflet map canvas and tabs.
+- `styles.css`: Festive theme, glassmorphism UI, and pulsating GPS radar animations.
+- `app.js`: Live GPS watcher, pandal database, road routing, and distance calculator.
+- `.nojekyll`: Direct deployment flag for GitHub Pages.
+- `render.yaml`: 1-click configuration for Render free static hosting.
