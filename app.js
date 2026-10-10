@@ -377,12 +377,68 @@ const DEFAULT_PANDALS = [
     estimatedQueueMins: 20,
     isBeautyPick: true,
     isHeritage: true
+  },
+  {
+    id: 'pandal-newtown-1',
+    name: 'New Town Sarbojanin (Action Area 1)',
+    pujaName: 'New Town Sarbojanin Durgotsav',
+    clubName: 'New Town Cultural Association',
+    theme: 'Illuminated Terracotta Craft & Grand Cultural Pavilion',
+    description: 'Premier community puja in New Town near The New Town School and Rabindra Tirtha Shishu Udyan. Radiant festive lighting and vibrant evening cultural ceremonies.',
+    location: { lat: 22.5845, lng: 88.4688 },
+    address: 'Near The New Town School, Action Area 1, New Town, Kolkata',
+    zone: 'North 24 Parganas',
+    images: [
+      'https://images.unsplash.com/photo-1601055283742-8b27e81b5553?auto=format&fit=crop&w=800&q=80'
+    ],
+    thumbnail: 'https://images.unsplash.com/photo-1601055283742-8b27e81b5553?auto=format&fit=crop&w=300&q=80',
+    rating: 4.9,
+    reviewCount: 420,
+    visitCount: 16500,
+    photosPostedCount: 680,
+    trafficLevel: 'moderate',
+    estimatedQueueMins: 15,
+    isBeautyPick: true,
+    isHeritage: false
+  },
+  {
+    id: 'pandal-newtown-2',
+    name: 'Jal Vayu Towers Durga Puja',
+    pujaName: 'Jal Vayu Towers Sarbojanin Durgotsav',
+    clubName: 'Jal Vayu Towers Residents Welfare Samiti',
+    theme: 'Vedic Sanatan Pratima & Grand Dhunuchi Naach Utsav',
+    description: 'Celebrated residential township festival near Street No. 299 and Greenfield Heights. Renowned for traditional rituals, community feast (bhog), and sparkling illumination.',
+    location: { lat: 22.5805, lng: 88.4702 },
+    address: 'Jal Vayu Towers, Street No. 299, New Town, Kolkata',
+    zone: 'North 24 Parganas',
+    images: [
+      'https://images.unsplash.com/photo-1571597438372-540dd352bf41?auto=format&fit=crop&w=800&q=80'
+    ],
+    thumbnail: 'https://images.unsplash.com/photo-1571597438372-540dd352bf41?auto=format&fit=crop&w=300&q=80',
+    rating: 4.8,
+    reviewCount: 310,
+    visitCount: 11200,
+    photosPostedCount: 450,
+    trafficLevel: 'low',
+    estimatedQueueMins: 10,
+    isBeautyPick: true,
+    isHeritage: false
   }
 ];
 
 // ----------------------------------------------------------------------------
 // 2. Global State & App Variables
 // ----------------------------------------------------------------------------
+const DEFAULT_FIREBASE_CONFIG = {
+  apiKey: "AIzaSyAoCm6D1DiREzdDe-dascTOrKC-fVLEmAM",
+  authDomain: "pujo-parikrama-d047a.firebaseapp.com",
+  projectId: "pujo-parikrama-d047a",
+  storageBucket: "pujo-parikrama-d047a.firebasestorage.app",
+  messagingSenderId: "235424583513",
+  appId: "1:235424583513:web:830552d3ce78baf8660648",
+  measurementId: "G-68WY4JMMRT"
+};
+
 const STORAGE_KEYS = {
   PANDALS: 'puja_parikrama_pandals_v1',
   PLANS: 'puja_parikrama_plans_v1',
@@ -450,17 +506,23 @@ let selectedPandal = null;
 // 3. Storage Utilities
 // ----------------------------------------------------------------------------
 function loadStoredPandals() {
+  let list = [...DEFAULT_PANDALS];
   try {
     const raw = localStorage.getItem(STORAGE_KEYS.PANDALS);
     if (raw) {
       const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        const mapById = new Map();
+        DEFAULT_PANDALS.forEach(p => mapById.set(p.id, p));
+        parsed.forEach(p => mapById.set(p.id, p));
+        list = Array.from(mapById.values());
+      }
     }
   } catch (e) {
     console.error('Failed reading localStorage pandals:', e);
   }
-  localStorage.setItem(STORAGE_KEYS.PANDALS, JSON.stringify(DEFAULT_PANDALS));
-  return [...DEFAULT_PANDALS];
+  localStorage.setItem(STORAGE_KEYS.PANDALS, JSON.stringify(list));
+  return list;
 }
 
 function savePandals(updatedList) {
@@ -1235,19 +1297,22 @@ function hideGpsAlert() {
 const COMMUNITY_SYNC_API = 'https://api.counterapi.dev/v1/pujo-parikrama-bengal/visits';
 
 function initCloudSync() {
-  let customConfig = null;
+  let activeConfig = DEFAULT_FIREBASE_CONFIG;
   try {
     const raw = localStorage.getItem(STORAGE_KEYS.FIREBASE_CONFIG);
-    if (raw) customConfig = JSON.parse(raw);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed && parsed.projectId) activeConfig = parsed;
+    }
   } catch (e) {
     console.warn('Could not parse stored Firebase config:', e);
   }
 
   // 1. Try Firebase Firestore if configured or SDK present
-  if (typeof firebase !== 'undefined' && customConfig && customConfig.projectId) {
+  if (typeof firebase !== 'undefined' && activeConfig && activeConfig.projectId) {
     try {
       if (!firebase.apps.length) {
-        firebase.initializeApp(customConfig);
+        firebase.initializeApp(activeConfig);
       }
       firestoreDb = firebase.firestore();
       startFirestoreListener();
@@ -1259,7 +1324,6 @@ function initCloudSync() {
   }
 
   // 2. Default Multi-User Community Cloud Relay
-  // Enables real-time synchronization between phones and computers out of the box!
   startCommunityRelaySync();
 }
 
@@ -1270,6 +1334,8 @@ function startFirestoreListener() {
   firestoreUnsubscribe = firestoreDb.collection('pandals')
     .onSnapshot((snapshot) => {
       let hasNewPandals = false;
+      const isInitial = !isCloudSyncActive;
+      isCloudSyncActive = true;
 
       snapshot.docChanges().forEach((change) => {
         const cloudPandal = change.doc.data();
@@ -1278,7 +1344,7 @@ function startFirestoreListener() {
           if (idx === -1) {
             pandals.unshift(cloudPandal);
             hasNewPandals = true;
-            if (cloudPandal.createdBy !== 'user') {
+            if (!isInitial && cloudPandal.createdBy !== 'user') {
               showToast(`🌟 New community pandal pinned: "${cloudPandal.name}"!`);
             }
           } else {
@@ -1286,6 +1352,7 @@ function startFirestoreListener() {
           }
         } else if (change.type === 'removed') {
           pandals = pandals.filter(p => p.id !== cloudPandal.id);
+          hasNewPandals = true;
         }
       });
 
@@ -1299,7 +1366,11 @@ function startFirestoreListener() {
       updateCloudStatus('Cloud: Firebase Live 🟢', true);
     }, (error) => {
       console.warn('Firestore snapshot error:', error);
-      updateCloudStatus('Cloud: Local Mode 🟡', false);
+      if (error.code === 'permission-denied') {
+        updateCloudStatus('Firestore: Rules Needed 🟡', false);
+      } else {
+        updateCloudStatus('Cloud: Standby 🟡', false);
+      }
     });
 }
 
@@ -1340,12 +1411,16 @@ function startCommunityRelaySync() {
 function broadcastPandalToCloud(newPandal) {
   // Broadcast to Firebase Firestore
   if (firestoreDb) {
-    firestoreDb.collection('pandals').doc(newPandal.id).set(newPandal)
+    const cleanDoc = JSON.parse(JSON.stringify(newPandal));
+    firestoreDb.collection('pandals').doc(newPandal.id).set(cleanDoc)
       .then(() => {
         showToast(`☁️ "${newPandal.name}" broadcasted to all hoppers across Bengal!`);
       })
       .catch((err) => {
         console.warn('Firestore broadcast fallback:', err);
+        if (err.code === 'permission-denied') {
+          showToast('⚠️ Firestore: Please set rules to test mode in Firebase Console');
+        }
       });
   }
 
