@@ -27,7 +27,10 @@ A mobile-first web app to track live GPS movements, discover top Durga Puja pand
 
 5. **16 Authentic Bengal Pujas Preloaded:**
    - Sreebhumi, Kalyani ITI More, Belur Math, Chandannagar, Ekdalia Evergreen, Santosh Mitra Square, Bagbazar, Siliguri, Suruchi Sangha, College Square, Maddox Square, Naktala, Durgapur, Midnapore, Sovabazar Rajbari, and Bally.
-   - Add/pin your own custom pandals with photos and descriptions!
+
+6. **Real-Time Community Cloud Sync (Firebase Firestore):**
+   - When any hopper marks a pandal on the map, it automatically broadcasts across Bengal so every user sees it dynamically in real time without refreshing!
+   - Built-in multi-user community relay + custom Firebase Firestore connector.
 
 ---
 

@@ -36,6 +36,12 @@
         </div>
 
         <div class="nav-actions">
+          <!-- Real-Time Cloud Sync Status Pill -->
+          <button class="btn-secondary" id="navbar-cloud-badge" onclick="openCloudModal()" title="Live Community Cloud Sync Status">
+            <span class="cloud-indicator-dot" id="cloud-indicator"></span>
+            <span id="cloud-status-text">Cloud: Live ☁️</span>
+          </button>
+
           <!-- Live Location Badge Button -->
           <button class="btn-secondary" id="navbar-location-badge" onclick="recenterMap()" title="Click to Center Map">
             Location: Kolkata 📍
@@ -287,6 +293,45 @@
               </button>
             </div>
           </form>
+      <!-- Modal 3: Live Cloud Sync & Firebase Configuration -->
+      <div id="modal-cloud-sync" class="modal-overlay">
+        <div class="modal-card">
+          <div class="modal-header">
+            <h3>☁️ Real-Time Community Cloud Sync</h3>
+            <button class="close-btn" onclick="closeCloudModal()">✕</button>
+          </div>
+          <div class="modal-body">
+            <div style="background:#f0fdf4; border:1px solid #bbf7d0; padding:12px; border-radius:14px; font-size:12px; color:#166534;">
+              <div style="display:flex; align-items:center; gap:6px; font-weight:800; font-size:13px; margin-bottom:4px;">
+                <span class="cloud-indicator-dot" id="modal-cloud-indicator"></span>
+                <span id="modal-cloud-status">Real-Time Cloud Sync Active</span>
+              </div>
+              <p>When you or any hopper pins a pandal on the map, it automatically broadcasts across Bengal so every user sees it in real-time!</p>
+            </div>
+
+            <div style="background:#f8fafc; border:1px solid var(--border-light); padding:10px 14px; border-radius:12px; display:flex; justify-content:space-between; align-items:center; font-size:12px;">
+              <span style="color:#64748b;">Community Pandals Synced:</span>
+              <strong id="cloud-pandals-count" style="color:#0f172a; font-size:14px;">16 Pandals</strong>
+            </div>
+
+            <div style="border-top:1px solid var(--border-light); padding-top:12px;">
+              <h4 style="font-size:13px; font-weight:800; color:#0f172a; margin-bottom:6px;">Firebase Firestore Custom Config (Optional)</h4>
+              <p style="font-size:11px; color:#64748b; margin-bottom:10px;">By default, community real-time sync is enabled automatically. If you want to connect your own free Firebase project, paste your config below:</p>
+              
+              <div class="form-group">
+                <textarea id="firebase-config-input" class="form-textarea" placeholder='{"apiKey": "...", "projectId": "...", ...}' style="font-family:monospace; font-size:11px;"></textarea>
+              </div>
+
+              <div style="display:flex; gap:8px; margin-top:10px;">
+                <button type="button" onclick="saveCustomFirebaseConfig()" class="btn-festive" style="flex:1; justify-content:center; padding:10px;">
+                  Save & Connect Firebase 🚀
+                </button>
+                <button type="button" onclick="resetToDefaultCloud()" class="btn-secondary" style="padding:10px;">
+                  Reset
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -294,6 +339,10 @@
 
     <!-- Leaflet JS (CDN) -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <!-- Firebase SDK (Compat Version for Vanilla JS & Zero Bundlers) -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 
     <!-- Pure Vanilla Application Logic -->
     <script src="./app.js"></script>

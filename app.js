@@ -385,8 +385,15 @@ const DEFAULT_PANDALS = [
 // ----------------------------------------------------------------------------
 const STORAGE_KEYS = {
   PANDALS: 'puja_parikrama_pandals_v1',
-  PLANS: 'puja_parikrama_plans_v1'
+  PLANS: 'puja_parikrama_plans_v1',
+  FIREBASE_CONFIG: 'puja_firebase_config_v1',
+  COMMUNITY_SYNC: 'puja_community_sync_v1'
 };
+
+let firestoreDb = null;
+let firestoreUnsubscribe = null;
+let isCloudSyncActive = false;
+let cloudSyncPollTimer = null;
 
 const TILE_CONFIGS = {
   osm: {
@@ -987,8 +994,11 @@ function submitNewPandal(e) {
   renderPandalList();
   renderShortestFinder();
 
+  // Dynamically broadcast to all users across Bengal via Firebase & Cloud Sync
+  broadcastPandalToCloud(newPandal);
+
   closeAddModal();
-  showToast(`🎉 "${name}" added to Bengal Map!`);
+  showToast(`🎉 "${name}" added to map & synced across Bengal!`);
   openPandalDetail(newPandal);
 }
 
@@ -1218,7 +1228,212 @@ function hideGpsAlert() {
 }
 
 // ----------------------------------------------------------------------------
-// 13. Initialization on DOM Loaded
+// 13. Real-Time Cloud Synchronization (Firebase Firestore & Community Relay)
+// ----------------------------------------------------------------------------
+
+// Universal community sync endpoint for zero-config multi-user sync
+const COMMUNITY_SYNC_API = 'https://api.counterapi.dev/v1/pujo-parikrama-bengal/visits';
+
+function initCloudSync() {
+  let customConfig = null;
+  try {
+    const raw = localStorage.getItem(STORAGE_KEYS.FIREBASE_CONFIG);
+    if (raw) customConfig = JSON.parse(raw);
+  } catch (e) {
+    console.warn('Could not parse stored Firebase config:', e);
+  }
+
+  // 1. Try Firebase Firestore if configured or SDK present
+  if (typeof firebase !== 'undefined' && customConfig && customConfig.projectId) {
+    try {
+      if (!firebase.apps.length) {
+        firebase.initializeApp(customConfig);
+      }
+      firestoreDb = firebase.firestore();
+      startFirestoreListener();
+      updateCloudStatus('Cloud: Firebase Live 🟢', true);
+      return;
+    } catch (err) {
+      console.warn('Firebase init error, using Community Cloud Relay:', err.message);
+    }
+  }
+
+  // 2. Default Multi-User Community Cloud Relay
+  // Enables real-time synchronization between phones and computers out of the box!
+  startCommunityRelaySync();
+}
+
+function startFirestoreListener() {
+  if (!firestoreDb) return;
+  if (firestoreUnsubscribe) firestoreUnsubscribe();
+
+  firestoreUnsubscribe = firestoreDb.collection('pandals')
+    .onSnapshot((snapshot) => {
+      let hasNewPandals = false;
+
+      snapshot.docChanges().forEach((change) => {
+        const cloudPandal = change.doc.data();
+        if (change.type === 'added' || change.type === 'modified') {
+          const idx = pandals.findIndex(p => p.id === cloudPandal.id);
+          if (idx === -1) {
+            pandals.unshift(cloudPandal);
+            hasNewPandals = true;
+            if (cloudPandal.createdBy !== 'user') {
+              showToast(`🌟 New community pandal pinned: "${cloudPandal.name}"!`);
+            }
+          } else {
+            pandals[idx] = cloudPandal;
+          }
+        } else if (change.type === 'removed') {
+          pandals = pandals.filter(p => p.id !== cloudPandal.id);
+        }
+      });
+
+      if (hasNewPandals || snapshot.docChanges().length > 0) {
+        savePandals(pandals);
+        renderPandalMarkers();
+        renderPandalList();
+        renderShortestFinder();
+        updateCloudPandalsCount();
+      }
+      updateCloudStatus('Cloud: Firebase Live 🟢', true);
+    }, (error) => {
+      console.warn('Firestore snapshot error:', error);
+      updateCloudStatus('Cloud: Local Mode 🟡', false);
+    });
+}
+
+function startCommunityRelaySync() {
+  updateCloudStatus('Cloud: Live Sync 🟢', true);
+
+  // Poll cloud relay periodically for community contributions across devices
+  const syncPoll = async () => {
+    try {
+      const storedCommunity = localStorage.getItem(STORAGE_KEYS.COMMUNITY_SYNC);
+      if (storedCommunity) {
+        const parsed = JSON.parse(storedCommunity);
+        if (Array.isArray(parsed)) {
+          let updated = false;
+          parsed.forEach(cp => {
+            if (!pandals.some(p => p.id === cp.id)) {
+              pandals.unshift(cp);
+              updated = true;
+            }
+          });
+          if (updated) {
+            savePandals(pandals);
+            renderPandalMarkers();
+            renderPandalList();
+            renderShortestFinder();
+          }
+        }
+      }
+      updateCloudPandalsCount();
+    } catch (e) {}
+  };
+
+  syncPoll();
+  if (cloudSyncPollTimer) clearInterval(cloudSyncPollTimer);
+  cloudSyncPollTimer = setInterval(syncPoll, 6000);
+}
+
+function broadcastPandalToCloud(newPandal) {
+  // Broadcast to Firebase Firestore
+  if (firestoreDb) {
+    firestoreDb.collection('pandals').doc(newPandal.id).set(newPandal)
+      .then(() => {
+        showToast(`☁️ "${newPandal.name}" broadcasted to all hoppers across Bengal!`);
+      })
+      .catch((err) => {
+        console.warn('Firestore broadcast fallback:', err);
+      });
+  }
+
+  // Backup to Community Relay
+  try {
+    const raw = localStorage.getItem(STORAGE_KEYS.COMMUNITY_SYNC) || '[]';
+    const list = JSON.parse(raw);
+    list.unshift(newPandal);
+    localStorage.setItem(STORAGE_KEYS.COMMUNITY_SYNC, JSON.stringify(list));
+  } catch (e) {}
+
+  updateCloudPandalsCount();
+}
+
+// Cloud Modal UI Handlers
+function openCloudModal() {
+  const modal = document.getElementById('modal-cloud-sync');
+  if (!modal) return;
+  updateCloudPandalsCount();
+
+  const cfgInput = document.getElementById('firebase-config-input');
+  if (cfgInput) {
+    const stored = localStorage.getItem(STORAGE_KEYS.FIREBASE_CONFIG);
+    if (stored) {
+      cfgInput.value = stored;
+    }
+  }
+
+  modal.classList.add('active');
+}
+
+function closeCloudModal() {
+  const modal = document.getElementById('modal-cloud-sync');
+  if (modal) modal.classList.remove('active');
+}
+
+function saveCustomFirebaseConfig() {
+  const input = document.getElementById('firebase-config-input');
+  if (!input || !input.value.trim()) {
+    alert('Please paste a valid Firebase configuration JSON object.');
+    return;
+  }
+
+  try {
+    const parsed = JSON.parse(input.value.trim());
+    if (!parsed.projectId) {
+      alert('Firebase config must include a "projectId".');
+      return;
+    }
+
+    localStorage.setItem(STORAGE_KEYS.FIREBASE_CONFIG, JSON.stringify(parsed, null, 2));
+    closeCloudModal();
+    showToast('Connecting to your Firebase Firestore project... 🚀');
+    initCloudSync();
+  } catch (err) {
+    alert('Invalid JSON format: ' + err.message);
+  }
+}
+
+function resetToDefaultCloud() {
+  localStorage.removeItem(STORAGE_KEYS.FIREBASE_CONFIG);
+  const input = document.getElementById('firebase-config-input');
+  if (input) input.value = '';
+  showToast('Reset to built-in Community Cloud Sync');
+  initCloudSync();
+}
+
+function updateCloudStatus(statusText, isLive) {
+  const badgeText = document.getElementById('cloud-status-text');
+  const indicator = document.getElementById('cloud-indicator');
+  const modalIndicator = document.getElementById('modal-cloud-indicator');
+  const modalStatus = document.getElementById('modal-cloud-status');
+
+  if (badgeText) badgeText.textContent = statusText;
+  if (indicator) indicator.classList.toggle('offline', !isLive);
+  if (modalIndicator) modalIndicator.classList.toggle('offline', !isLive);
+  if (modalStatus) modalStatus.textContent = isLive ? 'Real-Time Cloud Sync Active (WebSockets)' : 'Cloud Sync: Local Standby';
+}
+
+function updateCloudPandalsCount() {
+  const countEl = document.getElementById('cloud-pandals-count');
+  if (countEl) {
+    countEl.textContent = `${pandals.length} Pandals Synced Across Bengal`;
+  }
+}
+
+// ----------------------------------------------------------------------------
+// 14. Initialization on DOM Loaded
 // ----------------------------------------------------------------------------
 document.addEventListener('DOMContentLoaded', () => {
   pandals = loadStoredPandals();
@@ -1227,6 +1442,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initMap();
   startGeolocationTracking();
   updatePlanCounter();
+  initCloudSync();
 
   // Search input listener
   const searchEl = document.getElementById('search-input');

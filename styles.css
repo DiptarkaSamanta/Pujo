@@ -883,6 +883,35 @@ h1, h2, h3, .festive-font {
   to { transform: scale(1); opacity: 1; }
 }
 
+/* Cloud Sync Status Indicator */
+.cloud-indicator-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: #22c55e;
+  box-shadow: 0 0 8px #22c55e;
+  animation: pulse-dot 1.5s infinite;
+  display: inline-block;
+}
+
+.cloud-indicator-dot.offline {
+  background-color: #f59e0b;
+  box-shadow: 0 0 8px #f59e0b;
+}
+
+.cloud-tag {
+  background: #ecfdf5;
+  color: #065f46;
+  border: 1px solid #a7f3d0;
+  padding: 2px 7px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
 /* Responsive */
 @media (max-width: 640px) {
   #main-navbar { padding: 0 12px; }
