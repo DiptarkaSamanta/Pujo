@@ -36,10 +36,14 @@ A mobile-first web app to track live GPS movements, discover top Durga Puja pand
 
 ## 💻 How to Run Locally (Without Node.js)
 
-### Method 1: Just Open in Any Browser (Zero Commands)
+### Method 1: Double-click `run.bat` (1-Click Instant Preview)
+- Simply double-click **`run.bat`** in this folder!
+- It automatically opens your browser to `http://localhost:3000/` and serves the app locally so you can observe all your changes and live GPS in real time.
+
+### Method 2: Just Open in Any Browser (Zero Commands)
 - Simply double-click `index.html` to open it in Chrome, Edge, Safari, or Firefox!
 
-### Method 2: Python Local Server (Recommended for GPS testing)
+### Method 3: Python Local Server
 Open PowerShell or Terminal in this folder and run:
 ```bash
 python -m http.server 3000

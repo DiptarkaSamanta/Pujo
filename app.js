@@ -857,12 +857,28 @@ function toggleSimulation() {
 
 // ----------------------------------------------------------------------------
 // 8. Pandal Markers & Interactions
-// ----------------------------------------------------------------------------
+let isFamousFilterActive = false;
+let isTrafficFilterActive = false;
+const TILE_KEYS = ['osm', 'hot', 'esri_streets', 'satellite'];
+let currentTileIndex = 0;
+
 function renderPandalMarkers() {
   if (!pandalMarkersLayer) return;
   pandalMarkersLayer.clearLayers();
 
-  pandals.forEach(p => {
+  // Update header counter
+  const countEl = document.getElementById('header-pandal-count');
+  if (countEl) countEl.textContent = pandals.length;
+
+  let displayList = [...pandals];
+  if (isFamousFilterActive) {
+    displayList = displayList.filter(p => p.isBeautyPick || p.isHeritage).slice(0, 5);
+  }
+  if (isTrafficFilterActive) {
+    displayList = displayList.filter(p => p.trafficLevel === 'low' || p.trafficLevel === 'moderate');
+  }
+
+  displayList.forEach(p => {
     const trafficColor = 
       p.trafficLevel === 'low' ? '#10b981' :
       p.trafficLevel === 'moderate' ? '#f59e0b' :
@@ -895,6 +911,64 @@ function renderPandalMarkers() {
 
     marker.addTo(pandalMarkersLayer);
   });
+}
+
+function fitNearestPandals(count = 5) {
+  if (!map || !pandals.length) return;
+  switchTab('map');
+  const sorted = [...pandals].map(p => ({
+    ...p,
+    dist: calculateDistanceKm(userLocation, p.location)
+  })).sort((a, b) => a.dist - b.dist).slice(0, count);
+
+  const bounds = L.latLngBounds([[userLocation.lat, userLocation.lng]]);
+  sorted.forEach(p => bounds.extend([p.location.lat, p.location.lng]));
+  map.fitBounds(bounds, { padding: [80, 80], maxZoom: 16 });
+  showToast(`🗺️ Fitted nearest ${sorted.length} pandals around you`);
+}
+
+function toggleFamousPandals() {
+  isFamousFilterActive = !isFamousFilterActive;
+  const btn = document.getElementById('btn-famous-filter');
+  if (btn) btn.classList.toggle('active-famous', isFamousFilterActive);
+  renderPandalMarkers();
+  showToast(isFamousFilterActive ? '🪔 Showing 5 famous heritage pujas' : 'Showing all pandals');
+}
+
+function toggleTrafficFilter() {
+  isTrafficFilterActive = !isTrafficFilterActive;
+  const btn = document.getElementById('btn-traffic-filter');
+  if (btn) btn.classList.toggle('active', isTrafficFilterActive);
+  renderPandalMarkers();
+  showToast(isTrafficFilterActive ? '🚦 Filtered: Smooth & moderate crowd only' : 'Showing all traffic levels');
+}
+
+function quickShortestRoute() {
+  if (!pandals.length) return;
+  const sorted = [...pandals].map(p => ({
+    ...p,
+    dist: calculateDistanceKm(userLocation, p.location)
+  })).sort((a, b) => a.dist - b.dist);
+
+  const nearest = sorted[0];
+  if (nearest) {
+    startNavigationTo(nearest);
+  }
+}
+
+function mapZoomIn() {
+  if (map) map.zoomIn();
+}
+
+function mapZoomOut() {
+  if (map) map.zoomOut();
+}
+
+function cycleMapLayer() {
+  currentTileIndex = (currentTileIndex + 1) % TILE_KEYS.length;
+  const key = TILE_KEYS[currentTileIndex];
+  setTileStyle(key);
+  showToast(`Map Style: ${key.toUpperCase()}`);
 }
 
 function openPandalDetail(pandal) {

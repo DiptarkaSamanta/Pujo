@@ -25,31 +25,45 @@
   <body>
     <div id="app-container">
       
-      <!-- 1. Top Navbar -->
+      <!-- 1. Top Festive Navbar (Matching UI Mockup) -->
       <header id="main-navbar">
         <div class="nav-brand">
-          <div class="brand-icon">🪔</div>
-          <div class="brand-text">
-            <h1 class="festive-font">Durga Puja Parikrama</h1>
-            <p>BENGAL LIVE HOPPER 2026</p>
+          <div class="brand-icon-circle">
+            <span>🪔</span>
+          </div>
+          <div class="brand-titles">
+            <div class="brand-title-row">
+              <h1 class="brand-name">Pandal Hopper</h1>
+              <span class="badge-live">WEST BENGAL LIVE</span>
+            </div>
+            <p class="brand-subtitle">
+              <span>📍</span> <span id="header-pandal-count">18</span> Famous Pujo Pandals on Map
+            </p>
           </div>
         </div>
 
         <div class="nav-actions">
-          <!-- Real-Time Cloud Sync Status Pill -->
-          <button class="btn-secondary" id="navbar-cloud-badge" onclick="openCloudModal()" title="Live Community Cloud Sync Status">
+          <!-- Find Distance Button -->
+          <button class="top-pill-btn" onclick="switchTab('finder')" title="Find Shortest Distance">
+            <span class="pill-dot">🎯</span>
+            <span>Find Distance</span>
+          </button>
+
+          <!-- Shortest Route Button -->
+          <button class="top-pill-btn" onclick="quickShortestRoute()" title="Navigate to Nearest Pandal">
+            <span class="pill-dot">🧭</span>
+            <span>Shortest Route</span>
+          </button>
+
+          <!-- Plus Button (Pin Pandal on Map) -->
+          <button class="top-circle-add-btn" onclick="startPinningMode()" title="Pin Pandal on Map">
+            +
+          </button>
+
+          <!-- Cloud Sync Status Pill -->
+          <button class="top-cloud-btn" id="navbar-cloud-badge" onclick="openCloudModal()" title="Firebase Firestore Cloud Live Sync">
             <span class="cloud-indicator-dot" id="cloud-indicator"></span>
-            <span id="cloud-status-text">Cloud: Live ☁️</span>
-          </button>
-
-          <!-- Live Location Badge Button -->
-          <button class="btn-secondary" id="navbar-location-badge" onclick="recenterMap()" title="Click to Center Map">
-            Location: Kolkata 📍
-          </button>
-
-          <!-- Pin Pandal Button -->
-          <button class="btn-festive" onclick="startPinningMode()">
-            <span>Pin Pandal</span> 📍
+            <span id="cloud-status-text">Cloud 🟢</span>
           </button>
         </div>
       </header>
@@ -58,6 +72,50 @@
       <main id="main-viewport">
         <!-- Leaflet Map Canvas -->
         <div id="map"></div>
+
+        <!-- Floating Filter & Pinpoint Pills Overlay (Top-Left on Map) -->
+        <div id="map-top-overlay">
+          <div class="overlay-row-1">
+            <!-- Find Pandal / Club Card -->
+            <div class="overlay-card-finder" onclick="switchTab('finder')" title="Find Pandal / Shortest Distance Calculator">
+              <div class="finder-icon-badge">🎯</div>
+              <div class="finder-card-text">
+                <span class="finder-title">Find Pandal / Club</span>
+                <span class="finder-desc">Shortest distance calculator</span>
+              </div>
+            </div>
+
+            <!-- Pin the Pandal Orange Pill -->
+            <button class="overlay-pill-orange" onclick="startPinningMode()" title="Pin a Pandal">
+              <span>🪔</span> Pin the Pandal
+            </button>
+
+            <!-- My Pinpoint Blue Pill -->
+            <button class="overlay-pill-blue" onclick="recenterMap()" title="Center on My Location">
+              <span>📍</span> My Pinpoint
+            </button>
+          </div>
+
+          <div class="overlay-row-2">
+            <!-- Show Me + 5 Pandals White Pill -->
+            <button class="overlay-pill-white" onclick="fitNearestPandals(5)" title="Fit Nearest 5 Pandals on Map">
+              <span>🗺️</span> Show Me + 5 Pandals
+            </button>
+
+            <!-- 5 Famous Pujo Pandals White Pill -->
+            <button class="overlay-pill-white" id="btn-famous-filter" onclick="toggleFamousPandals()" title="Filter Top Famous Heritage Pandals">
+              <span class="pill-gold-dot">●</span> <span>🪔</span> 5 Famous Pujo Pandals
+            </button>
+          </div>
+        </div>
+
+        <!-- Bottom-Left Floating Live Crowd Legend -->
+        <div class="map-crowd-legend">
+          <span class="legend-title">● Live Crowd:</span>
+          <span class="legend-item"><span class="legend-dot dot-smooth"></span> Smooth</span>
+          <span class="legend-item"><span class="legend-dot dot-moderate"></span> Moderate</span>
+          <span class="legend-item"><span class="legend-dot dot-packed"></span> Packed</span>
+        </div>
 
         <!-- Top Toast Notification -->
         <div id="gps-toast">📍 Live GPS updated</div>
@@ -82,26 +140,36 @@
           </button>
         </div>
 
-        <!-- Floating HUD Controls (Right Side) -->
+        <!-- Floating HUD Controls (Right Side Vertical Stack Matching Mockup) -->
         <div class="map-floating-controls">
-          <!-- Recenter User GPS Button -->
-          <button class="hud-btn" id="btn-recenter-user" onclick="recenterMap()" title="Center on My Location">
-            📍
-          </button>
-
-          <!-- Live Follow Me Mode Toggle Button -->
-          <button class="hud-btn active-tracking" id="btn-toggle-follow" onclick="toggleFollowUser()" title="Auto-Follow Me: ON">
+          <!-- Blue Circular Compass Button (Follow & Recenter) -->
+          <button class="hud-circle-blue active-tracking" id="btn-toggle-follow" onclick="toggleFollowUser()" title="Follow My Live GPS">
             🧭
           </button>
 
-          <!-- Simulate Live Travel Movement Button (For Desktop/Testing) -->
-          <button class="hud-btn" id="btn-simulate-move" onclick="toggleSimulation()" title="Simulate Real Travel Movement (Test)">
-            🚶
+          <!-- White Square Map Style Switcher -->
+          <button class="hud-square" id="btn-map-layers" title="Change Map Style">
+            🗺️
           </button>
 
-          <!-- Map Tile Layers Switcher Button -->
-          <button class="hud-btn" id="btn-map-layers" title="Change Map Style">
-            🗺️
+          <!-- White Square Layers Cycle Button -->
+          <button class="hud-square" onclick="cycleMapLayer()" title="Cycle Map Tile Layer">
+            🗂️
+          </button>
+
+          <!-- Amber Traffic Light Button -->
+          <button class="hud-amber" id="btn-traffic-filter" onclick="toggleTrafficFilter()" title="Toggle Crowd Traffic Overlay">
+            🚦
+          </button>
+
+          <!-- Zoom In (+) -->
+          <button class="hud-square" onclick="mapZoomIn()" title="Zoom In">
+            +
+          </button>
+
+          <!-- Zoom Out (-) -->
+          <button class="hud-square" onclick="mapZoomOut()" title="Zoom Out">
+            −
           </button>
 
           <!-- Layer Dropdown Menu -->
@@ -167,23 +235,34 @@
 
       </main>
 
-      <!-- 4. Bottom Navigation Bar -->
+      <!-- 4. Bottom Navigation Bar (Matching Mockup) -->
       <nav id="bottom-navigation">
         <button class="bottom-nav-item active" data-tab="map" onclick="switchTab('map')">
           <span class="nav-icon">🗺️</span>
-          <span>Live Map</span>
+          <span class="nav-label">Live Map</span>
         </button>
+
         <button class="bottom-nav-item" data-tab="explore" onclick="switchTab('explore')">
-          <span class="nav-icon">🏛️</span>
-          <span>Explore</span>
+          <span class="nav-icon">☰</span>
+          <span class="nav-label">Explore</span>
         </button>
+
+        <!-- Center Raised Circular Button -->
+        <button class="bottom-nav-fab" onclick="startPinningMode()" title="Pin the Pandal">
+          <div class="fab-circle">
+            <span>⊕</span>
+          </div>
+          <span class="fab-label">Pin the Pandal</span>
+        </button>
+
         <button class="bottom-nav-item" data-tab="finder" onclick="switchTab('finder')">
-          <span class="nav-icon">🎯</span>
-          <span>Nearest</span>
+          <span class="nav-icon">🧭</span>
+          <span class="nav-label">Shortest Path</span>
         </button>
+
         <button class="bottom-nav-item" data-tab="itinerary" onclick="switchTab('itinerary')">
           <span class="nav-icon">📅</span>
-          <span>Itinerary</span>
+          <span class="nav-label">Next Visit</span>
           <span id="itinerary-badge" style="display:none; background:#b91c1c; color:#fff; font-size:9px; border-radius:999px; padding:1px 5px; margin-left:2px;"></span>
         </button>
       </nav>
