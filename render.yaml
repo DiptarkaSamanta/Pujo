@@ -1,0 +1,6 @@
+services:
+  - type: web
+    name: durga-puja-parikrama
+    env: static
+    buildCommand: ""
+    staticPublishPath: ./
