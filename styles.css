@@ -1406,10 +1406,76 @@ h1, h2, h3, .festive-font {
 }
 
 /* Responsive */
-@media (max-width: 640px) {
-  #main-navbar { padding: 0 12px; }
-  .brand-text h1 { font-size: 15px; }
-  .brand-text p { font-size: 10px; }
-  .nav-actions .btn-festive span, .nav-actions .btn-secondary span { display: none; }
-  .nav-actions .btn-festive, .nav-actions .btn-secondary { padding: 8px 10px; }
+@media (max-width: 768px) {
+  #main-navbar {
+    padding: 0 10px;
+    height: 60px;
+  }
+  .brand-name {
+    font-size: 16px;
+  }
+  .badge-live {
+    font-size: 8px;
+    padding: 2px 5px;
+  }
+  .brand-subtitle {
+    display: none;
+  }
+  .top-work-bar {
+    gap: 5px;
+    max-width: 65%;
+    overflow-x: auto;
+    padding: 4px 0;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .top-work-bar::-webkit-scrollbar {
+    display: none;
+  }
+  .top-work-bar .btn-label-text {
+    display: none;
+  }
+  .work-bar-btn {
+    padding: 5px 8px;
+    font-size: 11px;
+  }
+  .work-bar-icon-btn {
+    width: 32px;
+    height: 32px;
+    font-size: 14px;
+    border-radius: 9px;
+  }
+  .top-circle-add-btn {
+    width: 32px;
+    height: 32px;
+    font-size: 20px;
+  }
+  .overlay-row-1 {
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .overlay-card-finder {
+    padding: 6px 10px;
+  }
+  .finder-title {
+    font-size: 11px;
+  }
+  .finder-desc {
+    font-size: 9px;
+  }
 }
+
+@media (max-width: 480px) {
+  .brand-icon-circle {
+    width: 36px;
+    height: 36px;
+    font-size: 18px;
+  }
+  .brand-name {
+    font-size: 14px;
+  }
+  .top-work-bar {
+    max-width: 60%;
+  }
+}
+
