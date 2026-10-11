@@ -1,88 +1,153 @@
 # 🪔 Durga Puja Parikrama Bengal — Live GPS Pandal Hopper
 
-A mobile-first web app to track live GPS movements, discover top Durga Puja pandals across West Bengal, find the shortest road routes, check queue wait times, and plan your festive itinerary.
+An interactive, mobile-first web application for exploring Durga Puja pandals across West Bengal. Features real-time GPS tracking with radar beacons, shortest road routing, queue wait times, community photo uploads (Google Maps style) powered by **Firebase Cloud Storage (Approach B)**, live **Firestore** sync, and dual **User & Admin Panels** with pandal deletion privileges.
 
-**Zero Node.js Required:** Built as a pure, clean static web application (`HTML5` + `CSS3` + `Vanilla JavaScript`). Runs directly in any web browser, on mobile phones, or hosted on **GitHub Pages** & **Render** for free.
-
----
-
-## 🚀 Key Features
-
-1. **Ultra-Visible Live GPS Radar Beacon:**
-   - Multi-tier animated radar pulse waves.
-   - Dynamic directional heading cone (`user-marker-heading`) that turns in the direction you are walking or driving.
-   - Live hardware accuracy ring matching real GPS satellites (`pos.coords.accuracy`).
-   - Live speed & accuracy status badge (`YOU • Live GPS • ±6m`).
-
-2. **Auto-Follow ("Follow Me") Mode:**
-   - Automatically keeps your marker centered as you travel along roads in real life.
-   - Toggle button on the map to switch between locking camera or freely exploring.
-
-3. **Simulated Travel Mode (Play/Stop Button):**
-   - Click the **🚶** button on the map to simulate live walking through Kolkata streets and watch your marker move dynamically without walking outside.
-
-4. **Shortest Distance Calculator & Real Road Navigation:**
-   - Computes distance to all 16 major pandals in real-time as your GPS coordinates update.
-   - Fetches actual street-following road routes using OSRM with driving time estimates.
-
-5. **16 Authentic Bengal Pujas Preloaded:**
-   - Sreebhumi, Kalyani ITI More, Belur Math, Chandannagar, Ekdalia Evergreen, Santosh Mitra Square, Bagbazar, Siliguri, Suruchi Sangha, College Square, Maddox Square, Naktala, Durgapur, Midnapore, Sovabazar Rajbari, and Bally.
-
-6. **Real-Time Community Cloud Sync (Firebase Firestore):**
-   - When any hopper marks a pandal on the map, it automatically broadcasts across Bengal so every user sees it dynamically in real time without refreshing!
-   - Built-in multi-user community relay + custom Firebase Firestore connector.
+**Zero Node.js Build Step Required:** Built as a pure, high-performance static web application (`HTML5` + `CSS3` + `Vanilla JavaScript`). Runs directly in any web browser, on mobile devices, or hosted for free on **GitHub Pages** & **Render**.
 
 ---
 
-## 💻 How to Run Locally (Without Node.js)
+## ✨ Features & Architecture
+
+### 1. 📸 Community Photos & Approach B Cloud Architecture
+- **Google Maps-Style Photo Gallery:** Visitors can capture live moments from pandals with their camera or upload from their device gallery with custom captions and hopper handles.
+- **Approach B Architecture (Firebase Cloud Storage + Firestore):**
+  - **The Problem Solved:** Firestore documents have a strict 1 MB limit. Saving photos as Base64 strings directly in Firestore causes documents to hit the ceiling after just a few uploads.
+  - **The Solution:** Photos are uploaded directly to **Firebase Cloud Storage** (`pandal_photos/`), and only the short public download URL string (~80 bytes) is stored in the Firestore document.
+  - **Massive Scalability:** A single pandal can store thousands of community pictures while the Firestore document stays under ~50 KB. Utilizes Firebase's **5 GB free Cloud Storage tier**.
+- **Client-Side Compression:** Images are compressed and resized via HTML5 Canvas (900px wide, ~80–120 KB JPEG) prior to upload, ensuring rapid uploads even on congested mobile cellular networks.
+- **Fullscreen Lightbox:** Tap any photo to open a dark-mode fullscreen viewer with photo title, author credit, date, and pandal info.
+- **Graceful Fallback:** Seamlessly operates offline or with local backups if cloud storage rules are restricted.
+
+### 2. ✏️ Live Pandal Details Editor
+- Update crowd density in real time (**Smooth 🟢**, **Moderate 🟡**, **Heavy 🔴**, **Super Jam 🔥**).
+- Modify queue wait times (minutes), themes, official club titles, addresses, and descriptions.
+- Change pandal cover photos by uploading from device or providing image links.
+- All modifications sync immediately to other users via Firebase Firestore.
+
+### 3. 🛡️ User Panel vs. Admin Panel System
+- **Role-Based Startup Authentication:** Prompts on startup to choose **User Panel** or **Admin Panel**.
+- **User Panel Access:** Live GPS tracking, road routes, nearest pandal finder, itinerary planning, photo uploads, and community pandal submissions.
+- **Admin Panel Access (Passcode: `admin123`):**
+  - Exclusive access to **Delete Unnecessary Pandals** (removes test, duplicate, or expired pandals).
+  - Deletions propagate in real-time across Bengal via Firestore, removing the marker from all connected users' screens instantly.
+  - Dedicated **Admin Pandal Manager** modal with instant search and quick-delete controls.
+
+### 4. 🧭 Ultra-Visible Live GPS Radar Beacon & Navigation
+- **Radar Pulse Wave:** Multi-tier animated radar pulse around the hopper marker.
+- **Directional Heading Cone:** Turns dynamically in the direction the user is walking or driving.
+- **Satellite Accuracy Ring:** Displays real GPS satellite accuracy radius (`pos.coords.accuracy`).
+- **Follow Me Mode:** Locks the map camera to automatically follow user movement.
+- **Simulated Walking Mode (🚶):** Click the walk button to test movement along Kolkata roads without leaving your desk.
+- **Shortest Route Finder & Real Road Directions:** Real-time distance calculation to all pandals with street-following turn-by-turn road routes via OSRM.
+
+### 5. 🧰 Compact Sliding Toolbox Drawer & UI Polish
+- **Sliding Drawer:** Single button at top-right (`>`) opens a floating panel containing quick tools:
+  - 📍 **Pin New Pandal** (tap anywhere on map to add custom pujas)
+  - 🏆 **Leaderboard** (top-rated & most visited pujas)
+  - 👑 **Top Contributors** (active hoppers pinning pandals)
+  - 🥁 **Puja Panjika & Dhak Beats** (Sharadotsav 2026 Tithi calendar + traditional audio player)
+  - ☁️ **Cloud Sync Status** (WebSocket connectivity status indicator)
+  - 🛡️ **Admin Manager** (quick pandal deletion panel)
+- **Map-Only Floating Controls:** Recenter, Radar, Route, Layers, Zoom, and Quick Filter buttons automatically hide when browsing Explore, Finder, or Itinerary tabs.
+
+### 6. 🪔 16 Preloaded Heritage Bengal Pujas
+Pre-configured with coordinates, authentic themes, and verified landmarks:
+- Sreebhumi Sporting Club
+- Kalyani ITI More
+- Belur Math
+- Chandannagar Central
+- Ekdalia Evergreen
+- Santosh Mitra Square
+- Bagbazar Sarbojanin
+- Siliguri Central
+- Suruchi Sangha
+- College Square
+- Maddox Square
+- Naktala Udayan Sangha
+- Durgapur City Center
+- Midnapore Town Club
+- Sovabazar Rajbari
+- Bally Sporting
+
+---
+
+## 💻 How to Run Locally
 
 ### Method 1: Double-click `run.bat` (1-Click Instant Preview)
-- Simply double-click **`run.bat`** in this folder!
-- It automatically opens your browser to `http://localhost:3000/` and serves the app locally so you can observe all your changes and live GPS in real time.
+- Double-click **`run.bat`** in the repository root.
+- Starts a local server at `http://localhost:3000/` and launches your default browser automatically.
 
-### Method 2: Just Open in Any Browser (Zero Commands)
-- Simply double-click `index.html` to open it in Chrome, Edge, Safari, or Firefox!
+### Method 2: Open Directly (Zero Commands)
+- Simply double-click `index.html` to open in Chrome, Edge, Safari, or Firefox.
 
-### Method 3: Python Local Server
-Open PowerShell or Terminal in this folder and run:
+### Method 3: Python HTTP Server
 ```bash
 python -m http.server 3000
 ```
-Then open `http://localhost:3000/` in your browser.
+Then navigate to `http://localhost:3000/`.
 
 ---
 
-## 🌐 How to Host Online for Free (For Everyone to Use on Phones)
+## ☁️ Firebase Cloud Configuration
 
-### Option A: GitHub Pages (100% Free, 1-Click Setup)
-1. Push this folder to a GitHub repository (e.g. `github.com/your-username/durga-puja`).
-2. Go to your repository on GitHub.
-3. Click **Settings** ⚙️ ➔ **Pages** (in the left sidebar).
-4. Under **Build and deployment**:
+The application works out of the box with built-in community sync. To connect your own Firebase project with Firestore and Cloud Storage:
+
+### 1. Enable Firestore & Storage in Firebase Console
+1. Go to [Firebase Console](https://console.firebase.google.com/) and create or select your project.
+2. Under **Build** ➔ **Firestore Database**, create a database in test mode.
+3. Under **Build** ➔ **Storage**, enable Cloud Storage.
+
+### 2. Configure Firebase Storage Rules (Approach B)
+Under **Storage** ➔ **Rules**, set:
+```javascript
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /{allPaths=**} {
+      allow read, write: if true;
+    }
+  }
+}
+```
+Click **Publish**.
+
+### 3. Connect to the App
+Open the app, open the **Toolbox** ➔ **Cloud Sync Status**, and paste your Firebase configuration JSON.
+
+---
+
+## 🌐 Free Online Hosting
+
+### Option A: GitHub Pages (100% Free)
+1. Push this repository to GitHub.
+2. In your repository, go to **Settings** ⚙️ ➔ **Pages**.
+3. Under **Build and deployment**:
    - Source: **Deploy from a branch**
-   - Branch: **main** (or `master`), Folder: **/ (root)**
-5. Click **Save**!
-6. In ~1 minute, your app will be live at:
-   `https://your-username.github.io/durga-puja/`
-   *(GitHub Pages provides free HTTPS, which is required by Android & iOS for live GPS tracking!)*
+   - Branch: **main**, Folder: **/ (root)**
+4. Click **Save**.
+5. Your app is live with HTTPS (required for mobile GPS tracking) at:
+   `https://<username>.github.io/<repo-name>/`
+
+### Option B: Render.com
+1. Connect your repository to [render.com](https://render.com).
+2. Create a new **Static Site**.
+3. Set **Publish Directory** to `./` and deploy.
 
 ---
 
-### Option B: Render.com (100% Free Static Site)
-1. Push this folder to GitHub.
-2. Sign in to [render.com](https://render.com).
-3. Click **New +** ➔ **Static Site**.
-4. Connect your GitHub repository.
-5. Set:
-   - **Build Command**: *(leave empty)*
-   - **Publish Directory**: `./`
-6. Click **Create Static Site** — your public link is generated automatically!
+## 📁 Repository Structure
+
+```text
+├── index.html           # Main HTML5 application shell and modals
+├── styles.css           # Glassmorphism design, festive styling, animations
+├── app.js               # Core logic: GPS, Leaflet map, Firebase Firestore & Storage (Approach B)
+├── run.bat              # Windows 1-click preview server launcher
+├── .nojekyll            # Prevents Jekyll processing on GitHub Pages
+├── render.yaml          # Render.com static deployment configuration
+└── README.md            # Comprehensive project documentation
+```
 
 ---
 
-## 📁 File Structure (Minimal & Pure Static)
-- `index.html`: Main web app with Leaflet map canvas and tabs.
-- `styles.css`: Festive theme, glassmorphism UI, and pulsating GPS radar animations.
-- `app.js`: Live GPS watcher, pandal database, road routing, and distance calculator.
-- `.nojekyll`: Direct deployment flag for GitHub Pages.
-- `render.yaml`: 1-click configuration for Render free static hosting.
+## 📜 License
+Open source and built for the festive spirit of Durga Puja. Free to use, fork, and enhance! 🪔✨
