@@ -443,7 +443,15 @@ const STORAGE_KEYS = {
   PANDALS: 'puja_parikrama_pandals_v1',
   PLANS: 'puja_parikrama_plans_v1',
   FIREBASE_CONFIG: 'puja_firebase_config_v1',
-  COMMUNITY_SYNC: 'puja_community_sync_v1'
+  COMMUNITY_SYNC: 'puja_community_sync_v1',
+  AUTH: 'puja_parikrama_auth_v1'
+};
+
+const ADMIN_PASSCODE = 'admin123';
+
+let currentAuth = {
+  role: 'user', // 'user' or 'admin'
+  name: 'Pandal Hopper'
 };
 
 let firestoreDb = null;
@@ -987,11 +995,65 @@ function openPandalDetail(pandal) {
   const imgEl = document.getElementById('modal-detail-img');
   imgEl.src = pandal.thumbnail || pandal.images[0];
 
+  // Admin delete button toggle
+  const deleteBtn = document.getElementById('btn-admin-delete-pandal');
+  if (deleteBtn) {
+    deleteBtn.style.display = (currentAuth && currentAuth.role === 'admin') ? 'inline-flex' : 'none';
+  }
+
   document.getElementById('modal-pandal-detail').classList.add('active');
 }
 
 function closePandalDetail() {
   document.getElementById('modal-pandal-detail').classList.remove('active');
+}
+
+function deleteCurrentPandal() {
+  if (selectedPandal) {
+    deletePandal(selectedPandal.id);
+  }
+}
+
+function deletePandal(pandalId) {
+  if (!currentAuth || currentAuth.role !== 'admin') {
+    alert('Access restricted: Only administrators can delete pandals.');
+    return;
+  }
+
+  const target = pandals.find(p => p.id === pandalId);
+  const name = target ? target.name : 'this pandal';
+
+  if (!confirm(`Are you sure you want to delete "${name}" from the live map? This will remove it for all connected users.`)) {
+    return;
+  }
+
+  // 1. Remove from local pandals array
+  pandals = pandals.filter(p => p.id !== pandalId);
+  savePandals(pandals);
+
+  // 2. Remove from Firebase Firestore (propagates live deletion to all users!)
+  if (firestoreDb) {
+    firestoreDb.collection('pandals').doc(pandalId).delete()
+      .then(() => {
+        console.log('Successfully deleted pandal from Firestore:', pandalId);
+      })
+      .catch((err) => {
+        console.warn('Firestore delete error:', err);
+      });
+  }
+
+  // 3. Remove from community backup storage
+  try {
+    const raw = localStorage.getItem(STORAGE_KEYS.COMMUNITY_SYNC) || '[]';
+    const list = JSON.parse(raw).filter(p => p.id !== pandalId);
+    localStorage.setItem(STORAGE_KEYS.COMMUNITY_SYNC, JSON.stringify(list));
+  } catch (e) {}
+
+  closePandalDetail();
+  renderPandalMarkers();
+  renderPandalList();
+  renderShortestFinder();
+  showToast(`🗑️ "${name}" deleted from the live map!`);
 }
 
 // ----------------------------------------------------------------------------
@@ -1048,13 +1110,15 @@ function startPinningMode() {
   isPinningMode = true;
   document.body.classList.add('pinning-mode');
   switchTab('map');
-  showToast('📍 Tap anywhere on the map to pin a new pandal spot');
+  const banner = document.getElementById('pinning-active-banner');
+  if (banner) banner.style.display = 'flex';
+  showToast('📍 Tap map to place pin • Tap Exit Pin Mode to cancel');
 }
 
 function setManualPin(latlng) {
   manualPinLocation = { lat: latlng.lat, lng: latlng.lng };
 
-  if (tempPinMarker) map.removeLayer(tempPinMarker);
+  if (tempPinMarker && map) map.removeLayer(tempPinMarker);
 
   const pinIcon = L.divIcon({
     className: 'custom-temp-pin',
@@ -1079,7 +1143,23 @@ function setManualPin(latlng) {
 function cancelPinningMode() {
   isPinningMode = false;
   document.body.classList.remove('pinning-mode');
+  const banner = document.getElementById('pinning-active-banner');
+  if (banner) banner.style.display = 'none';
+  if (tempPinMarker && map) {
+    map.removeLayer(tempPinMarker);
+    tempPinMarker = null;
+  }
 }
+
+// PC/Laptop Escape key to cancel pinning cleanly
+window.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    if (isPinningMode) {
+      cancelPinningMode();
+      showToast('Pin mode canceled • Map untouched');
+    }
+  }
+});
 
 function closeAddModal() {
   document.getElementById('modal-add-pandal').classList.remove('active');
@@ -1194,7 +1274,14 @@ function renderPandalList() {
         </span>
       </div>
       <div class="card-body">
-        <h4 class="card-title">${p.name}</h4>
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 8px;">
+          <h4 class="card-title">${p.name}</h4>
+          ${(currentAuth && currentAuth.role === 'admin') ? `
+            <button onclick="event.stopPropagation(); deletePandal('${p.id}')" title="Admin Delete Pandal" style="background:#fee2e2; color:#dc2626; border:1px solid #fca5a5; border-radius:8px; padding:3px 7px; font-size:11px; font-weight:800; cursor:pointer; flex-shrink:0;">
+              🗑️ Delete
+            </button>
+          ` : ''}
+        </div>
         <p class="card-theme">🎨 ${p.theme}</p>
         <p class="card-address">🚩 ${p.address}</p>
         <div class="card-footer">
@@ -1226,7 +1313,7 @@ function renderShortestFinder() {
           <p style="font-size: 11px; color: #64748b;">${p.zone} • ~${Math.round(p.distanceKm * 3.5)} mins drive</p>
         </div>
       </div>
-      <div style="text-align: right; display: flex; align-items: center; gap: 10px;">
+      <div style="text-align: right; display: flex; align-items: center; gap: 8px;">
         <div>
           <span style="font-size: 14px; font-weight: 900; color: #0284c7; display: block;">${p.distanceKm} km</span>
           <span style="font-size: 10px; color: #64748b; font-weight: 600;">Shortest Path</span>
@@ -1234,6 +1321,11 @@ function renderShortestFinder() {
         <button onclick="startNavigationToById('${p.id}')" style="background: linear-gradient(135deg, #b91c1c, #d97706); color: #fff; border: none; border-radius: 10px; padding: 6px 12px; font-size: 11px; font-weight: 800; cursor: pointer;">
           Go 🚗
         </button>
+        ${(currentAuth && currentAuth.role === 'admin') ? `
+          <button onclick="event.stopPropagation(); deletePandal('${p.id}')" title="Admin Delete Pandal" style="background:#fee2e2; color:#dc2626; border:1px solid #fca5a5; border-radius:10px; padding:6px 10px; font-size:12px; font-weight:800; cursor:pointer;">
+            🗑️
+          </button>
+        ` : ''}
       </div>
     </div>
   `).join('');
@@ -1582,7 +1674,113 @@ function updateCloudPandalsCount() {
 }
 
 // ----------------------------------------------------------------------------
-// 14. Initialization on DOM Loaded
+// 14. Authentication & Role Management (User Panel vs Admin Panel)
+// ----------------------------------------------------------------------------
+function initAuth() {
+  const saved = localStorage.getItem(STORAGE_KEYS.AUTH);
+  if (saved) {
+    try {
+      currentAuth = JSON.parse(saved);
+      updateAuthUI();
+      return;
+    } catch (e) {}
+  }
+  // First time or logged out: Open Startup Login Modal
+  openAuthModal();
+}
+
+function openAuthModal() {
+  const modal = document.getElementById('modal-auth-login');
+  if (modal) {
+    modal.classList.add('active');
+    const inputName = document.getElementById('input-user-name');
+    if (inputName && currentAuth && currentAuth.name && currentAuth.name !== 'Pandal Hopper') {
+      inputName.value = currentAuth.name;
+    }
+  }
+}
+
+function closeAuthModal() {
+  const modal = document.getElementById('modal-auth-login');
+  if (modal) modal.classList.remove('active');
+}
+
+function switchAuthTab(tab) {
+  const tabUser = document.getElementById('tab-auth-user');
+  const tabAdmin = document.getElementById('tab-auth-admin');
+  const formUser = document.getElementById('form-auth-user');
+  const formAdmin = document.getElementById('form-auth-admin');
+
+  if (tab === 'user') {
+    if (tabUser) tabUser.classList.add('active');
+    if (tabAdmin) tabAdmin.classList.remove('active');
+    if (formUser) formUser.style.display = 'block';
+    if (formAdmin) formAdmin.style.display = 'none';
+  } else {
+    if (tabAdmin) tabAdmin.classList.add('active');
+    if (tabUser) tabUser.classList.remove('active');
+    if (formAdmin) formAdmin.style.display = 'block';
+    if (formUser) formUser.style.display = 'none';
+  }
+}
+
+function handleUserLogin(e) {
+  e.preventDefault();
+  const nameInput = document.getElementById('input-user-name');
+  const name = (nameInput && nameInput.value.trim()) ? nameInput.value.trim() : 'Pandal Hopper';
+  currentAuth = {
+    role: 'user',
+    name: name
+  };
+  localStorage.setItem(STORAGE_KEYS.AUTH, JSON.stringify(currentAuth));
+  updateAuthUI();
+  closeAuthModal();
+  showToast(`👋 Logged in as ${name} (User Mode)`);
+}
+
+function handleAdminLogin(e) {
+  e.preventDefault();
+  const passInput = document.getElementById('input-admin-pass');
+  const pass = passInput ? passInput.value.trim() : '';
+
+  if (pass === ADMIN_PASSCODE || pass === 'bengal2026') {
+    currentAuth = {
+      role: 'admin',
+      name: 'Administrator'
+    };
+    localStorage.setItem(STORAGE_KEYS.AUTH, JSON.stringify(currentAuth));
+    updateAuthUI();
+    closeAuthModal();
+    showToast('🛡️ Welcome, Admin! Pandal deletion privileges enabled.');
+  } else {
+    alert('Incorrect Admin Passcode!\nHint: Default passcode is admin123');
+  }
+}
+
+function updateAuthUI() {
+  const badgeBtn = document.getElementById('btn-user-role-badge');
+  const badgeIcon = document.getElementById('role-badge-icon');
+  const badgeText = document.getElementById('role-badge-text');
+
+  if (badgeIcon && badgeText) {
+    if (currentAuth && currentAuth.role === 'admin') {
+      badgeIcon.textContent = '🛡️';
+      badgeText.textContent = 'Admin';
+      if (badgeBtn) badgeBtn.classList.add('is-admin');
+    } else {
+      badgeIcon.textContent = '👤';
+      badgeText.textContent = (currentAuth && currentAuth.name) ? currentAuth.name : 'User';
+      if (badgeBtn) badgeBtn.classList.remove('is-admin');
+    }
+  }
+
+  // Refresh pandal lists & markers so admin delete buttons are properly updated
+  renderPandalList();
+  renderShortestFinder();
+}
+
+// ----------------------------------------------------------------------------
+// 15. Initialization on DOM Loaded
 // ----------------------------------------------------------------------------
 document.addEventListener('DOMContentLoaded', () => {
   pandals = loadStoredPandals();
@@ -1592,6 +1790,7 @@ document.addEventListener('DOMContentLoaded', () => {
   startGeolocationTracking();
   updatePlanCounter();
   initCloudSync();
+  initAuth();
 
   // Search input listener
   const searchEl = document.getElementById('search-input');
@@ -1616,8 +1815,12 @@ document.addEventListener('DOMContentLoaded', () => {
   const layerBtn = document.getElementById('btn-map-layers');
   const dropdown = document.getElementById('tile-dropdown');
   if (layerBtn && dropdown) {
-    layerBtn.addEventListener('click', () => {
+    layerBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
       dropdown.style.display = dropdown.style.display === 'flex' ? 'none' : 'flex';
+    });
+    document.addEventListener('click', () => {
+      dropdown.style.display = 'none';
     });
   }
 });

@@ -129,37 +129,95 @@ h1, h2, h3, .festive-font {
   gap: 4px;
 }
 
-.nav-actions {
+/* Top Right Unified Work Bar */
+.top-work-bar {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
+  flex-wrap: nowrap;
 }
 
-.top-pill-btn {
-  background: rgba(153, 27, 27, 0.5);
+.work-bar-btn {
+  background: rgba(153, 27, 27, 0.45);
   color: #ffffff;
-  border: 1.5px solid rgba(254, 240, 138, 0.45);
+  border: 1.5px solid rgba(254, 240, 138, 0.4);
   border-radius: 999px;
-  padding: 7px 15px;
+  padding: 6px 12px;
   font-size: 12px;
   font-weight: 700;
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
   cursor: pointer;
   backdrop-filter: blur(8px);
   transition: all 0.2s ease;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+  white-space: nowrap;
 }
 
-.top-pill-btn:hover {
+.work-bar-btn:hover {
   background: rgba(185, 28, 28, 0.85);
   border-color: #facc15;
   transform: translateY(-1px);
 }
 
-.top-pill-btn .pill-dot {
-  font-size: 14px;
+.role-badge-btn {
+  background: rgba(0, 0, 0, 0.35);
+  border-color: #facc15;
+  color: #fef08a;
+  padding: 6px 13px;
+  font-weight: 800;
+  box-shadow: 0 0 10px rgba(250, 204, 21, 0.25);
+}
+
+.role-badge-btn:hover {
+  background: rgba(0, 0, 0, 0.55);
+  border-color: #fde047;
+}
+
+.role-badge-btn.is-admin {
+  background: #7f1d1d;
+  border-color: #ef4444;
+  color: #fee2e2;
+  box-shadow: 0 0 12px rgba(239, 68, 68, 0.5);
+}
+
+.cloud-badge-btn {
+  background: rgba(0, 0, 0, 0.25);
+  color: #fef08a;
+  border-color: rgba(255, 255, 255, 0.25);
+  padding: 6px 10px;
+  font-size: 11px;
+}
+
+.work-bar-icon-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 11px;
+  background: rgba(255, 255, 255, 0.18);
+  color: #ffffff;
+  border: 1.5px solid rgba(255, 255, 255, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 16px;
+  backdrop-filter: blur(8px);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+  flex-shrink: 0;
+}
+
+.work-bar-icon-btn:hover {
+  background: rgba(255, 255, 255, 0.35);
+  border-color: #facc15;
+  transform: translateY(-1px);
+}
+
+.work-bar-icon-btn.active-tracking {
+  background: #0284c7;
+  border-color: #38bdf8;
+  box-shadow: 0 0 12px rgba(2, 132, 199, 0.6);
 }
 
 .top-circle-add-btn {
@@ -178,6 +236,7 @@ h1, h2, h3, .festive-font {
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
   line-height: 1;
+  flex-shrink: 0;
 }
 
 .top-circle-add-btn:hover {
@@ -189,18 +248,78 @@ h1, h2, h3, .festive-font {
   transform: scale(0.95);
 }
 
-.top-cloud-btn {
-  background: rgba(0, 0, 0, 0.25);
-  color: #fef08a;
-  border: 1px solid rgba(255, 255, 255, 0.25);
-  border-radius: 999px;
-  padding: 6px 10px;
-  font-size: 11px;
-  font-weight: 700;
+/* Map Zoom Controls */
+.map-zoom-controls {
+  position: absolute;
+  bottom: 20px;
+  right: 16px;
+  z-index: 500;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.zoom-btn {
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  background: #ffffff;
+  color: #1e293b;
+  border: 1.5px solid #cbd5e1;
+  font-size: 20px;
+  font-weight: 800;
   display: flex;
   align-items: center;
-  gap: 5px;
+  justify-content: center;
   cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  transition: all 0.2s ease;
+}
+
+.zoom-btn:hover {
+  border-color: #f59e0b;
+  color: #b91c1c;
+  transform: scale(1.05);
+}
+
+/* Admin Styles */
+.btn-danger-admin {
+  background: linear-gradient(135deg, #dc2626, #b91c1c);
+  color: #ffffff;
+  border: 1.5px solid #fca5a5;
+  border-radius: 12px;
+  padding: 8px 14px;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.35);
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+}
+
+.btn-danger-admin:hover {
+  background: #b91c1c;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(220, 38, 38, 0.45);
+}
+
+.auth-tab-btn {
+  border: none;
+  background: none;
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 12.5px;
+  font-weight: 800;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.auth-tab-btn.active {
+  background: #ffffff;
+  color: #0f172a;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
 }
 
 /* --------------------------------------------------------------------------
@@ -267,6 +386,46 @@ h1, h2, h3, .festive-font {
   gap: 8px;
   border: 1px solid rgba(255, 255, 255, 0.2);
   backdrop-filter: blur(8px);
+}
+
+/* Pinning Mode Active Banner */
+#pinning-active-banner {
+  position: absolute;
+  top: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1000;
+  background: linear-gradient(135deg, #b91c1c, #d97706);
+  color: #fff;
+  padding: 8px 16px;
+  border-radius: 999px;
+  box-shadow: 0 10px 30px rgba(185, 28, 28, 0.45);
+  border: 2px solid #fef08a;
+  display: none;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  backdrop-filter: blur(8px);
+  animation: slideDown 0.3s ease;
+}
+
+.btn-exit-pinning {
+  background: #ffffff;
+  color: #b91c1c;
+  border: none;
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 11.5px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  white-space: nowrap;
+}
+
+.btn-exit-pinning:hover {
+  background: #fee2e2;
+  transform: scale(1.05);
 }
 
 /* Navigation route banner */
