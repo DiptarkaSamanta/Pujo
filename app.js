@@ -1517,7 +1517,8 @@ function startFirestoreListener() {
             pandals[idx] = cloudPandal;
           }
         } else if (change.type === 'removed') {
-          pandals = pandals.filter(p => p.id !== cloudPandal.id);
+          const removedId = cloudPandal?.id || change.doc.id;
+          pandals = pandals.filter(p => p.id !== removedId);
           hasNewPandals = true;
         }
       });
@@ -1655,8 +1656,8 @@ function resetToDefaultCloud() {
 }
 
 function updateCloudStatus(statusText, isLive) {
-  const badgeText = document.getElementById('cloud-status-text');
-  const indicator = document.getElementById('cloud-indicator');
+  const badgeText = document.getElementById('toolbox-cloud-text') || document.getElementById('cloud-status-text');
+  const indicator = document.getElementById('toolbox-cloud-indicator') || document.getElementById('cloud-indicator');
   const modalIndicator = document.getElementById('modal-cloud-indicator');
   const modalStatus = document.getElementById('modal-cloud-status');
 
@@ -1685,7 +1686,14 @@ function initAuth() {
       return;
     } catch (e) {}
   }
-  // First time or logged out: Open Startup Login Modal
+  // Default to guest hopper user
+  currentAuth = {
+    role: 'user',
+    name: 'Pandal Hopper'
+  };
+  localStorage.setItem(STORAGE_KEYS.AUTH, JSON.stringify(currentAuth));
+  updateAuthUI();
+  // Open startup modal
   openAuthModal();
 }
 
@@ -1758,29 +1766,506 @@ function handleAdminLogin(e) {
 }
 
 function updateAuthUI() {
-  const badgeBtn = document.getElementById('btn-user-role-badge');
-  const badgeIcon = document.getElementById('role-badge-icon');
-  const badgeText = document.getElementById('role-badge-text');
+  const profileCard = document.querySelector('.toolbox-profile-card');
+  const avatarIcon = document.getElementById('toolbox-avatar-icon');
+  const profileName = document.getElementById('toolbox-profile-name');
+  const roleTag = document.getElementById('toolbox-role-tag');
 
-  if (badgeIcon && badgeText) {
-    if (currentAuth && currentAuth.role === 'admin') {
-      badgeIcon.textContent = '🛡️';
-      badgeText.textContent = 'Admin';
-      if (badgeBtn) badgeBtn.classList.add('is-admin');
-    } else {
-      badgeIcon.textContent = '👤';
-      badgeText.textContent = (currentAuth && currentAuth.name) ? currentAuth.name : 'User';
-      if (badgeBtn) badgeBtn.classList.remove('is-admin');
-    }
+  const adminToolTile = document.getElementById('btn-tool-admin-manager');
+  const adminTitle = document.getElementById('tool-admin-title');
+  const adminDesc = document.getElementById('tool-admin-desc');
+  const adminIconBox = document.getElementById('tool-admin-icon-box');
+
+  const isAdmin = currentAuth && currentAuth.role === 'admin';
+
+  if (profileCard) profileCard.classList.toggle('is-admin', isAdmin);
+  if (avatarIcon) avatarIcon.textContent = isAdmin ? '🛡️' : '👤';
+  if (profileName) profileName.textContent = isAdmin ? 'Administrator' : ((currentAuth && currentAuth.name) || 'Pandal Hopper');
+  if (roleTag) roleTag.textContent = isAdmin ? '🛡️ Admin Panel' : 'login / signup';
+
+  if (adminToolTile) {
+    adminToolTile.classList.toggle('tile-admin', isAdmin);
+  }
+  if (adminTitle) {
+    adminTitle.textContent = isAdmin ? 'delete unnecessary pandals' : 'admin: unlock delete';
+  }
+  if (adminDesc) {
+    adminDesc.textContent = isAdmin ? 'Admin deletion panel' : 'Passcode required to delete';
+  }
+  if (adminIconBox) {
+    adminIconBox.textContent = isAdmin ? '🗑️' : '🔒';
+  }
+
+  // Admin delete button in pandal detail modal
+  const detailDeleteBtn = document.getElementById('btn-admin-delete-pandal');
+  if (detailDeleteBtn) {
+    detailDeleteBtn.style.display = isAdmin ? 'inline-flex' : 'none';
   }
 
   // Refresh pandal lists & markers so admin delete buttons are properly updated
   renderPandalList();
   renderShortestFinder();
+  renderAdminManagerList();
 }
 
 // ----------------------------------------------------------------------------
-// 15. Initialization on DOM Loaded
+// 15. Single Capsule & Interactive Tool Box Window Controllers
+// ----------------------------------------------------------------------------
+function toggleToolboxWindow(e) {
+  if (e) {
+    if (typeof e.stopPropagation === 'function') e.stopPropagation();
+  }
+  // Dismiss any open modals so the toolbox opens cleanly
+  document.querySelectorAll('.modal-overlay.active').forEach(m => m.classList.remove('active'));
+
+  const win = document.getElementById('toolbox-window');
+  const btn = document.getElementById('btn-toolbox-capsule');
+  if (!win) return;
+  const isOpen = win.classList.contains('active');
+  if (isOpen) {
+    closeToolboxWindow();
+  } else {
+    win.classList.add('active');
+    if (btn) btn.classList.add('open');
+  }
+}
+
+function closeToolboxWindow() {
+  const win = document.getElementById('toolbox-window');
+  const btn = document.getElementById('btn-toolbox-capsule');
+  if (win) win.classList.remove('active');
+  if (btn) btn.classList.remove('open');
+}
+
+// ----------------------------------------------------------------------------
+// 16. Live Clock & Autumn Weather Engine
+// ----------------------------------------------------------------------------
+function startLiveClockAndWeather() {
+  const updateClock = () => {
+    const now = new Date();
+    const timeStr = now.toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: true
+    });
+    const el = document.getElementById('live-clock-text');
+    if (el) el.textContent = timeStr;
+  };
+  updateClock();
+  setInterval(updateClock, 1000);
+
+  fetchKolkataWeather();
+}
+
+async function fetchKolkataWeather() {
+  try {
+    const res = await fetch('https://api.open-meteo.com/v1/forecast?latitude=22.5726&longitude=88.3639&current=temperature_2m');
+    if (res.ok) {
+      const data = await res.json();
+      if (data && data.current && data.current.temperature_2m !== undefined) {
+        const temp = Math.round(data.current.temperature_2m);
+        const el = document.getElementById('live-weather-text');
+        if (el) el.textContent = `${temp}°C`;
+      }
+    }
+  } catch (e) {
+    // Keep default 26°C
+  }
+}
+
+// ----------------------------------------------------------------------------
+// 17. Authentic Web Audio API Bengali Dhak Beat Synthesizer
+// ----------------------------------------------------------------------------
+let audioCtx = null;
+let isDhakPlaying = false;
+let dhakIntervalId = null;
+
+function initAudioContext() {
+  if (!audioCtx) {
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    if (AudioContext) audioCtx = new AudioContext();
+  }
+  if (audioCtx && audioCtx.state === 'suspended') {
+    audioCtx.resume();
+  }
+}
+
+function playDhakHit(isBass = true, gainValue = 0.8) {
+  if (!audioCtx) return;
+  const now = audioCtx.currentTime;
+
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  osc.connect(gain);
+  gain.connect(audioCtx.destination);
+
+  if (isBass) {
+    // Deep Dhak skin boom
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(140, now);
+    osc.frequency.exponentialRampToValueAtTime(45, now + 0.18);
+    gain.gain.setValueAtTime(gainValue * 1.2, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
+    osc.start(now);
+    osc.stop(now + 0.25);
+  } else {
+    // Sharp rim / kathi strike
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(480, now);
+    osc.frequency.exponentialRampToValueAtTime(180, now + 0.08);
+    gain.gain.setValueAtTime(gainValue * 0.7, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
+    osc.start(now);
+    osc.stop(now + 0.12);
+
+    // Noise snap
+    const bufferSize = Math.floor(audioCtx.sampleRate * 0.05);
+    const noiseBuffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+    const output = noiseBuffer.getChannelData(0);
+    for (let i = 0; i < bufferSize; i++) {
+      output[i] = Math.random() * 2 - 1;
+    }
+    const noise = audioCtx.createBufferSource();
+    noise.buffer = noiseBuffer;
+    const noiseFilter = audioCtx.createBiquadFilter();
+    noiseFilter.type = 'highpass';
+    noiseFilter.frequency.value = 1800;
+    const noiseGain = audioCtx.createGain();
+    noiseGain.gain.setValueAtTime(gainValue * 0.45, now);
+    noiseGain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+
+    noise.connect(noiseFilter);
+    noiseFilter.connect(noiseGain);
+    noiseGain.connect(audioCtx.destination);
+    noise.start(now);
+  }
+}
+
+const DHAK_PATTERN = [
+  { bass: true, delay: 0 },
+  { bass: false, delay: 180 },
+  { bass: false, delay: 320 },
+  { bass: true, delay: 480 },
+  { bass: true, delay: 680 },
+  { bass: false, delay: 840 },
+  { bass: false, delay: 960 },
+  { bass: true, delay: 1120 }
+];
+
+function startDhakBeats() {
+  initAudioContext();
+  isDhakPlaying = true;
+  updateDhakUI(true);
+
+  const loopLength = 1300;
+  const playLoop = () => {
+    DHAK_PATTERN.forEach(item => {
+      setTimeout(() => {
+        if (isDhakPlaying) playDhakHit(item.bass, 0.75);
+      }, item.delay);
+    });
+  };
+
+  playLoop();
+  dhakIntervalId = setInterval(playLoop, loopLength);
+}
+
+function stopDhakBeats() {
+  isDhakPlaying = false;
+  if (dhakIntervalId) {
+    clearInterval(dhakIntervalId);
+    dhakIntervalId = null;
+  }
+  updateDhakUI(false);
+}
+
+function toggleFestiveSong() {
+  if (isDhakPlaying) {
+    stopDhakBeats();
+    showToast('🔇 Dhak music paused');
+  } else {
+    startDhakBeats();
+    showToast('🥁 Playing Authentic Bengal Dhak Beats!');
+  }
+}
+
+function updateDhakUI(playing) {
+  const soundIcon = document.getElementById('capsule-sound-icon');
+  const audioBtn = document.getElementById('capsule-audio-btn');
+  const dhakStatus = document.getElementById('toolbox-dhak-status');
+  const bannerBtn = document.getElementById('btn-toolbox-audio-toggle');
+  const panjikaLabel = document.getElementById('panjika-dhak-label');
+  const panjikaBtn = document.getElementById('btn-panjika-dhak-toggle');
+
+  if (soundIcon) soundIcon.textContent = playing ? '🔊' : '🔇';
+  if (audioBtn) audioBtn.classList.toggle('playing', playing);
+  if (dhakStatus) dhakStatus.textContent = playing ? '🥁 Pause Dhak Beats' : '🥁 Play Dhak Beats';
+  if (bannerBtn) bannerBtn.classList.toggle('active', playing);
+  if (panjikaLabel) panjikaLabel.textContent = playing ? 'Status: 🔊 Playing Live' : 'Status: 🔇 Muted';
+  if (panjikaBtn) panjikaBtn.textContent = playing ? '⏸ Pause Dhak' : '▶ Play Dhak';
+}
+
+// ----------------------------------------------------------------------------
+// 18. Tool Box Actions & Button Handlers
+// ----------------------------------------------------------------------------
+function handleToolMyLocation() {
+  closeToolboxWindow();
+  recenterMap();
+  showToast('📍 Centered on your live GPS location');
+}
+
+function handleToolDistanceRoute() {
+  closeToolboxWindow();
+  switchTab('finder');
+}
+
+function handleToolTraffic() {
+  toggleTrafficFilter();
+  const circle = document.getElementById('tool-traffic-circle');
+  if (circle) circle.textContent = isTrafficFilterActive ? '🔴' : '🚦';
+}
+
+const MAP_STYLES = ['osm', 'hot', 'satellite', 'esri_streets'];
+const MAP_STYLE_NAMES = {
+  osm: 'Classic Streets (OSM)',
+  hot: 'Festive Streets (Hot)',
+  satellite: 'Satellite Imagery',
+  esri_streets: 'Esri World Streets'
+};
+let currentStyleIndex = 0;
+
+function handleToolMapStyleCycle() {
+  currentStyleIndex = (currentStyleIndex + 1) % MAP_STYLES.length;
+  const nextStyle = MAP_STYLES[currentStyleIndex];
+  setTileStyle(nextStyle);
+  const label = document.getElementById('tool-current-style-label');
+  if (label) label.textContent = MAP_STYLE_NAMES[nextStyle] || nextStyle;
+  showToast(`🗺️ Map Style: ${MAP_STYLE_NAMES[nextStyle]}`);
+}
+
+function handleToolPinPandal() {
+  closeToolboxWindow();
+  startPinningMode();
+}
+
+function handleToolItinerary() {
+  closeToolboxWindow();
+  switchTab('itinerary');
+}
+
+function handleToolForceSync() {
+  closeToolboxWindow();
+  showToast('🔄 Syncing with Google Firebase Firestore...');
+  initCloudSync();
+}
+
+let isDarkMode = false;
+function toggleDarkModeTheme() {
+  isDarkMode = !isDarkMode;
+  document.body.classList.toggle('dark-theme', isDarkMode);
+  const label = document.getElementById('tool-theme-label');
+  if (label) label.textContent = isDarkMode ? 'Royal Gold Dark' : 'Festive Crimson Light';
+  showToast(isDarkMode ? '🌙 Royal Gold Dark Mode Active' : '☀️ Festive Crimson Mode Active');
+}
+
+// ----------------------------------------------------------------------------
+// 19. Admin Pandal Deletion Manager Modal Handlers
+// ----------------------------------------------------------------------------
+function handleToolAdminManager() {
+  closeToolboxWindow();
+  if (currentAuth && currentAuth.role === 'admin') {
+    openAdminManagerModal();
+  } else {
+    openAuthModal();
+    switchAuthTab('admin');
+    showToast('🛡️ Admin Passcode required to delete pandals');
+  }
+}
+
+function openAdminManagerModal() {
+  if (!currentAuth || currentAuth.role !== 'admin') {
+    openAuthModal();
+    switchAuthTab('admin');
+    return;
+  }
+  const modal = document.getElementById('modal-admin-manager');
+  if (modal) {
+    modal.classList.add('active');
+    renderAdminManagerList();
+  }
+}
+
+function closeAdminManagerModal() {
+  const modal = document.getElementById('modal-admin-manager');
+  if (modal) modal.classList.remove('active');
+}
+
+function renderAdminManagerList() {
+  const container = document.getElementById('admin-manager-list');
+  const countBar = document.getElementById('admin-manager-count-bar');
+  const searchInput = document.getElementById('admin-manager-search');
+  if (!container) return;
+
+  const query = (searchInput ? searchInput.value.toLowerCase().trim() : '');
+  let filtered = pandals;
+  if (query) {
+    filtered = pandals.filter(p =>
+      (p.name && p.name.toLowerCase().includes(query)) ||
+      (p.zone && p.zone.toLowerCase().includes(query)) ||
+      (p.clubName && p.clubName.toLowerCase().includes(query)) ||
+      (p.theme && p.theme.toLowerCase().includes(query))
+    );
+  }
+
+  if (countBar) {
+    countBar.textContent = `Showing ${filtered.length} of ${pandals.length} Pandals on Live Map`;
+  }
+
+  if (filtered.length === 0) {
+    container.innerHTML = `
+      <div style="text-align:center; padding: 24px; color:#64748b; font-size:12px;">
+        No pandals matching "${query}"
+      </div>
+    `;
+    return;
+  }
+
+  container.innerHTML = filtered.map(p => `
+    <div style="background:#fff; border: 1.5px solid var(--border-light); border-radius:14px; padding:12px 14px; display:flex; justify-content:space-between; align-items:center; gap:12px; box-shadow: 0 2px 6px rgba(0,0,0,0.03);">
+      <div style="display:flex; align-items:center; gap:10px; overflow:hidden;">
+        <img src="${p.thumbnail || (p.images && p.images[0]) || ''}" style="width:42px; height:42px; border-radius:10px; object-fit:cover; flex-shrink:0; border:1px solid #e2e8f0;" onerror="this.src='https://images.unsplash.com/photo-1601055283742-8b27e81b5553?auto=format&fit=crop&w=100&q=80'" />
+        <div style="overflow:hidden;">
+          <h4 style="margin:0; font-size:13px; font-weight:800; color:#0f172a; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${p.name}</h4>
+          <p style="margin:2px 0 0 0; font-size:11px; color:#64748b;">🚩 ${p.zone} • ${p.clubName || p.name}</p>
+          <span style="font-size:10px; color:#94a3b8; font-family:monospace;">ID: ${p.id}</span>
+        </div>
+      </div>
+      <div style="display:flex; gap:8px; align-items:center; flex-shrink:0;">
+        <button type="button" onclick="zoomToPandalAndDetail('${p.id}')" class="btn-secondary" style="padding:6px 10px; font-size:11px;" title="View on map">
+          View 📍
+        </button>
+        <button type="button" onclick="adminDeletePandalFromManager('${p.id}')" style="background:#dc2626; color:#fff; border:none; border-radius:8px; padding:6px 12px; font-size:11.5px; font-weight:800; cursor:pointer; display:flex; align-items:center; gap:4px; box-shadow: 0 2px 6px rgba(220, 38, 38, 0.3);">
+          🗑️ Delete
+        </button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function zoomToPandalAndDetail(id) {
+  closeAdminManagerModal();
+  const p = pandals.find(x => x.id === id);
+  if (p) {
+    switchTab('map');
+    if (map) map.flyTo([p.location.lat, p.location.lng], 16, { animate: true });
+    openPandalDetail(p);
+  }
+}
+
+function adminDeletePandalFromManager(id) {
+  deletePandal(id);
+  renderAdminManagerList();
+}
+
+// ----------------------------------------------------------------------------
+// 20. Leaderboard, Contributors, and Panjika Modals
+// ----------------------------------------------------------------------------
+function openLeaderboardModal() {
+  closeToolboxWindow();
+  const modal = document.getElementById('modal-leaderboard');
+  const body = document.getElementById('leaderboard-modal-body');
+  if (!modal || !body) return;
+
+  const sorted = [...pandals].sort((a, b) => (b.visitCount || 0) - (a.visitCount || 0));
+  body.innerHTML = `
+    <div style="display:flex; flex-direction:column; gap:10px;">
+      ${sorted.slice(0, 10).map((p, idx) => `
+        <div style="background:#fff; border:1.5px solid var(--border-light); border-radius:14px; padding:12px 14px; display:flex; align-items:center; justify-content:space-between; gap:12px;">
+          <div style="display:flex; align-items:center; gap:12px;">
+            <div style="width:30px; height:30px; border-radius:50%; background:${idx === 0 ? '#facc15' : idx === 1 ? '#cbd5e1' : idx === 2 ? '#b45309' : '#f1f5f9'}; color:${idx < 3 ? '#000' : '#64748b'}; font-weight:900; font-size:12px; display:flex; align-items:center; justify-content:center;">
+              ${idx + 1}
+            </div>
+            <div>
+              <h4 style="margin:0; font-size:13px; font-weight:800; color:#0f172a;">${p.name}</h4>
+              <p style="margin:2px 0 0 0; font-size:11px; color:#64748b;">${p.zone} • ★ ${p.rating}</p>
+            </div>
+          </div>
+          <div style="text-align:right;">
+            <span style="font-size:12px; font-weight:800; color:#b91c1c; display:block;">${(p.visitCount || 1000).toLocaleString()} hoppers</span>
+            <button onclick="closeLeaderboardModal(); openPandalDetail(pandals.find(x => x.id === '${p.id}'));" style="background:none; border:none; color:#0284c7; font-size:11px; font-weight:700; cursor:pointer; padding:0;">View →</button>
+          </div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+  modal.classList.add('active');
+}
+
+function closeLeaderboardModal() {
+  const modal = document.getElementById('modal-leaderboard');
+  if (modal) modal.classList.remove('active');
+}
+
+function openContributorsModal() {
+  closeToolboxWindow();
+  const modal = document.getElementById('modal-contributors');
+  const body = document.getElementById('contributors-modal-body');
+  if (!modal || !body) return;
+
+  const contributors = [
+    { name: 'Sayan Banerjee', role: 'Chief Pandal Mapper', count: 9, badge: '👑 Golden Hopper' },
+    { name: 'Ananya Mukherjee', role: 'Kolkata Heritage Scout', count: 6, badge: '🌟 Super Contributor' },
+    { name: 'Debashis Roy', role: 'Nadia & Kalyani Guide', count: 5, badge: '🪔 Verified Guide' },
+    { name: 'Rohan Sen', role: 'Howrah Crowd Reporter', count: 4, badge: '📍 Pujo Explorer' }
+  ];
+
+  body.innerHTML = `
+    <div style="display:flex; flex-direction:column; gap:10px;">
+      <div style="background:#f5f3ff; border:1px solid #ddd6fe; border-radius:12px; padding:10px 14px; font-size:11.5px; color:#5b21b6;">
+        🏆 Community members who pinned and verified pandals live on Bengal's Parikrama map!
+      </div>
+      ${contributors.map(c => `
+        <div style="background:#fff; border:1.5px solid var(--border-light); border-radius:14px; padding:12px 14px; display:flex; justify-content:space-between; align-items:center;">
+          <div style="display:flex; align-items:center; gap:10px;">
+            <div style="width:36px; height:36px; border-radius:10px; background:linear-gradient(135deg, #7c3aed, #4f46e5); color:#fff; display:flex; align-items:center; justify-content:center; font-size:16px;">
+              👤
+            </div>
+            <div>
+              <h4 style="margin:0; font-size:13px; font-weight:800; color:#0f172a;">${c.name}</h4>
+              <p style="margin:2px 0 0 0; font-size:11px; color:#64748b;">${c.role}</p>
+            </div>
+          </div>
+          <div style="text-align:right;">
+            <span style="background:#ede9fe; color:#6d28d9; padding:2px 8px; border-radius:6px; font-size:10px; font-weight:800;">${c.badge}</span>
+            <p style="margin:3px 0 0 0; font-size:11px; color:#475569; font-weight:700;">${c.count} Pandals Pinned</p>
+          </div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+  modal.classList.add('active');
+}
+
+function closeContributorsModal() {
+  const modal = document.getElementById('modal-contributors');
+  if (modal) modal.classList.remove('active');
+}
+
+function openPanjikaModal() {
+  closeToolboxWindow();
+  const modal = document.getElementById('modal-panjika');
+  if (modal) modal.classList.add('active');
+  updateDhakUI(isDhakPlaying);
+}
+
+function closePanjikaModal() {
+  const modal = document.getElementById('modal-panjika');
+  if (modal) modal.classList.remove('active');
+}
+
+// ----------------------------------------------------------------------------
+// 21. Initialization on DOM Loaded
 // ----------------------------------------------------------------------------
 document.addEventListener('DOMContentLoaded', () => {
   pandals = loadStoredPandals();
@@ -1791,6 +2276,7 @@ document.addEventListener('DOMContentLoaded', () => {
   updatePlanCounter();
   initCloudSync();
   initAuth();
+  startLiveClockAndWeather();
 
   // Search input listener
   const searchEl = document.getElementById('search-input');
@@ -1823,4 +2309,34 @@ document.addEventListener('DOMContentLoaded', () => {
       dropdown.style.display = 'none';
     });
   }
+
+  // Explicit capsule click binding
+  const capsuleEl = document.getElementById('btn-toolbox-capsule');
+  if (capsuleEl) {
+    capsuleEl.addEventListener('click', (e) => {
+      // If clicking audio button inside, let its handler work
+      if (e.target && e.target.closest('#capsule-audio-btn')) {
+        return;
+      }
+      toggleToolboxWindow(e);
+    });
+  }
+
+  // Click outside to close toolbox window
+  document.addEventListener('click', (e) => {
+    const container = document.querySelector('.top-right-capsule-container');
+    if (container && !container.contains(e.target)) {
+      closeToolboxWindow();
+    }
+  });
+
+  // Modal backdrop click to dismiss
+  document.querySelectorAll('.modal-overlay').forEach(overlay => {
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) {
+        overlay.classList.remove('active');
+      }
+    });
+  });
 });
+
