@@ -20,9 +20,9 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 
     <!-- Custom Festive Stylesheet -->
-    <link rel="stylesheet" href="./styles.css" />
+    <link rel="stylesheet" href="./styles.css?v=2.6" />
   </head>
-  <body>
+  <body data-active-tab="map">
     <div id="app-container">
       
       <!-- 1. Top Festive Navbar (Matching UI Mockup) -->
@@ -56,10 +56,12 @@
               <span id="live-weather-text">26°C</span>
             </span>
             <span class="capsule-divider">|</span>
-            <span class="capsule-audio-btn" id="capsule-audio-btn" onclick="event.stopPropagation(); toggleFestiveSong();" title="Toggle Festive Dhak Sound">
+            <div class="capsule-audio-btn" id="capsule-audio-btn" onclick="event.stopPropagation(); toggleFestiveSong();" title="Toggle Festive Dhak Sound">
               <span id="capsule-sound-icon">🔇</span>
-            </span>
-            <span class="capsule-arrow" id="capsule-arrow-icon">›</span>
+            </div>
+            <div class="capsule-arrow-btn" id="capsule-arrow-btn" onclick="event.stopPropagation(); toggleToolboxWindow(event);" title="Click > to Open Tools Window">
+              <span class="capsule-arrow" id="capsule-arrow-icon">›</span>
+            </div>
           </div>
 
           <!-- Interactive Tool Box Window (Matching Image 2 Hand-Drawn Sketch) -->
@@ -106,8 +108,8 @@
                 <button class="tool-tile tile-round" onclick="openPanjikaModal()" title="Durga Puja Panjika & Festive Music">
                   <div class="tile-icon-circle icon-gold">🥁</div>
                   <div class="tile-content">
-                    <span class="tile-title">calendar / time / song</span>
-                    <span class="tile-desc">Dhak rhythm & Puja Panjika</span>
+                    <span class="tile-title">Puja Panjika & Dhak</span>
+                    <span class="tile-desc">Live rhythm & Tithi timing</span>
                   </div>
                 </button>
 
@@ -115,8 +117,8 @@
                 <button class="tool-tile tile-round" onclick="handleToolMyLocation()" title="Center GPS on my location">
                   <div class="tile-icon-circle icon-blue">📍</div>
                   <div class="tile-content">
-                    <span class="tile-title">My location</span>
-                    <span class="tile-desc">GPS pinpoint & auto-follow</span>
+                    <span class="tile-title">My GPS Location</span>
+                    <span class="tile-desc">Pinpoint & auto-follow</span>
                   </div>
                 </button>
 
@@ -124,7 +126,7 @@
                 <button class="tool-tile tile-round" onclick="handleToolDistanceRoute()" title="Shortest route navigation">
                   <div class="tile-icon-circle icon-crimson">🧭</div>
                   <div class="tile-content">
-                    <span class="tile-title">distance / route</span>
+                    <span class="tile-title">Distance & Route</span>
                     <span class="tile-desc">Shortest road directions</span>
                   </div>
                 </button>
@@ -133,8 +135,8 @@
                 <button class="tool-tile tile-round" onclick="handleToolTraffic()" title="Toggle Crowd Density & Traffic Flyer">
                   <div class="tile-icon-circle icon-emerald" id="tool-traffic-circle">🚦</div>
                   <div class="tile-content">
-                    <span class="tile-title">toggle croud traffic flyer</span>
-                    <span class="tile-desc">Crowd density & queue time</span>
+                    <span class="tile-title">Live Crowd Traffic</span>
+                    <span class="tile-desc">Queue status & density</span>
                   </div>
                 </button>
 
@@ -142,7 +144,7 @@
                 <button class="tool-tile tile-round" onclick="handleToolMapStyleCycle()" title="Cycle Map Styles (OSM, Hot, Satellite, Esri)">
                   <div class="tile-icon-circle icon-indigo">🗺️</div>
                   <div class="tile-content">
-                    <span class="tile-title">change map style</span>
+                    <span class="tile-title">Change Map Style</span>
                     <span class="tile-desc" id="tool-current-style-label">Classic Streets (OSM)</span>
                   </div>
                 </button>
@@ -151,8 +153,8 @@
                 <button class="tool-tile tile-round" onclick="handleToolPinPandal()" title="Pin point pandal location on map">
                   <div class="tile-icon-circle icon-amber">🪔</div>
                   <div class="tile-content">
-                    <span class="tile-title">pin point pandal location</span>
-                    <span class="tile-desc">Drop pin & broadcast pandal</span>
+                    <span class="tile-title">Pin Pandal Location</span>
+                    <span class="tile-desc">Drop pin & add puja</span>
                   </div>
                 </button>
               </div>
@@ -163,7 +165,7 @@
                 <button class="tool-tile tile-square" onclick="openLeaderboardModal()" title="Top Pandals Leaderboard">
                   <div class="tile-icon-box icon-gold">📊</div>
                   <div class="tile-content">
-                    <span class="tile-title">leaderboard</span>
+                    <span class="tile-title">Top Leaderboard</span>
                     <span class="tile-desc">Most visited & top rated</span>
                   </div>
                 </button>
@@ -172,8 +174,8 @@
                 <button class="tool-tile tile-square" onclick="openContributorsModal()" title="Community Contributors Leaderboard">
                   <div class="tile-icon-box icon-purple">👑</div>
                   <div class="tile-content">
-                    <span class="tile-title">highest contributors</span>
-                    <span class="tile-desc">Hoppers pinning Bengal pujas</span>
+                    <span class="tile-title">Top Contributors</span>
+                    <span class="tile-desc">Hoppers adding new pujas</span>
                   </div>
                 </button>
 
@@ -181,7 +183,7 @@
                 <button class="tool-tile tile-square tile-admin" id="btn-tool-admin-manager" onclick="handleToolAdminManager()" title="Admin: Delete Unnecessary Pandals">
                   <div class="tile-icon-box icon-red" id="tool-admin-icon-box">🗑️</div>
                   <div class="tile-content">
-                    <span class="tile-title" id="tool-admin-title">delete unnecessary pandals</span>
+                    <span class="tile-title" id="tool-admin-title">Delete Pandals</span>
                     <span class="tile-desc" id="tool-admin-desc">Admin deletion panel</span>
                   </div>
                 </button>
@@ -190,7 +192,7 @@
                 <button class="tool-tile tile-square" onclick="handleToolItinerary()" title="My Parikrama Checklist">
                   <div class="tile-icon-box icon-blue">📅</div>
                   <div class="tile-content">
-                    <span class="tile-title">my itinerary</span>
+                    <span class="tile-title">My Itinerary</span>
                     <span class="tile-desc">Scheduled pandal visits</span>
                   </div>
                 </button>
@@ -199,8 +201,8 @@
                 <button class="tool-tile tile-square" onclick="handleToolForceSync()" title="Force Refresh from Firebase Firestore">
                   <div class="tile-icon-box icon-green">🔄</div>
                   <div class="tile-content">
-                    <span class="tile-title">sync firebase live</span>
-                    <span class="tile-desc">Pull latest pandal markers</span>
+                    <span class="tile-title">Sync Firebase Live</span>
+                    <span class="tile-desc">Pull latest cloud markers</span>
                   </div>
                 </button>
 
@@ -208,7 +210,7 @@
                 <button class="tool-tile tile-square" onclick="toggleDarkModeTheme()" title="Toggle Night & Gold Theme">
                   <div class="tile-icon-box icon-slate" id="tool-theme-icon-box">🌓</div>
                   <div class="tile-content">
-                    <span class="tile-title">festive night theme</span>
+                    <span class="tile-title">Festive Night Theme</span>
                     <span class="tile-desc" id="tool-theme-label">Switch dark / light mode</span>
                   </div>
                 </button>
@@ -312,7 +314,7 @@
           </div>
 
           <div class="filter-chips">
-            <button class="filter-chip active" data-filter="all">All Pandals</button>
+            <button class="filter-chip active" data-filter="all">🪔 All Pandals</button>
             <button class="filter-chip" data-filter="nearest">📍 Nearest First</button>
             <button class="filter-chip" data-filter="rating">★ Top Rated</button>
             <button class="filter-chip" data-filter="visits">🔥 Most Visited</button>
@@ -353,10 +355,13 @@
           <span class="nav-label">Explore</span>
         </button>
 
-        <!-- Center Raised Circular Button -->
-        <button class="bottom-nav-fab" onclick="startPinningMode()" title="Pin the Pandal">
+        <!-- Center Raised Circular Button (Matching Second Picture) -->
+        <button class="bottom-nav-fab" onclick="startPinningMode()" title="Pin the Pandal" type="button">
           <div class="fab-circle">
-            <span>⊕</span>
+            <svg class="fab-plus-svg" width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="12" cy="12" r="9" stroke="#ffffff" stroke-width="2.3" />
+              <path d="M12 7.5V16.5M7.5 12H16.5" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
           </div>
           <span class="fab-label">Pin the Pandal</span>
         </button>
@@ -383,7 +388,16 @@
             <button class="close-btn" onclick="closePandalDetail()">✕</button>
           </div>
           <div class="modal-body">
-            <img id="modal-detail-img" src="" alt="Pandal Photo" style="width:100%; height:200px; object-fit:cover; border-radius:16px; border:1px solid var(--border-light);" />
+            <!-- Cover Photo with Google Maps style Photo Count & Quick Add button -->
+            <div class="modal-cover-wrap" style="position:relative; border-radius:16px; overflow:hidden; background:#0f172a;">
+              <img id="modal-detail-img" src="" alt="Pandal Photo" style="width:100%; height:200px; object-fit:cover; display:block;" />
+              <span id="modal-detail-photo-badge" class="badge-photo-count" onclick="scrollToGallery()" title="View all community photos">
+                📷 1 Photo
+              </span>
+              <button type="button" class="btn-cover-add-photo" onclick="openAddPhotoModal()" title="Upload a photo to this pandal">
+                📸 + Add Photo
+              </button>
+            </div>
             
             <div>
               <p id="modal-detail-puja" style="font-size:12px; font-weight:800; color:#b91c1c;"></p>
@@ -401,22 +415,251 @@
 
             <p id="modal-detail-address" style="font-size:11px; color:#64748b;">🚩 Address</p>
 
-            <div style="display:flex; gap:8px; margin-top:8px;">
-              <button onclick="startNavigationTo(selectedPandal)" class="btn-festive" style="flex:1; justify-content:center; padding:10px;">
-                🚗 Start Road Navigation
+            <!-- Quick Actions: Directions, Add Photo, Edit Details, Schedule, Share -->
+            <div class="detail-actions-row">
+              <button type="button" onclick="startNavigationTo(selectedPandal)" class="btn-festive" style="flex:1.2; justify-content:center; padding:10px 12px; font-size:12px;">
+                🚗 Directions
               </button>
-              <button onclick="addToItinerary()" class="btn-secondary" style="flex:1; justify-content:center; padding:10px;">
-                📅 Schedule Visit
+              <button type="button" onclick="openAddPhotoModal()" class="btn-festive-amber" style="flex:1.1; justify-content:center; padding:10px 12px; font-size:12px;" title="Upload your picture of this pandal">
+                📸 Add Photo
               </button>
-              <button onclick="shareCurrentPandal()" class="btn-secondary" style="padding:10px;" title="Share Pandal">
+              <button type="button" onclick="openEditPandalModal()" class="btn-secondary" style="flex:1; justify-content:center; padding:10px 12px; font-size:12px;" title="Edit details of this pandal">
+                ✏️ Edit Info
+              </button>
+              <button type="button" onclick="addToItinerary()" class="btn-secondary" style="padding:10px 12px; font-size:12px;" title="Schedule Visit">
+                📅
+              </button>
+              <button type="button" onclick="shareCurrentPandal()" class="btn-secondary" style="padding:10px 12px; font-size:12px;" title="Share Pandal">
                 📲
               </button>
             </div>
 
+            <!-- Google Maps Style "Photos from Visitors & Hoppers" Section -->
+            <div class="community-photos-section" id="community-photos-section" style="margin-top:16px; border-top:1.5px solid var(--border-light); padding-top:14px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                <div>
+                  <h4 style="font-size:14px; font-weight:800; color:#0f172a; display:flex; align-items:center; gap:6px;">
+                    <span>📸</span> Community Photos
+                    <span id="gallery-count-badge" class="badge-pill-count">0</span>
+                  </h4>
+                  <p style="font-size:11px; color:#64748b; margin-top:1px;">Live visitor pictures synced across Bengal</p>
+                </div>
+                <button type="button" onclick="openAddPhotoModal()" class="btn-mini-add-photo">
+                  + Upload Photo
+                </button>
+              </div>
+
+              <!-- Photo Gallery Grid / Carousel -->
+              <div id="modal-gallery-container" class="community-gallery-grid"></div>
+            </div>
+
             <!-- Admin Delete Button (Only active for Admin panel) -->
-            <button id="btn-admin-delete-pandal" type="button" onclick="deleteCurrentPandal()" class="btn-danger-admin" style="display:none; width:100%; margin-top:10px; padding:10px; justify-content:center; align-items:center; gap:6px;">
+            <button id="btn-admin-delete-pandal" type="button" onclick="deleteCurrentPandal()" class="btn-danger-admin" style="display:none; width:100%; margin-top:14px; padding:10px; justify-content:center; align-items:center; gap:6px;">
               🗑️ Delete This Pandal (Admin Privileges)
             </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Modal: Upload User Picture for Pandal (Google Maps Style) -->
+      <div id="modal-add-photo" class="modal-overlay">
+        <div class="modal-card">
+          <div class="modal-header">
+            <h3 style="display:flex; align-items:center; gap:8px;">
+              <span>📸</span> Upload Pandal Picture
+            </h3>
+            <button class="close-btn" onclick="closeAddPhotoModal()">✕</button>
+          </div>
+          <form onsubmit="submitUserPhoto(event)" class="modal-body">
+            <!-- Target Pandal Info Banner -->
+            <div style="background: linear-gradient(135deg, rgba(185, 28, 28, 0.08), rgba(217, 119, 6, 0.08)); border: 1.5px solid rgba(217, 119, 6, 0.3); padding: 10px 14px; border-radius: 14px;">
+              <span style="font-size: 11px; font-weight: 700; color: #b91c1c; text-transform: uppercase;">Pandal Location:</span>
+              <h4 id="add-photo-pandal-name" style="font-size: 14px; font-weight: 800; color: #0f172a; margin-top: 2px;">Bagbazar Sarbojanin</h4>
+            </div>
+
+            <!-- Approach B Cloud Architecture Info Badge -->
+            <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 12px; padding: 8px 12px; display: flex; align-items: center; gap: 8px; font-size: 11px; color: #15803d;">
+              <span style="font-size: 16px;">☁️</span>
+              <div>
+                <strong>Approach B Storage:</strong> Photo uploads directly to Firebase Cloud Storage (5 GB Free), saving public link in database.
+              </div>
+            </div>
+
+            <!-- Upload Source Tabs: Device File or Image Link -->
+            <div class="photo-source-tabs">
+              <button type="button" id="tab-btn-file" class="photo-tab-btn active" onclick="switchPhotoSource('file')">
+                📁 Device / Camera
+              </button>
+              <button type="button" id="tab-btn-url" class="photo-tab-btn" onclick="switchPhotoSource('url')">
+                🔗 Image URL
+              </button>
+            </div>
+
+            <!-- Option 1: File Upload Dropzone -->
+            <div id="photo-file-section" class="form-group" style="margin-top:8px;">
+              <label style="display:block; font-size:12px; font-weight:700; margin-bottom:6px; color:#334155;">Select Image from Phone or PC *</label>
+              <label for="photo-file-input" class="photo-dropzone">
+                <span style="font-size:32px;">📷</span>
+                <span style="font-size:13px; font-weight:800; color:#b91c1c;">Tap to choose photo or take camera snap</span>
+                <span style="font-size:11px; color:#64748b;">Supports JPG, PNG, WEBP (auto-compressed & resized)</span>
+              </label>
+              <input type="file" id="photo-file-input" accept="image/*" style="display:none;" onchange="handlePhotoFileSelected(event)" />
+            </div>
+
+            <!-- Option 2: Image URL Input -->
+            <div id="photo-url-section" class="form-group" style="display:none; margin-top:8px;">
+              <label style="display:block; font-size:12px; font-weight:700; margin-bottom:6px; color:#334155;">Web Image Link / Direct URL *</label>
+              <input type="url" id="photo-url-input" class="form-input" placeholder="https://images.unsplash.com/... or any image link" oninput="handlePhotoUrlInput(event)" />
+            </div>
+
+            <!-- Live Image Preview Container -->
+            <div id="photo-preview-wrap" style="display:none; margin-top:8px; position:relative; border-radius:14px; overflow:hidden; border:2px dashed #f59e0b; max-height:220px; background:#0f172a;">
+              <img id="photo-preview-img" src="" alt="Photo Preview" style="width:100%; max-height:220px; object-fit:contain; display:block;" />
+              <button type="button" onclick="clearPhotoSelection()" style="position:absolute; top:8px; right:8px; background:rgba(0,0,0,0.7); color:#fff; border:none; border-radius:50%; width:28px; height:28px; cursor:pointer; font-size:13px; font-weight:bold;">✕</button>
+            </div>
+
+            <!-- Photo Caption -->
+            <div class="form-group" style="margin-top:10px;">
+              <label style="display:block; font-size:12px; font-weight:700; margin-bottom:6px; color:#334155;">Caption or Darshan Note (Optional)</label>
+              <input type="text" id="photo-caption-input" class="form-input" placeholder="e.g. Magnificent Pratima lighting at evening, queue moving fast!" />
+            </div>
+
+            <!-- Hopper / Uploader Name -->
+            <div class="form-group">
+              <label style="display:block; font-size:12px; font-weight:700; margin-bottom:6px; color:#334155;">Your Name / Hopper Handle *</label>
+              <input type="text" id="photo-author-input" class="form-input" placeholder="e.g. Diptarka S." required />
+            </div>
+
+            <div style="display:flex; gap:10px; margin-top:12px;">
+              <button type="button" class="btn-secondary" onclick="closeAddPhotoModal()" style="flex:1; justify-content:center; padding:10px;">
+                Cancel
+              </button>
+              <button type="submit" id="btn-submit-photo" class="btn-festive" style="flex:2; justify-content:center; padding:10px; font-weight:800;">
+                🚀 Upload & Broadcast Photo
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- Modal: Edit Pandal Details -->
+      <div id="modal-edit-pandal" class="modal-overlay">
+        <div class="modal-card">
+          <div class="modal-header">
+            <h3 style="display:flex; align-items:center; gap:8px;">
+              <span>✏️</span> Edit Pandal Details
+            </h3>
+            <button class="close-btn" onclick="closeEditPandalModal()">✕</button>
+          </div>
+          <form onsubmit="submitEditPandal(event)" class="modal-body">
+            <input type="hidden" id="edit-pandal-id" />
+
+            <!-- Target Pandal Banner -->
+            <div style="background:#eff6ff; border:1px solid #bfdbfe; padding:8px 12px; border-radius:12px; font-size:11.5px; font-weight:700; color:#1e40af;">
+              ✏️ Editing Details for: <span id="edit-pandal-target-name" style="font-weight:800;"></span>
+            </div>
+
+            <div class="form-group" style="margin-top:10px;">
+              <label style="display:block; font-size:12px; font-weight:700; margin-bottom:6px; color:#334155;">Pandal / Club Name *</label>
+              <input type="text" id="edit-pandal-name" class="form-input" required />
+            </div>
+
+            <div class="form-group">
+              <label style="display:block; font-size:12px; font-weight:700; margin-bottom:6px; color:#334155;">Theme / Concept *</label>
+              <input type="text" id="edit-pandal-theme" class="form-input" required />
+            </div>
+
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+              <div class="form-group">
+                <label style="display:block; font-size:12px; font-weight:700; margin-bottom:6px; color:#334155;">District / Zone *</label>
+                <select id="edit-pandal-zone" class="form-select">
+                  <option value="Kolkata">Kolkata</option>
+                  <option value="North 24 Parganas">North 24 Parganas</option>
+                  <option value="South 24 Parganas">South 24 Parganas</option>
+                  <option value="Howrah">Howrah</option>
+                  <option value="Hooghly">Hooghly (Chandannagar)</option>
+                  <option value="Nadia">Nadia (Kalyani)</option>
+                  <option value="Siliguri">Siliguri & North Bengal</option>
+                  <option value="Burdwan">Burdwan (Durgapur)</option>
+                  <option value="Midnapore">Midnapore</option>
+                  <option value="Other Bengal">Other Bengal</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label style="display:block; font-size:12px; font-weight:700; margin-bottom:6px; color:#334155;">Live Crowd Density</label>
+                <select id="edit-pandal-traffic" class="form-select">
+                  <option value="low">🟢 Smooth / Low Wait</option>
+                  <option value="moderate">🟡 Moderate Queue</option>
+                  <option value="heavy">🔴 Heavy / Packed</option>
+                  <option value="jam">🔥 Super Jam / Mega Rush</option>
+                </select>
+              </div>
+            </div>
+
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+              <div class="form-group">
+                <label style="display:block; font-size:12px; font-weight:700; margin-bottom:6px; color:#334155;">Queue Wait Time (mins)</label>
+                <input type="number" id="edit-pandal-wait" class="form-input" min="0" max="300" placeholder="20" />
+              </div>
+
+              <div class="form-group">
+                <label style="display:block; font-size:12px; font-weight:700; margin-bottom:6px; color:#334155;">Puja Official Title</label>
+                <input type="text" id="edit-pandal-puja" class="form-input" placeholder="e.g. Sarbojanin Durgotsav" />
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label style="display:block; font-size:12px; font-weight:700; margin-bottom:6px; color:#334155;">Landmark & Road Address *</label>
+              <input type="text" id="edit-pandal-address" class="form-input" required />
+            </div>
+
+            <div class="form-group">
+              <label style="display:block; font-size:12px; font-weight:700; margin-bottom:6px; color:#334155;">Full Description</label>
+              <textarea id="edit-pandal-desc" class="form-textarea" rows="3"></textarea>
+            </div>
+
+            <div class="form-group">
+              <label style="display:block; font-size:12px; font-weight:700; margin-bottom:6px; color:#334155;">Cover Photo Image Link / Upload</label>
+              <div style="display:flex; gap:8px;">
+                <input type="text" id="edit-pandal-cover" class="form-input" placeholder="https://... or choose from device" style="flex:1;" />
+                <label for="edit-cover-file-input" class="btn-secondary" style="margin:0; font-size:11px; padding:8px 12px; cursor:pointer; display:flex; align-items:center; gap:4px; white-space:nowrap;">
+                  📁 Device
+                </label>
+                <input type="file" id="edit-cover-file-input" accept="image/*" style="display:none;" onchange="handleEditCoverFile(event)" />
+              </div>
+            </div>
+
+            <div style="display:flex; gap:10px; margin-top:12px;">
+              <button type="button" class="btn-secondary" onclick="closeEditPandalModal()" style="flex:1; justify-content:center; padding:10px;">
+                Cancel
+              </button>
+              <button type="submit" class="btn-festive" style="flex:2; justify-content:center; padding:10px; font-weight:800;">
+                💾 Save & Sync Updates
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- Modal: Photo Lightbox (Google Maps Fullscreen Viewer) -->
+      <div id="modal-photo-lightbox" class="modal-overlay lightbox-overlay" onclick="closePhotoLightbox(event)">
+        <div class="lightbox-content" onclick="event.stopPropagation()">
+          <button class="lightbox-close-btn" onclick="closePhotoLightbox()" title="Close Lightbox">✕</button>
+          
+          <div class="lightbox-img-wrap">
+            <img id="lightbox-img" src="" alt="Enlarged Pandal Photo" />
+          </div>
+
+          <div class="lightbox-footer">
+            <div class="lightbox-info">
+              <h4 id="lightbox-pandal-name">Pandal Name</h4>
+              <p id="lightbox-caption">Photo Caption</p>
+            </div>
+            <div class="lightbox-meta">
+              <span id="lightbox-author" class="lightbox-badge-author">👤 Uploaded by Hopper</span>
+              <span id="lightbox-date" class="lightbox-date">Just now</span>
+            </div>
           </div>
         </div>
       </div>
@@ -715,8 +958,9 @@
     <!-- Firebase SDK (Compat Version for Vanilla JS & Zero Bundlers) -->
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-storage-compat.js"></script>
 
     <!-- Pure Vanilla Application Logic -->
-    <script src="./app.js"></script>
+    <script src="./app.js?v=2.6"></script>
   </body>
 </html>

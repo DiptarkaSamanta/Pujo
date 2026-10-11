@@ -455,6 +455,7 @@ let currentAuth = {
 };
 
 let firestoreDb = null;
+let firebaseStorage = null;
 let firestoreUnsubscribe = null;
 let isCloudSyncActive = false;
 let cloudSyncPollTimer = null;
@@ -984,7 +985,7 @@ function openPandalDetail(pandal) {
   const dist = calculateDistanceKm(userLocation, pandal.location);
 
   document.getElementById('modal-detail-title').textContent = pandal.name;
-  document.getElementById('modal-detail-puja').textContent = pandal.pujaName;
+  document.getElementById('modal-detail-puja').textContent = pandal.pujaName || pandal.name;
   document.getElementById('modal-detail-theme').textContent = pandal.theme;
   document.getElementById('modal-detail-desc').textContent = pandal.description;
   document.getElementById('modal-detail-address').textContent = pandal.address;
@@ -994,6 +995,9 @@ function openPandalDetail(pandal) {
   
   const imgEl = document.getElementById('modal-detail-img');
   imgEl.src = pandal.thumbnail || pandal.images[0];
+
+  // Render Google Maps Style Community Gallery
+  renderCommunityGallery(pandal);
 
   // Admin delete button toggle
   const deleteBtn = document.getElementById('btn-admin-delete-pandal');
@@ -1006,6 +1010,539 @@ function openPandalDetail(pandal) {
 
 function closePandalDetail() {
   document.getElementById('modal-pandal-detail').classList.remove('active');
+}
+
+// ----------------------------------------------------------------------------
+// 9B. Community Photos Gallery & Lightbox (Google Maps Style)
+// ----------------------------------------------------------------------------
+function renderCommunityGallery(pandal) {
+  const container = document.getElementById('modal-gallery-container');
+  const countBadge = document.getElementById('gallery-count-badge');
+  const photoBadge = document.getElementById('modal-detail-photo-badge');
+  if (!container) return;
+
+  const userPhotos = Array.isArray(pandal.userPhotos) ? pandal.userPhotos : [];
+  const officialImages = Array.isArray(pandal.images) ? pandal.images : [pandal.thumbnail].filter(Boolean);
+  
+  const totalCount = userPhotos.length + officialImages.length;
+  if (countBadge) countBadge.textContent = `${totalCount}`;
+  if (photoBadge) photoBadge.textContent = `📷 ${totalCount} Photo${totalCount === 1 ? '' : 's'}`;
+
+  if (totalCount === 0) {
+    container.innerHTML = `
+      <div class="gallery-empty-state">
+        <span style="font-size: 32px; display: block; margin-bottom: 6px;">📸</span>
+        <strong style="font-size: 13px; color: #0f172a; display: block;">No photos uploaded yet</strong>
+        <p style="font-size: 11px; color: #64748b; margin-top: 3px;">Be the first hopper to share a live picture of this pandal!</p>
+        <button type="button" onclick="openAddPhotoModal()" class="btn-festive" style="margin-top: 10px; padding: 7px 16px; font-size: 11.5px; border-radius: 999px;">
+          + Upload Live Photo
+        </button>
+      </div>
+    `;
+    return;
+  }
+
+  let html = '';
+
+  // 1. User-Uploaded Community Photos (Priority at top)
+  userPhotos.forEach(photo => {
+    const escapedCaption = (photo.caption || 'Durga Puja Parikrama').replace(/'/g, "\\'");
+    const escapedAuthor = (photo.authorName || 'Hopper').replace(/'/g, "\\'");
+    const escapedDate = (photo.timestamp || 'Live').replace(/'/g, "\\'");
+    const escapedPandal = (pandal.name || '').replace(/'/g, "\\'");
+    html += `
+      <div class="gallery-photo-card" onclick="openPhotoLightbox('${photo.url}', '${escapedCaption}', '${escapedAuthor}', '${escapedDate}', '${escapedPandal}')" title="Click to view full photo">
+        <img class="gallery-photo-img" src="${photo.url}" alt="${photo.caption || pandal.name}" loading="lazy" onerror="this.src='${pandal.thumbnail || ''}'">
+        <div class="gallery-photo-info">
+          <span class="gallery-photo-author">👤 ${photo.authorName || 'Hopper'}</span>
+          <span class="gallery-photo-date">${photo.timestamp || 'Live'}</span>
+        </div>
+      </div>
+    `;
+  });
+
+  // 2. Official Pandal Images
+  officialImages.forEach((imgUrl) => {
+    if (!userPhotos.some(up => up.url === imgUrl)) {
+      const escapedCaption = `${pandal.name} - Official Darshan View`.replace(/'/g, "\\'");
+      const escapedAuthor = 'Committee / Official'.replace(/'/g, "\\'");
+      const escapedPandal = (pandal.name || '').replace(/'/g, "\\'");
+      html += `
+        <div class="gallery-photo-card" onclick="openPhotoLightbox('${imgUrl}', '${escapedCaption}', '${escapedAuthor}', 'Durga Puja 2026', '${escapedPandal}')" title="Click to view full photo">
+          <img class="gallery-photo-img" src="${imgUrl}" alt="${pandal.name}" loading="lazy">
+          <div class="gallery-photo-info">
+            <span class="gallery-photo-author" style="color: #b91c1c;">✨ Official Photo</span>
+            <span class="gallery-photo-date">Puja Darshan</span>
+          </div>
+        </div>
+      `;
+    }
+  });
+
+  container.innerHTML = html;
+}
+
+function scrollToGallery() {
+  const section = document.getElementById('community-photos-section');
+  if (section) {
+    section.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+}
+
+// ----------------------------------------------------------------------------
+// 9C. Photo Upload Handlers (Device / Camera / URL + Client Compression)
+// ----------------------------------------------------------------------------
+let pendingPhotoDataUrl = null;
+
+function openAddPhotoModal(pandalId) {
+  if (pandalId) {
+    const target = pandals.find(p => p.id === pandalId);
+    if (target) selectedPandal = target;
+  }
+  if (!selectedPandal) {
+    showToast('Please select a pandal first');
+    return;
+  }
+
+  const nameEl = document.getElementById('add-photo-pandal-name');
+  if (nameEl) nameEl.textContent = `${selectedPandal.name} (${selectedPandal.zone})`;
+
+  const authorEl = document.getElementById('photo-author-input');
+  if (authorEl) {
+    authorEl.value = (currentAuth && currentAuth.name) ? currentAuth.name : (localStorage.getItem('puja_last_author') || 'Bengal Hopper');
+  }
+
+  const captionEl = document.getElementById('photo-caption-input');
+  if (captionEl) captionEl.value = '';
+
+  clearPhotoSelection();
+  switchPhotoSource('file');
+
+  document.getElementById('modal-add-photo').classList.add('active');
+}
+
+function closeAddPhotoModal() {
+  const modal = document.getElementById('modal-add-photo');
+  if (modal) modal.classList.remove('active');
+  clearPhotoSelection();
+}
+
+function switchPhotoSource(type) {
+  const fileTab = document.getElementById('tab-btn-file');
+  const urlTab = document.getElementById('tab-btn-url');
+  const fileSec = document.getElementById('photo-file-section');
+  const urlSec = document.getElementById('photo-url-section');
+
+  if (type === 'file') {
+    if (fileTab) fileTab.classList.add('active');
+    if (urlTab) urlTab.classList.remove('active');
+    if (fileSec) fileSec.style.display = 'block';
+    if (urlSec) urlSec.style.display = 'none';
+  } else {
+    if (fileTab) fileTab.classList.remove('active');
+    if (urlTab) urlTab.classList.add('active');
+    if (fileSec) fileSec.style.display = 'none';
+    if (urlSec) urlSec.style.display = 'block';
+  }
+}
+
+async function handlePhotoFileSelected(e) {
+  const file = e.target.files && e.target.files[0];
+  if (!file) return;
+
+  try {
+    showToast('⏳ Compressing photo for instant cloud upload...');
+    const compressed = await compressImageFile(file, 900, 0.75);
+    pendingPhotoDataUrl = compressed;
+    showPhotoPreview(compressed);
+  } catch (err) {
+    console.error('Image compression error:', err);
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      pendingPhotoDataUrl = ev.target.result;
+      showPhotoPreview(pendingPhotoDataUrl);
+    };
+    reader.readAsDataURL(file);
+  }
+}
+
+function handlePhotoUrlInput(e) {
+  const url = e.target.value.trim();
+  if (url && (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:image'))) {
+    pendingPhotoDataUrl = url;
+    showPhotoPreview(url);
+  }
+}
+
+function showPhotoPreview(src) {
+  const wrap = document.getElementById('photo-preview-wrap');
+  const img = document.getElementById('photo-preview-img');
+  if (wrap && img) {
+    img.src = src;
+    wrap.style.display = 'block';
+  }
+}
+
+function clearPhotoSelection() {
+  pendingPhotoDataUrl = null;
+  const fileInput = document.getElementById('photo-file-input');
+  if (fileInput) fileInput.value = '';
+  const urlInput = document.getElementById('photo-url-input');
+  if (urlInput) urlInput.value = '';
+  const wrap = document.getElementById('photo-preview-wrap');
+  if (wrap) wrap.style.display = 'none';
+  const img = document.getElementById('photo-preview-img');
+  if (img) img.src = '';
+}
+
+async function submitUserPhoto(e) {
+  if (e) e.preventDefault();
+  if (!selectedPandal) return;
+
+  const urlInput = document.getElementById('photo-url-input');
+  const rawUrl = pendingPhotoDataUrl || (urlInput && urlInput.value.trim());
+
+  if (!rawUrl) {
+    alert('Please select a photo from your device or enter an image URL.');
+    return;
+  }
+
+  const submitBtn = document.getElementById('btn-submit-photo');
+  const originalBtnHtml = submitBtn ? submitBtn.innerHTML : 'Upload';
+  if (submitBtn) {
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '☁️ Uploading to Firebase Cloud Storage...';
+  }
+
+  const caption = (document.getElementById('photo-caption-input')?.value || '').trim() || 'Durga Puja Parikrama Darshan';
+  const author = (document.getElementById('photo-author-input')?.value || '').trim() || 'Bengal Hopper';
+
+  localStorage.setItem('puja_last_author', author);
+
+  try {
+    // Approach B: Upload photo to Firebase Cloud Storage, get public download URL (~60 bytes)
+    const uploadResult = await uploadImageToCloudStorage(rawUrl, 'pandal_photos');
+    const finalUrl = uploadResult.url || rawUrl;
+
+    const newPhoto = {
+      id: 'photo_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
+      url: finalUrl,
+      caption: caption,
+      authorName: author,
+      authorRole: (currentAuth && currentAuth.role === 'admin') ? 'Admin' : 'Hopper',
+      timestamp: new Date().toLocaleDateString('en-IN', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }),
+      createdAt: Date.now()
+    };
+
+    if (!Array.isArray(selectedPandal.userPhotos)) {
+      selectedPandal.userPhotos = [];
+    }
+    selectedPandal.userPhotos.unshift(newPhoto);
+
+    if (!Array.isArray(selectedPandal.images)) {
+      selectedPandal.images = [selectedPandal.thumbnail].filter(Boolean);
+    }
+    selectedPandal.images.unshift(newPhoto.url);
+    selectedPandal.photosPostedCount = (selectedPandal.photosPostedCount || 0) + 1;
+
+    // Save to local storage
+    savePandals(pandals);
+
+    // Broadcast to Firebase Firestore in real time for all users
+    broadcastPandalUpdate(selectedPandal);
+
+    // Refresh UI
+    renderCommunityGallery(selectedPandal);
+    closeAddPhotoModal();
+
+    if (uploadResult.provider === 'firebase_storage') {
+      showToast(`☁️ Approach B: Photo saved to Firebase Cloud Storage & linked in database!`);
+    } else {
+      showToast(`📸 Photo by ${author} uploaded & synced to live database!`);
+    }
+  } catch (err) {
+    console.error('Photo upload process error:', err);
+    showToast('⚠️ Could not complete photo upload. Please try again.');
+  } finally {
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.innerHTML = originalBtnHtml;
+    }
+  }
+}
+
+// ----------------------------------------------------------------------------
+// 9D. Edit Pandal Details Handlers (Live Firestore Sync)
+// ----------------------------------------------------------------------------
+function openEditPandalModal(pandalId) {
+  if (pandalId) {
+    const target = pandals.find(p => p.id === pandalId);
+    if (target) selectedPandal = target;
+  }
+  if (!selectedPandal) {
+    showToast('Please select a pandal first');
+    return;
+  }
+
+  const p = selectedPandal;
+  document.getElementById('edit-pandal-id').value = p.id;
+  document.getElementById('edit-pandal-target-name').textContent = p.name;
+  document.getElementById('edit-pandal-name').value = p.name || '';
+  document.getElementById('edit-pandal-theme').value = p.theme || '';
+  document.getElementById('edit-pandal-zone').value = p.zone || 'Kolkata';
+  document.getElementById('edit-pandal-traffic').value = p.trafficLevel || 'moderate';
+  document.getElementById('edit-pandal-wait').value = p.estimatedQueueMins || 20;
+  document.getElementById('edit-pandal-puja').value = p.pujaName || '';
+  document.getElementById('edit-pandal-address').value = p.address || '';
+  document.getElementById('edit-pandal-desc').value = p.description || '';
+  document.getElementById('edit-pandal-cover').value = p.thumbnail || (p.images && p.images[0]) || '';
+
+  document.getElementById('modal-edit-pandal').classList.add('active');
+}
+
+function closeEditPandalModal() {
+  const modal = document.getElementById('modal-edit-pandal');
+  if (modal) modal.classList.remove('active');
+}
+
+async function submitEditPandal(e) {
+  if (e) e.preventDefault();
+  const id = document.getElementById('edit-pandal-id').value;
+  const p = pandals.find(x => x.id === id);
+  if (!p) return;
+
+  const saveBtn = document.querySelector('#modal-edit-pandal button[type="submit"]');
+  const originalText = saveBtn ? saveBtn.innerHTML : 'Save Changes';
+  if (saveBtn) {
+    saveBtn.disabled = true;
+    saveBtn.innerHTML = '☁️ Uploading & Saving to Database...';
+  }
+
+  try {
+    p.name = document.getElementById('edit-pandal-name').value.trim() || p.name;
+    p.theme = document.getElementById('edit-pandal-theme').value.trim() || p.theme;
+    p.zone = document.getElementById('edit-pandal-zone').value || p.zone;
+    p.trafficLevel = document.getElementById('edit-pandal-traffic').value || p.trafficLevel;
+    p.estimatedQueueMins = parseInt(document.getElementById('edit-pandal-wait').value, 10) || p.estimatedQueueMins;
+    p.pujaName = document.getElementById('edit-pandal-puja').value.trim() || p.pujaName || p.name;
+    p.address = document.getElementById('edit-pandal-address').value.trim() || p.address;
+    p.description = document.getElementById('edit-pandal-desc').value.trim() || p.description;
+
+    const newCover = document.getElementById('edit-pandal-cover').value.trim();
+    if (newCover) {
+      let finalCover = newCover;
+      if (newCover.startsWith('data:')) {
+        const upResult = await uploadImageToCloudStorage(newCover, 'pandal_covers');
+        if (upResult && upResult.url) {
+          finalCover = upResult.url;
+        }
+      }
+      p.thumbnail = finalCover;
+      if (!p.images) p.images = [];
+      if (!p.images.includes(finalCover)) p.images.unshift(finalCover);
+    }
+
+    savePandals(pandals);
+    broadcastPandalUpdate(p);
+
+    // Refresh detail sheet & lists
+    openPandalDetail(p);
+    renderPandalMarkers();
+    renderPandalList();
+    renderShortestFinder();
+
+    closeEditPandalModal();
+    showToast(`✅ "${p.name}" details updated and saved to database!`);
+  } catch (err) {
+    console.error('Error saving pandal edit:', err);
+    showToast('⚠️ Could not save pandal details.');
+  } finally {
+    if (saveBtn) {
+      saveBtn.disabled = false;
+      saveBtn.innerHTML = originalText;
+    }
+  }
+}
+
+async function handleEditCoverFile(e) {
+  const file = e.target.files && e.target.files[0];
+  if (!file) return;
+  try {
+    showToast('⏳ Compressing cover image...');
+    const compressed = await compressImageFile(file, 1000, 0.8);
+    const input = document.getElementById('edit-pandal-cover');
+    if (input) input.value = compressed;
+    showToast('📸 Cover photo ready! Tap "Save Changes" to upload.');
+  } catch (err) {
+    console.error('Error preparing cover file:', err);
+  }
+}
+
+// ----------------------------------------------------------------------------
+// 9E. Fullscreen Photo Lightbox Handlers
+// ----------------------------------------------------------------------------
+function openPhotoLightbox(photoUrl, caption, author, date, pandalName) {
+  const lightbox = document.getElementById('modal-photo-lightbox');
+  if (!lightbox) return;
+
+  document.getElementById('lightbox-img').src = photoUrl;
+  document.getElementById('lightbox-pandal-name').textContent = pandalName || (selectedPandal ? selectedPandal.name : 'Pandal Photo');
+  document.getElementById('lightbox-caption').textContent = caption || 'Durga Puja Parikrama Darshan';
+  document.getElementById('lightbox-author').textContent = author ? `👤 ${author}` : '👤 Hopper';
+  document.getElementById('lightbox-date').textContent = date || 'Live';
+
+  lightbox.classList.add('active');
+}
+
+function closePhotoLightbox(e) {
+  if (e && e.target && e.target.closest('.lightbox-content') && !e.target.closest('.lightbox-close-btn')) {
+    return;
+  }
+  const lightbox = document.getElementById('modal-photo-lightbox');
+  if (lightbox) lightbox.classList.remove('active');
+}
+
+// ----------------------------------------------------------------------------
+// 9F. Client-Side Image Compressor & Firestore Synchronizer
+// ----------------------------------------------------------------------------
+function compressImageFile(file, maxWidth = 900, quality = 0.75) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        let width = img.width;
+        let height = img.height;
+        if (width > maxWidth) {
+          height = Math.round((height * maxWidth) / width);
+          width = maxWidth;
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+        const dataUrl = canvas.toDataURL('image/jpeg', quality);
+        resolve(dataUrl);
+      };
+      img.onerror = reject;
+      img.src = e.target.result;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+// ----------------------------------------------------------------------------
+// 9G. Approach B: Firebase Cloud Storage Photo Uploader (5GB Free Tier)
+// ----------------------------------------------------------------------------
+/**
+ * Approach B: Uploads image file or data URI to Firebase Cloud Storage,
+ * returns the public download URL (~60-120 bytes) to be saved in Firestore.
+ * Prevents hitting Firestore's 1 MB document limit while supporting unlimited photos.
+ */
+async function uploadImageToCloudStorage(fileOrDataUrl, folder = 'pandal_photos') {
+  if (!fileOrDataUrl) {
+    return { success: false, url: '', provider: 'none' };
+  }
+
+  // If already an HTTP/HTTPS URL, no upload required
+  if (typeof fileOrDataUrl === 'string' && (fileOrDataUrl.startsWith('http://') || fileOrDataUrl.startsWith('https://'))) {
+    return { success: true, url: fileOrDataUrl, provider: 'external_url' };
+  }
+
+  // Ensure Firebase Storage is initialized if Firebase SDK is present
+  if (!firebaseStorage && typeof firebase !== 'undefined' && typeof firebase.storage === 'function') {
+    try {
+      let activeConfig = DEFAULT_FIREBASE_CONFIG;
+      const raw = localStorage.getItem(STORAGE_KEYS.FIREBASE_CONFIG);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed && parsed.projectId) activeConfig = parsed;
+      }
+      if (!firebase.apps.length && activeConfig && activeConfig.projectId) {
+        firebase.initializeApp(activeConfig);
+      }
+      firebaseStorage = firebase.storage();
+    } catch (e) {
+      console.warn('Lazy Firebase storage initialization notice:', e);
+    }
+  }
+
+  // Approach B: Upload to Firebase Cloud Storage
+  if (firebaseStorage) {
+    try {
+      const timestamp = Date.now();
+      const rand = Math.random().toString(36).substring(2, 8);
+      const filename = `${folder}/${timestamp}_${rand}.jpg`;
+      const storageRef = firebaseStorage.ref().child(filename);
+
+      let snapshot = null;
+      if (typeof fileOrDataUrl === 'string' && fileOrDataUrl.startsWith('data:')) {
+        // Upload Base64 Data URL (e.g. from canvas compression)
+        snapshot = await storageRef.putString(fileOrDataUrl, 'data_url', {
+          contentType: 'image/jpeg'
+        });
+      } else if (fileOrDataUrl instanceof Blob || fileOrDataUrl instanceof File) {
+        // Upload Blob/File directly
+        snapshot = await storageRef.put(fileOrDataUrl, {
+          contentType: fileOrDataUrl.type || 'image/jpeg'
+        });
+      }
+
+      if (snapshot && snapshot.ref) {
+        const downloadUrl = await snapshot.ref.getDownloadURL();
+        console.log('☁️ [Approach B] Photo uploaded to Firebase Cloud Storage successfully:', downloadUrl);
+        return {
+          success: true,
+          url: downloadUrl,
+          provider: 'firebase_storage'
+        };
+      }
+    } catch (err) {
+      console.warn('Firebase Storage upload notice (using graceful fallback):', err.code || err.message);
+      if (err.code === 'storage/unauthorized' || err.code === 'storage/unknown') {
+        console.info('💡 Firebase Storage Tip: To enable public uploads in Firebase Console, go to Storage -> Rules and set:\n' +
+          'rules_version = \'2\';\nservice firebase.storage {\n  match /b/{bucket}/o {\n    match /{allPaths=**} {\n      allow read, write: if true;\n    }\n  }\n}');
+      }
+      // Graceful fallback: return the client-compressed image data URL so the photo is NEVER lost!
+    }
+  }
+
+  // Graceful Fallback if Storage is unavailable or rules locked
+  return {
+    success: true,
+    url: typeof fileOrDataUrl === 'string' ? fileOrDataUrl : '',
+    provider: 'compressed_fallback'
+  };
+}
+
+function broadcastPandalUpdate(pandal) {
+  // Sync to Firebase Firestore
+  if (firestoreDb) {
+    try {
+      const cleanDoc = JSON.parse(JSON.stringify(pandal));
+      firestoreDb.collection('pandals').doc(pandal.id).set(cleanDoc, { merge: true })
+        .then(() => {
+          console.log(`Firestore document updated for: ${pandal.name}`);
+        })
+        .catch(err => {
+          console.warn('Firestore update error:', err);
+        });
+    } catch (e) {
+      console.warn('Error serializing pandal for Firestore:', e);
+    }
+  }
+
+  // Backup to Community Relay
+  try {
+    const raw = localStorage.getItem(STORAGE_KEYS.COMMUNITY_SYNC) || '[]';
+    let list = JSON.parse(raw);
+    const idx = list.findIndex(p => p.id === pandal.id);
+    if (idx !== -1) list[idx] = pandal;
+    else list.unshift(pandal);
+    localStorage.setItem(STORAGE_KEYS.COMMUNITY_SYNC, JSON.stringify(list));
+  } catch (e) {}
 }
 
 function deleteCurrentPandal() {
@@ -1169,16 +1706,21 @@ function closeAddModal() {
   }
 }
 
-function submitNewPandal(e) {
+async function submitNewPandal(e) {
   e.preventDefault();
   const name = document.getElementById('add-name').value.trim();
   const club = document.getElementById('add-club').value.trim();
   const zone = document.getElementById('add-zone').value;
   const theme = document.getElementById('add-theme').value.trim() || 'Festive Pratima & Illumination';
   const desc = document.getElementById('add-desc').value.trim() || 'Community contributed pandal.';
-  const imgUrl = document.getElementById('add-img').value.trim() || 'https://images.unsplash.com/photo-1601055283742-8b27e81b5553?auto=format&fit=crop&w=800&q=80';
+  let imgUrl = document.getElementById('add-img').value.trim() || 'https://images.unsplash.com/photo-1601055283742-8b27e81b5553?auto=format&fit=crop&w=800&q=80';
 
   if (!name) return alert('Please enter a pandal name');
+
+  if (imgUrl.startsWith('data:')) {
+    const up = await uploadImageToCloudStorage(imgUrl, 'pandal_covers');
+    if (up && up.url) imgUrl = up.url;
+  }
 
   const loc = manualPinLocation || userLocation;
 
@@ -1222,12 +1764,46 @@ function submitNewPandal(e) {
 // 11. Tab Switching & Views (Explore, Finder, Itinerary)
 // ----------------------------------------------------------------------------
 function switchTab(tabId) {
+  document.body.setAttribute('data-active-tab', tabId);
   document.querySelectorAll('.tab-view').forEach(v => v.classList.remove('active'));
   document.querySelectorAll('.bottom-nav-item').forEach(b => b.classList.toggle('active', b.dataset.tab === tabId));
 
-  if (tabId !== 'map') {
+  const isMap = (tabId === 'map');
+
+  // CRITICAL: ONLY show floating overlay icons over the map page, never over explore/finder/itinerary!
+  const mapOverlay = document.getElementById('map-top-overlay');
+  if (mapOverlay) {
+    if (isMap) {
+      mapOverlay.style.setProperty('display', 'flex', 'important');
+      mapOverlay.classList.remove('overlay-hidden');
+    } else {
+      mapOverlay.style.setProperty('display', 'none', 'important');
+      mapOverlay.classList.add('overlay-hidden');
+    }
+  }
+
+  // Also toggle map bottom legend and zoom buttons so they don't cover tab views
+  const crowdLegend = document.querySelector('.map-crowd-legend');
+  if (crowdLegend) {
+    crowdLegend.style.setProperty('display', isMap ? 'flex' : 'none', 'important');
+  }
+
+  const zoomControls = document.querySelector('.map-zoom-controls');
+  if (zoomControls) {
+    zoomControls.style.setProperty('display', isMap ? 'flex' : 'none', 'important');
+  }
+
+  if (!isMap) {
     const targetView = document.getElementById(`view-${tabId}`);
-    if (targetView) targetView.classList.add('active');
+    if (targetView) {
+      targetView.classList.add('active');
+      targetView.scrollTop = 0;
+    }
+  } else {
+    // If returning to map, refresh leaflet sizing
+    if (map) {
+      setTimeout(() => { map.invalidateSize(); }, 80);
+    }
   }
 
   if (tabId === 'explore') renderPandalList();
@@ -1285,8 +1861,26 @@ function renderPandalList() {
         <p class="card-theme">🎨 ${p.theme}</p>
         <p class="card-address">🚩 ${p.address}</p>
         <div class="card-footer">
-          <span class="card-rating">★ ${p.rating} (${p.reviewCount || 100})</span>
-          <span style="font-size: 11px; font-weight: 700; color: #b91c1c;">View Details →</span>
+          <span class="card-rating">★ ${p.rating} <span style="font-size:10px; color:#64748b; font-weight:600;">(${p.reviewCount || 100})</span></span>
+          <div class="card-action-btns">
+            <button type="button" class="btn-card-action btn-card-route" onclick="event.stopPropagation(); startNavigationToById('${p.id}')" title="Get Road Route">
+              🚗 Route
+            </button>
+            <button type="button" class="btn-card-action btn-card-photo" onclick="event.stopPropagation(); openAddPhotoModal('${p.id}')" title="Upload Photo for this Pandal">
+              📸 +Photo
+            </button>
+            <button type="button" class="btn-card-action btn-card-details" onclick="event.stopPropagation(); openEditPandalModal('${p.id}')" title="Edit Pandal Details">
+              ✏️ Edit
+            </button>
+            <button type="button" class="btn-card-action btn-card-details" onclick="event.stopPropagation(); openPandalDetailById('${p.id}')" title="View Pandal Details">
+              Details →
+            </button>
+            ${(currentAuth && currentAuth.role === 'admin') ? `
+              <button type="button" class="btn-card-action btn-card-delete" onclick="event.stopPropagation(); deletePandal('${p.id}')" title="Admin Delete Pandal">
+                🗑️
+              </button>
+            ` : ''}
+          </div>
         </div>
       </div>
     </div>
@@ -1474,13 +2068,24 @@ function initCloudSync() {
     console.warn('Could not parse stored Firebase config:', e);
   }
 
-  // 1. Try Firebase Firestore if configured or SDK present
+  // 1. Try Firebase Firestore & Firebase Cloud Storage (Approach B) if configured or SDK present
   if (typeof firebase !== 'undefined' && activeConfig && activeConfig.projectId) {
     try {
       if (!firebase.apps.length) {
         firebase.initializeApp(activeConfig);
       }
       firestoreDb = firebase.firestore();
+
+      // Initialize Firebase Cloud Storage for Approach B (5GB photo hosting)
+      if (typeof firebase.storage === 'function') {
+        try {
+          firebaseStorage = firebase.storage();
+          console.log('☁️ [Approach B] Firebase Cloud Storage initialized with bucket:', activeConfig.storageBucket || 'default');
+        } catch (stErr) {
+          console.warn('Firebase Storage init notice:', stErr);
+        }
+      }
+
       startFirestoreListener();
       updateCloudStatus('Cloud: Firebase Live 🟢', true);
       return;
@@ -1515,6 +2120,11 @@ function startFirestoreListener() {
             }
           } else {
             pandals[idx] = cloudPandal;
+            // Live refresh open detail modal if other user added a photo or edited details!
+            const detailModal = document.getElementById('modal-pandal-detail');
+            if (detailModal && detailModal.classList.contains('active') && selectedPandal && selectedPandal.id === cloudPandal.id) {
+              openPandalDetail(cloudPandal);
+            }
           }
         } else if (change.type === 'removed') {
           const removedId = cloudPandal?.id || change.doc.id;
@@ -1787,7 +2397,7 @@ function updateAuthUI() {
     adminToolTile.classList.toggle('tile-admin', isAdmin);
   }
   if (adminTitle) {
-    adminTitle.textContent = isAdmin ? 'delete unnecessary pandals' : 'admin: unlock delete';
+    adminTitle.textContent = isAdmin ? 'Delete Pandals' : 'Admin: Unlock Delete';
   }
   if (adminDesc) {
     adminDesc.textContent = isAdmin ? 'Admin deletion panel' : 'Passcode required to delete';
@@ -1811,10 +2421,18 @@ function updateAuthUI() {
 // ----------------------------------------------------------------------------
 // 15. Single Capsule & Interactive Tool Box Window Controllers
 // ----------------------------------------------------------------------------
+let lastToolboxToggleTime = 0;
 function toggleToolboxWindow(e) {
   if (e) {
     if (typeof e.stopPropagation === 'function') e.stopPropagation();
+    if (typeof e.preventDefault === 'function') e.preventDefault();
   }
+  const now = Date.now();
+  if (now - lastToolboxToggleTime < 250) {
+    return; // Prevent duplicate execution within 250ms
+  }
+  lastToolboxToggleTime = now;
+
   // Dismiss any open modals so the toolbox opens cleanly
   document.querySelectorAll('.modal-overlay.active').forEach(m => m.classList.remove('active'));
 
@@ -2310,14 +2928,21 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Explicit capsule click binding
+  // Explicit capsule & arrow button click binding
   const capsuleEl = document.getElementById('btn-toolbox-capsule');
   if (capsuleEl) {
     capsuleEl.addEventListener('click', (e) => {
-      // If clicking audio button inside, let its handler work
+      // If clicking audio button inside, let audio handler work
       if (e.target && e.target.closest('#capsule-audio-btn')) {
         return;
       }
+      toggleToolboxWindow(e);
+    });
+  }
+
+  const arrowBtn = document.getElementById('capsule-arrow-btn');
+  if (arrowBtn) {
+    arrowBtn.addEventListener('click', (e) => {
       toggleToolboxWindow(e);
     });
   }
@@ -2338,5 +2963,8 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
   });
+
+  // Ensure default active tab is map
+  document.body.setAttribute('data-active-tab', 'map');
 });
 
