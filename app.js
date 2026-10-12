@@ -487,9 +487,23 @@ let map = null;
 let tileLayer = null;
 let pandalMarkersLayer = null;
 let navRouteLayer = null;
+let foodMarkersLayer = null;
+let medicalMarkersLayer = null;
+let tourMarkersLayer = null;
 let userMarker = null;
 let userAccuracyCircle = null;
 let tempPinMarker = null;
+
+let isFoodLayerActive = false;
+let isMedicalLayerActive = false;
+let activeMultiRoutes = [];
+let selectedRouteIndex = 0;
+let currentRouteNavDest = null;
+let plannedTourData = null;
+let currentPlannerCount = 5;
+let currentPlannerStrategy = 'shortest';
+let currentPlannerTravelMode = 'car';
+let currentFinderMode = 'car';
 
 // User Location & Tracking State
 let userLocation = { lat: 22.5726, lng: 88.3639 }; // Defaults to Central Kolkata
@@ -615,6 +629,9 @@ function initMap() {
 
   pandalMarkersLayer = L.layerGroup().addTo(map);
   navRouteLayer = L.layerGroup().addTo(map);
+  foodMarkersLayer = L.layerGroup().addTo(map);
+  medicalMarkersLayer = L.layerGroup().addTo(map);
+  tourMarkersLayer = L.layerGroup().addTo(map);
 
   // Invalidate size to guarantee immediate full rendering on mobile screens
   setTimeout(() => { if (map) map.invalidateSize(); }, 150);
@@ -758,6 +775,7 @@ function startGeolocationTracking() {
 
     // Refresh distance badges
     refreshDistanceBadges();
+    updateLiveNavigationProgress();
   };
 
   const error = (err) => {
@@ -860,6 +878,7 @@ function toggleSimulation() {
     }
 
     refreshDistanceBadges();
+    updateLiveNavigationProgress();
     step++;
   }, 1200);
 }
@@ -1761,16 +1780,29 @@ async function submitNewPandal(e) {
 }
 
 // ----------------------------------------------------------------------------
-// 11. Tab Switching & Views (Explore, Finder, Itinerary)
+// 11. Tab Switching & Views (Live Map, Explore, Shortest Path, Next Visit)
 // ----------------------------------------------------------------------------
 function switchTab(tabId) {
-  document.body.setAttribute('data-active-tab', tabId);
+  let normalizedTab = tabId;
+  let targetSubtab = null;
+
+  if (tabId === 'route-finder') normalizedTab = 'finder';
+  if (tabId === 'hopper') { normalizedTab = 'itinerary'; targetSubtab = 'hopper'; }
+  if (tabId === 'pet-pujo') { normalizedTab = 'itinerary'; targetSubtab = 'pet-pujo'; }
+  if (tabId === 'medical') { normalizedTab = 'itinerary'; targetSubtab = 'medical'; }
+  if (tabId === 'saved') { normalizedTab = 'itinerary'; targetSubtab = 'saved'; }
+
+  document.body.setAttribute('data-active-tab', normalizedTab);
   document.querySelectorAll('.tab-view').forEach(v => v.classList.remove('active'));
-  document.querySelectorAll('.bottom-nav-item').forEach(b => b.classList.toggle('active', b.dataset.tab === tabId));
+  
+  // Highlight only the 5 bottom nav items
+  document.querySelectorAll('.bottom-nav-item').forEach(b => {
+    b.classList.toggle('active', b.dataset.tab === normalizedTab);
+  });
 
-  const isMap = (tabId === 'map');
+  const isMap = (normalizedTab === 'map');
 
-  // CRITICAL: ONLY show floating overlay icons over the map page, never over explore/finder/itinerary!
+  // CRITICAL: ONLY show floating overlay icons over the map page, never over other sections!
   const mapOverlay = document.getElementById('map-top-overlay');
   if (mapOverlay) {
     if (isMap) {
@@ -1794,21 +1826,77 @@ function switchTab(tabId) {
   }
 
   if (!isMap) {
-    const targetView = document.getElementById(`view-${tabId}`);
+    let targetView = document.getElementById(`view-${normalizedTab}`);
     if (targetView) {
       targetView.classList.add('active');
       targetView.scrollTop = 0;
     }
   } else {
-    // If returning to map, refresh leaflet sizing
+    // If returning to map, refresh leaflet sizing immediately & after paint
     if (map) {
-      setTimeout(() => { map.invalidateSize(); }, 80);
+      setTimeout(() => { map.invalidateSize(); }, 60);
+      setTimeout(() => { map.invalidateSize(); }, 250);
     }
   }
 
-  if (tabId === 'explore') renderPandalList();
-  if (tabId === 'finder') renderShortestFinder();
-  if (tabId === 'itinerary') renderItineraryList();
+  if (normalizedTab === 'explore') renderPandalList();
+  if (normalizedTab === 'finder') {
+    populateRouteLocationDropdowns();
+    renderShortestFinder();
+  }
+  if (normalizedTab === 'itinerary') {
+    if (targetSubtab) {
+      switchNextVisitTab(targetSubtab);
+    } else {
+      // Default to currently active or hopper
+      const activeBtn = document.querySelector('.nv-subtab-btn.active');
+      const activeCat = activeBtn ? activeBtn.id.replace('nv-subtab-', '') : 'hopper';
+      switchNextVisitTab(activeCat === 'petpujo' ? 'pet-pujo' : activeCat);
+    }
+  }
+}
+
+function switchNextVisitTab(subtabId) {
+  let cat = subtabId;
+  if (cat === 'petpujo') cat = 'pet-pujo';
+
+  const panels = {
+    'hopper': document.getElementById('nv-panel-hopper'),
+    'pet-pujo': document.getElementById('nv-panel-pet-pujo'),
+    'medical': document.getElementById('nv-panel-medical'),
+    'saved': document.getElementById('nv-panel-saved')
+  };
+
+  const buttons = {
+    'hopper': document.getElementById('nv-subtab-hopper'),
+    'pet-pujo': document.getElementById('nv-subtab-petpujo'),
+    'medical': document.getElementById('nv-subtab-medical'),
+    'saved': document.getElementById('nv-subtab-saved')
+  };
+
+  Object.keys(panels).forEach(key => {
+    if (panels[key]) {
+      panels[key].style.display = (key === cat) ? 'block' : 'none';
+      panels[key].classList.toggle('active', key === cat);
+    }
+    if (buttons[key]) {
+      buttons[key].classList.toggle('active', key === cat);
+    }
+  });
+
+  if (cat === 'pet-pujo') {
+    renderSectionPetPujoList();
+  } else if (cat === 'medical') {
+    renderSectionMedicalList();
+  } else if (cat === 'saved') {
+    renderItineraryList();
+  }
+}
+
+function openNextVisitSection(subtabId) {
+  closeToolboxWindow();
+  switchTab('itinerary');
+  switchNextVisitTab(subtabId);
 }
 
 function renderPandalList() {
@@ -2883,6 +2971,1500 @@ function closePanjikaModal() {
 }
 
 // ----------------------------------------------------------------------------
+// 22. Pet Pujo (Food, Sweets & 24x7 Groceries) Hotspots Dataset & Handlers
+// ----------------------------------------------------------------------------
+const PET_PUJO_PLACES = [
+  {
+    id: 'food-arsalan-park-circus',
+    name: 'Arsalan (Park Circus 7-Point)',
+    bengali: 'আরসালান পার্ক সার্কাস',
+    category: 'restaurant',
+    cuisine: 'Kolkata Mughlai & Biryani',
+    price: '₹₹',
+    rating: 4.8,
+    reviews: 18200,
+    hours: '11:00 AM – 3:30 AM (Puja Night Special)',
+    specialty: 'Mutton Special Biryani, Mutton Chaap, Firni',
+    address: '119A, Park St, Beniapukur, Kolkata 700017',
+    landmark: 'Near 7-Point Crossing, Park Circus',
+    location: { lat: 22.5442, lng: 88.3688 },
+    phone: '03322849111'
+  },
+  {
+    id: 'food-shiraz-golden-shiraz',
+    name: 'Shiraz Golden Restaurant',
+    bengali: 'শিরাজ গোল্ডেন রেস্তোরাঁ',
+    category: 'restaurant',
+    cuisine: 'Awadhi Biryani & Mughlai',
+    price: '₹₹',
+    rating: 4.6,
+    reviews: 12400,
+    hours: '11:30 AM – 2:00 AM',
+    specialty: 'Chicken Biryani, Rezala, Mutton Tikka Kebab',
+    address: '135, Park St, Mullick Bazar, Park Circus, Kolkata 700014',
+    landmark: 'Mullick Bazar Crossing',
+    location: { lat: 22.5478, lng: 88.3619 },
+    phone: '03322802022'
+  },
+  {
+    id: 'food-royal-india-chitpur',
+    name: 'Royal India Hotel (Chitpur)',
+    bengali: 'রয়্যাল ইন্ডিয়া হোটেল',
+    category: 'restaurant',
+    cuisine: 'Heritage Lucknowi Mughlai',
+    price: '₹₹',
+    rating: 4.7,
+    reviews: 15300,
+    hours: '11:00 AM – 1:00 AM',
+    specialty: 'Mutton Biryani (Without Potato), Shahi Mutton Chaap',
+    address: '147, Rabindra Sarani, Bara Bazar, Chitpur, Kolkata 700073',
+    landmark: 'Near Nakhoda Masjid, Central Ave',
+    location: { lat: 22.5852, lng: 88.3582 },
+    phone: '03322681074'
+  },
+  {
+    id: 'food-aminia-new-market',
+    name: 'Aminia (New Market)',
+    bengali: 'আমিনিয়া নিউ মার্কেট',
+    category: 'restaurant',
+    cuisine: 'Kolkata Biryani & Awadhi',
+    price: '₹₹',
+    rating: 4.5,
+    reviews: 14100,
+    hours: '11:00 AM – 2:30 AM',
+    specialty: 'Aminia Special Mutton Biryani, Pasinda Kebab',
+    address: '6A, SN Banerjee Rd, New Market, Dharmatala, Kolkata 700087',
+    landmark: 'Near KMC HQ & New Market',
+    location: { lat: 22.5621, lng: 88.3533 },
+    phone: '03322442278'
+  },
+  {
+    id: 'food-oudh-deshapriya',
+    name: 'Oudh 1590 (Deshapriya Park)',
+    bengali: 'অওধ ১৫৯০ দেশপ্রিয় পার্ক',
+    category: 'restaurant',
+    cuisine: 'Period Dining Awadhi & Biryani',
+    price: '₹₹₹',
+    rating: 4.7,
+    reviews: 9800,
+    hours: '12:00 PM – 1:30 AM',
+    specialty: 'Raan Biryani, Murgh Sugandhi Kebab, Galawati Kebab',
+    address: '23/B, Deshapriya Park West, Kalighat, Kolkata 700026',
+    landmark: 'Near Deshapriya Park Durga Puja',
+    location: { lat: 22.5181, lng: 88.3541 },
+    phone: '07604036566'
+  },
+  {
+    id: 'food-dada-boudi-barrackpore',
+    name: 'Dada Boudi Biryani (Barrackpore)',
+    bengali: 'দাদা বৌদি বিরিয়ানি',
+    category: 'restaurant',
+    cuisine: 'Giant Portion Mega Biryani',
+    price: '₹₹',
+    rating: 4.9,
+    reviews: 26000,
+    hours: '11:00 AM – 12:00 Midnight',
+    specialty: 'Giant Mutton Biryani with tender oversized potato & egg',
+    address: '1, Ghosh Para Rd, Near Barrackpore Station, Kolkata 700120',
+    landmark: 'Barrackpore Railway Station Platform 1',
+    location: { lat: 22.7628, lng: 88.3756 },
+    phone: '09831318020'
+  },
+  {
+    id: 'food-kusum-rolls-park-st',
+    name: "Kusum Rolls (Park Street)",
+    bengali: 'কুসুম রোল পার্ক স্ট্রিট',
+    category: 'streetfood',
+    cuisine: 'Legendary Kolkata Kathi Rolls',
+    price: '₹',
+    rating: 4.7,
+    reviews: 16800,
+    hours: '11:30 AM – 2:00 AM',
+    specialty: 'Double Egg Double Chicken Kathi Roll, Mutton Liver Roll',
+    address: '21, Karnani Mansion, Park St, Kolkata 700016',
+    landmark: 'Near Peter Cat & Moulin Rouge',
+    location: { lat: 22.5532, lng: 88.3537 },
+    phone: '03322299868'
+  },
+  {
+    id: 'food-nizams-new-market',
+    name: "Nizam's (New Market)",
+    bengali: 'নিজামস নিউ মার্কেট',
+    category: 'streetfood',
+    cuisine: 'The Original Birthplace of Kathi Roll (Est. 1932)',
+    price: '₹',
+    rating: 4.5,
+    reviews: 13700,
+    hours: '11:00 AM – 1:30 AM',
+    specialty: 'The Original Mutton Kathi Kabab Roll, Seekh Kabab',
+    address: '23 & 24, Hogg St, New Market, Kolkata 700087',
+    landmark: 'Behind New Market clock tower',
+    location: { lat: 22.5614, lng: 88.3524 },
+    phone: '03322523416'
+  },
+  {
+    id: 'food-mitra-cafe-shobhabazar',
+    name: 'Mitra Cafe (Shobhabazar)',
+    bengali: 'মিত্র কাফে শোভাবাজার',
+    category: 'streetfood',
+    cuisine: 'Heritage Bengali Fast Food & Fries (Est. 1910)',
+    price: '₹₹',
+    rating: 4.7,
+    reviews: 11200,
+    hours: '4:00 PM – 1:00 AM',
+    specialty: 'Diamond Fish Fry, Brain Chop, Mutton Kabiraji',
+    address: '47, Jatindra Mohan Ave, Sovabazar, Hati Bagan, Kolkata 700005',
+    landmark: 'Opposite Shobhabazar Metro Gate 1',
+    location: { lat: 22.5974, lng: 88.3686 },
+    phone: '09830342665'
+  },
+  {
+    id: 'food-bedwin-gariahat',
+    name: 'Bedwin (Gariahat More)',
+    bengali: 'বেডউইন গড়িয়াহাট',
+    category: 'streetfood',
+    cuisine: 'South Kolkata Iconic Kathi Rolls & Biryani',
+    price: '₹',
+    rating: 4.6,
+    reviews: 8900,
+    hours: '12:00 PM – 2:30 AM',
+    specialty: 'Egg Chicken Roll, Mutton Boti Kebab, Chicken Tikka',
+    address: '15/A, Gariahat Rd, Ballygunge, Kolkata 700019',
+    landmark: 'Gariahat 4-point Crossing',
+    location: { lat: 22.5195, lng: 88.3644 },
+    phone: '03324641320'
+  },
+  {
+    id: 'food-dacres-lane-stew',
+    name: "Chitto Da's Suruchee (Dacres Lane)",
+    bengali: 'চিত্ত দার সুরুচি ডেক্স লেন',
+    category: 'streetfood',
+    cuisine: 'Heritage Street Food & British-era Stew',
+    price: '₹',
+    rating: 4.8,
+    reviews: 15900,
+    hours: '9:00 AM – 11:00 PM',
+    specialty: 'Chicken Stew with Butter Toast, Fish Roll, Khichudi',
+    address: 'Dacres Lane (James Hickey Sarani), Esplanade, Kolkata 700069',
+    landmark: 'Connecting Waterloo St to Esplanade',
+    location: { lat: 22.5684, lng: 88.3512 },
+    phone: '09830588661'
+  },
+  {
+    id: 'food-balaram-mullick-bhowanipore',
+    name: 'Balaram Mullick & Radharaman Mullick',
+    bengali: 'বলরাম মল্লিক ও রাধারমণ মল্লিক',
+    category: 'mishti',
+    cuisine: 'Artisanal Bengali Heritage Mishti (Est. 1885)',
+    price: '₹₹',
+    rating: 4.9,
+    reviews: 21500,
+    hours: '7:00 AM – 1:00 AM (Festive Night Hours)',
+    specialty: 'Baked Rosogolla, Nolen Gur Sandesh, Mango Gelato Sandesh',
+    address: '2, Paddapukur Rd, Jadubabur Bazar, Bhowanipore, Kolkata 700020',
+    landmark: 'Near Bhowanipore Paddapukur',
+    location: { lat: 22.5318, lng: 88.3496 },
+    phone: '03324754708'
+  },
+  {
+    id: 'food-kc-das-esplanade',
+    name: 'K.C. Das (Esplanade Square)',
+    bengali: 'কে. সি. দাস এসপ্ল্যানেড',
+    category: 'mishti',
+    cuisine: 'Inventors of the Canned Rosogolla & Rossomalai (Est. 1866)',
+    price: '₹₹',
+    rating: 4.7,
+    reviews: 18400,
+    hours: '7:30 AM – 12:30 AM',
+    specialty: 'Original Kolkata Sponge Rosogolla, Rossomalai, Amriti',
+    address: '11A, Esplanade East, Chowringhee, Kolkata 700069',
+    landmark: 'Opposite Tipu Sultan Mosque, Esplanade',
+    location: { lat: 22.5658, lng: 88.3526 },
+    phone: '03322485920'
+  },
+  {
+    id: 'food-girish-nakur-hatibagan',
+    name: 'Girish Chandra Dey & Nakur Chandra Nandy',
+    bengali: 'গিরিশ চন্দ্র দে ও নকুড় চন্দ্র নন্দী',
+    category: 'mishti',
+    cuisine: 'World-Renowned Pioneer of Sandesh Craft (Est. 1844)',
+    price: '₹₹',
+    rating: 4.9,
+    reviews: 19800,
+    hours: '7:00 AM – 11:30 PM',
+    specialty: 'Jalbhara Talsash Sandesh, Mousumi Sandesh, Parijat',
+    address: '56, Ramdulal Sarkar St, Hedua Park, Hatibagan, Kolkata 700006',
+    landmark: 'Behind Hedua Park, near Bethune College',
+    location: { lat: 22.5878, lng: 88.3688 },
+    phone: '03322410047'
+  },
+  {
+    id: 'food-putiram-college-st',
+    name: 'Putiram (College Street Boi Para)',
+    bengali: 'পুঁটিরাম কলেজ স্ট্রিট',
+    category: 'mishti',
+    cuisine: 'Bengali Heritage Breakfast & Sweets (Est. 1852)',
+    price: '₹',
+    rating: 4.8,
+    reviews: 12600,
+    hours: '6:30 AM – 11:00 PM',
+    specialty: 'Kachori with Chholar Dal, Radhaballabhi, Baked Mihidana',
+    address: '12A, Surya Sen St, College Square, Bowbazar, Kolkata 700012',
+    landmark: 'Directly opposite College Square Durga Puja',
+    location: { lat: 22.5739, lng: 88.3648 },
+    phone: '09831780444'
+  },
+  {
+    id: 'food-ganguram-shyambazar',
+    name: 'Ganguram Sweets (Shyambazar 5-Point)',
+    bengali: 'গাঙ্গুরাম শ্যামবাজার',
+    category: 'mishti',
+    cuisine: 'Iconic Bengali Mishti Doi & Sweets (Est. 1892)',
+    price: '₹',
+    rating: 4.6,
+    reviews: 9700,
+    hours: '7:00 AM – 12:00 Midnight',
+    specialty: 'Traditional Lal Mishti Doi, Chanar Jilapi, Kheer Kadam',
+    address: '124, Bidhan Sarani, Shyambazar 5-point, Kolkata 700004',
+    landmark: 'Near Netaji Statue, Shyambazar',
+    location: { lat: 22.6028, lng: 88.3712 },
+    phone: '03325556272'
+  },
+  {
+    id: 'food-college-st-night-grocery',
+    name: 'College Street 24x7 Night Stalls & Grocery',
+    bengali: 'কলেজ স্ট্রিট ২৪x৭ মুদি ও জল',
+    category: 'grocery',
+    cuisine: '24x7 Packaged Mineral Water, Cold Drinks, Snacks & Energy',
+    price: '₹',
+    rating: 4.6,
+    reviews: 4300,
+    hours: '24 Hours Open (Puja All Night)',
+    specialty: 'Chilled Kinley/Bisleri Water, ORS, Biscuits, Juice, Energy drinks',
+    address: 'Surya Sen St Crossing, College St, Kolkata 700012',
+    landmark: 'Opposite Presidency University Gate',
+    location: { lat: 22.5746, lng: 88.3638 },
+    phone: '09830000001'
+  },
+  {
+    id: 'food-park-st-night-store',
+    name: 'Park Street All-Night Grocery & Water Mart',
+    bengali: 'পার্ক স্ট্রিট ২৪x৭ মার্ট',
+    category: 'grocery',
+    cuisine: '24x7 Convenience Store, Snacks & Hydration',
+    price: '₹₹',
+    rating: 4.7,
+    reviews: 6200,
+    hours: '24 Hours Open All 5 Days of Puja',
+    specialty: 'Cold Beverages, Electrolyte Water, Chips, Sandwiches, Red Bull',
+    address: '32, Park St, Taltala, Kolkata 700016',
+    landmark: 'Near Park St Post Office & Camac St',
+    location: { lat: 22.5524, lng: 88.3548 },
+    phone: '03322291010'
+  },
+  {
+    id: 'food-gariahut-night-kiosk',
+    name: 'Gariahat All-Night Tea, Snacks & Water Stall',
+    bengali: 'গড়িয়াহাট চা, জল ও জলখাবার কিয়স্ক',
+    category: 'grocery',
+    cuisine: '24x7 Steaming Milk Tea, Toast, Mineral Water & Fruits',
+    price: '₹',
+    rating: 4.8,
+    reviews: 8100,
+    hours: '24 Hours Open Round The Clock',
+    specialty: 'Malai Cha, Mineral Water 1L/2L, Banana, Glucose Biscuits, Cakes',
+    address: 'Gariahat Tram Depot More, Ballygunge, Kolkata 700019',
+    landmark: 'Under Gariahat Flyover',
+    location: { lat: 22.5192, lng: 88.3651 },
+    phone: '09831112233'
+  },
+  {
+    id: 'food-coffee-house-college-st',
+    name: 'Indian Coffee House (College Street)',
+    bengali: 'ইন্ডিয়ান কফি হাউস',
+    category: 'cafe',
+    cuisine: 'Legendary Adda Haven & Classic British-era Snacks (Est. 1876)',
+    price: '₹',
+    rating: 4.8,
+    reviews: 24500,
+    hours: '9:00 AM – 11:30 PM',
+    specialty: 'Hot Infusion Coffee, Cold Coffee with Cream, Chicken Kabiraji, Mutton Cutlet',
+    address: '15, Bankim Chatterjee St, College Square, Bowbazar, Kolkata 700073',
+    landmark: 'Opposite Presidency University',
+    location: { lat: 22.5756, lng: 88.3636 },
+    phone: '03322414869'
+  },
+  {
+    id: 'food-flurys-park-street',
+    name: 'Flurys (Park Street)',
+    bengali: 'ফ্লুরিজ পার্ক স্ট্রিট',
+    category: 'cafe',
+    cuisine: 'European Tearoom, English Breakfast & Pastries (Est. 1927)',
+    price: '₹₹₹',
+    rating: 4.7,
+    reviews: 22100,
+    hours: '7:30 AM – 1:00 AM (Festive Night Special)',
+    specialty: 'English Breakfast, Rum Ball, Baba Cake, Darjeeling First Flush Tea',
+    address: '18, Park St, Stephen Court, Park Street, Kolkata 700071',
+    landmark: 'Stephen Court Building, Park St',
+    location: { lat: 22.5536, lng: 88.3528 },
+    phone: '03340007452'
+  }
+];
+
+let currentPetPujoFilter = 'all';
+
+function renderSectionPetPujoList() {
+  const container = document.getElementById('section-pet-pujo-list');
+  const countBar = document.getElementById('section-pet-pujo-count-bar');
+  const searchInput = document.getElementById('section-pet-pujo-search');
+  if (!container) return;
+
+  const query = (searchInput ? searchInput.value.toLowerCase().trim() : '');
+  
+  let list = PET_PUJO_PLACES.map(item => ({
+    ...item,
+    distanceKm: calculateDistanceKm(userLocation, item.location)
+  }));
+
+  if (currentPetPujoFilter !== 'all') {
+    list = list.filter(item => item.category === currentPetPujoFilter);
+  }
+
+  if (query) {
+    list = list.filter(item =>
+      item.name.toLowerCase().includes(query) ||
+      item.cuisine.toLowerCase().includes(query) ||
+      item.specialty.toLowerCase().includes(query) ||
+      item.address.toLowerCase().includes(query)
+    );
+  }
+
+  list.sort((a, b) => a.distanceKm - b.distanceKm);
+
+  if (countBar) {
+    countBar.textContent = `Showing ${list.length} food spots sorted by distance from your location (${hasRealGps ? 'Live GPS' : 'Kolkata Center'})`;
+  }
+
+  if (list.length === 0) {
+    container.innerHTML = `<div style="grid-column: 1/-1; text-align:center; padding:30px; color:#64748b; font-size:13px;">No food places matching "${query}". Try searching for 'biryani', 'roll', or 'mishti'.</div>`;
+    return;
+  }
+
+  container.innerHTML = list.map(item => createPetPujoCardHtml(item)).join('');
+}
+
+function renderPetPujoList() {
+  const container = document.getElementById('pet-pujo-list');
+  const countBar = document.getElementById('pet-pujo-count-bar');
+  const searchInput = document.getElementById('pet-pujo-search');
+  if (!container) return;
+
+  const query = (searchInput ? searchInput.value.toLowerCase().trim() : '');
+  
+  let list = PET_PUJO_PLACES.map(item => ({
+    ...item,
+    distanceKm: calculateDistanceKm(userLocation, item.location)
+  }));
+
+  if (currentPetPujoFilter !== 'all') {
+    list = list.filter(item => item.category === currentPetPujoFilter);
+  }
+
+  if (query) {
+    list = list.filter(item =>
+      item.name.toLowerCase().includes(query) ||
+      item.cuisine.toLowerCase().includes(query) ||
+      item.specialty.toLowerCase().includes(query) ||
+      item.address.toLowerCase().includes(query)
+    );
+  }
+
+  list.sort((a, b) => a.distanceKm - b.distanceKm);
+
+  if (countBar) {
+    countBar.textContent = `Found ${list.length} culinary places nearest to you`;
+  }
+
+  container.innerHTML = list.map(item => createPetPujoCardHtml(item)).join('');
+}
+
+function createPetPujoCardHtml(item) {
+  const catBadge = item.category === 'restaurant' ? '🍛 Biryani' :
+                   item.category === 'streetfood' ? '🌯 Rolls' :
+                   item.category === 'mishti' ? '🍬 Mishti' :
+                   item.category === 'grocery' ? '🛒 24x7 Water' : '☕ Cafe';
+  
+  return `
+    <div class="pet-pujo-card" style="background:#fff; border:1.5px solid var(--border-light); border-radius:16px; padding:14px; display:flex; flex-direction:column; justify-content:space-between; box-shadow:0 3px 10px rgba(0,0,0,0.03); transition:all 0.2s ease;">
+      <div>
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:6px;">
+          <div>
+            <h4 style="margin:0; font-size:14px; font-weight:800; color:#0f172a;">${item.name}</h4>
+            <span style="font-size:11px; color:#64748b;">${item.bengali} • ${item.price}</span>
+          </div>
+          <span style="background:#ffedd5; color:#c2410c; padding:3px 8px; border-radius:6px; font-size:10px; font-weight:800; white-space:nowrap;">
+            ${catBadge}
+          </span>
+        </div>
+
+        <p style="margin:3px 0 6px 0; font-size:11.5px; color:#c2410c; font-weight:700;">
+          ⭐ ${item.specialty}
+        </p>
+        <p style="margin:0 0 4px 0; font-size:11px; color:#475569;">
+          📍 ${item.address}
+        </p>
+        <div style="font-size:10.5px; color:#64748b; margin-bottom:8px;">
+          🕒 ${item.hours}
+        </div>
+      </div>
+
+      <div style="display:flex; justify-content:space-between; align-items:center; border-top:1px solid #f1f5f9; padding-top:10px; margin-top:8px;">
+        <span style="font-size:11.5px; font-weight:800; color:#0284c7;">
+          📍 ${item.distanceKm.toFixed(1)} km away
+        </span>
+        <div style="display:flex; gap:6px;">
+          <button type="button" class="btn-secondary" onclick="zoomToFoodPlace('${item.id}')" style="padding:6px 10px; font-size:11px;">
+            🗺️ View
+          </button>
+          <button type="button" class="btn-festive" onclick="navigateToFoodPlace('${item.id}')" style="padding:6px 12px; font-size:11px; font-weight:800;">
+            🚗 Route
+          </button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function filterSectionPetPujoCat(cat, btn) {
+  currentPetPujoFilter = cat;
+  document.querySelectorAll('#section-pet-pujo-chips .filter-chip').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  renderSectionPetPujoList();
+}
+
+function filterPetPujoCat(cat, btn) {
+  currentPetPujoFilter = cat;
+  document.querySelectorAll('.pet-pujo-chips .filter-chip').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  renderPetPujoList();
+}
+
+function toggleMapFoodLayer() {
+  isFoodLayerActive = !isFoodLayerActive;
+  const btns = [document.getElementById('btn-section-toggle-food-layer'), document.getElementById('btn-toggle-food-layer')];
+  btns.forEach(b => {
+    if (b) {
+      b.classList.toggle('active', isFoodLayerActive);
+      b.textContent = isFoodLayerActive ? '✅ Food Pins Visible' : '🗺️ Food on Map';
+    }
+  });
+
+  if (!foodMarkersLayer) return;
+  foodMarkersLayer.clearLayers();
+
+  if (isFoodLayerActive) {
+    PET_PUJO_PLACES.forEach(place => {
+      const icon = L.divIcon({
+        className: 'food-map-pin',
+        html: `
+          <div style="width:34px; height:34px; border-radius:50%; background:linear-gradient(135deg, #ea580c, #c2410c); border:2.5px solid #fff; box-shadow:0 3px 10px rgba(0,0,0,0.3); display:flex; align-items:center; justify-content:center; font-size:16px;">
+            🍛
+          </div>
+        `,
+        iconSize: [34, 34],
+        iconAnchor: [17, 17]
+      });
+
+      const m = L.marker([place.location.lat, place.location.lng], { icon });
+      m.bindPopup(`
+        <div style="font-family:'Outfit',sans-serif; min-width:180px; padding:4px;">
+          <h4 style="margin:0 0 4px 0; font-size:13px; font-weight:800; color:#c2410c;">🍛 ${place.name}</h4>
+          <p style="margin:2px 0; font-size:11px; color:#475569;">${place.specialty}</p>
+          <p style="margin:2px 0; font-size:10.5px; color:#64748b;">${place.address}</p>
+          <div style="margin-top:8px;">
+            <button onclick="navigateToFoodPlace('${place.id}')" style="background:#ea580c; color:#fff; border:none; padding:4px 10px; border-radius:6px; font-size:11px; font-weight:700; cursor:pointer; width:100%;">
+              🚗 Navigate Road Route
+            </button>
+          </div>
+        </div>
+      `);
+      m.addTo(foodMarkersLayer);
+    });
+    showToast('🍛 Displayed 21+ Pet Pujo culinary hotspots on map');
+  } else {
+    showToast('Hidden food pins from map');
+  }
+}
+
+function zoomToFoodPlace(id) {
+  const item = PET_PUJO_PLACES.find(p => p.id === id);
+  if (!item) return;
+  closePetPujoModal();
+  switchTab('map');
+  if (map) {
+    map.flyTo([item.location.lat, item.location.lng], 16, { animate: true });
+    if (!isFoodLayerActive) toggleMapFoodLayer();
+  }
+}
+
+function navigateToFoodPlace(id) {
+  const item = PET_PUJO_PLACES.find(p => p.id === id);
+  if (!item) return;
+  closePetPujoModal();
+  switchTab('finder');
+  
+  const destSelect = document.getElementById('route-dest-select');
+  if (destSelect) {
+    destSelect.value = id;
+    calculateAndDisplayMultiRoutes();
+  }
+}
+
+function openPetPujoModal() {
+  openNextVisitSection('pet-pujo');
+}
+
+function closePetPujoModal() {
+  const modal = document.getElementById('modal-pet-pujo');
+  if (modal) modal.classList.remove('active');
+}
+
+// ----------------------------------------------------------------------------
+// 23. Important Medical Services (24x7 Pharmacies, Hospitals & SOS) Handlers
+// ----------------------------------------------------------------------------
+let currentMedicalFilter = 'all';
+
+function renderSectionMedicalList() {
+  const container = document.getElementById('section-medical-list');
+  const countBar = document.getElementById('section-medical-count-bar');
+  const searchInput = document.getElementById('section-medical-search');
+  if (!container) return;
+
+  const query = (searchInput ? searchInput.value.toLowerCase().trim() : '');
+  
+  let list = MEDICAL_SERVICES.map(item => ({
+    ...item,
+    distanceKm: calculateDistanceKm(userLocation, item.location)
+  }));
+
+  if (currentMedicalFilter !== 'all') {
+    list = list.filter(item => item.category === currentMedicalFilter);
+  }
+
+  if (query) {
+    list = list.filter(item =>
+      item.name.toLowerCase().includes(query) ||
+      item.type.toLowerCase().includes(query) ||
+      item.address.toLowerCase().includes(query) ||
+      (item.facilities && item.facilities.some(f => f.toLowerCase().includes(query)))
+    );
+  }
+
+  list.sort((a, b) => a.distanceKm - b.distanceKm);
+
+  if (countBar) {
+    countBar.textContent = `Showing ${list.length} medical centers sorted by proximity to you (${hasRealGps ? 'Live GPS' : 'Kolkata'})`;
+  }
+
+  if (list.length === 0) {
+    container.innerHTML = `<div style="grid-column: 1/-1; text-align:center; padding:30px; color:#64748b; font-size:13px;">No medical services matching "${query}".</div>`;
+    return;
+  }
+
+  container.innerHTML = list.map(item => createMedicalCardHtml(item)).join('');
+}
+
+function renderMedicalList() {
+  const container = document.getElementById('medical-list');
+  const countBar = document.getElementById('medical-count-bar');
+  const searchInput = document.getElementById('medical-search');
+  if (!container) return;
+
+  const query = (searchInput ? searchInput.value.toLowerCase().trim() : '');
+  
+  let list = MEDICAL_SERVICES.map(item => ({
+    ...item,
+    distanceKm: calculateDistanceKm(userLocation, item.location)
+  }));
+
+  if (currentMedicalFilter !== 'all') {
+    list = list.filter(item => item.category === currentMedicalFilter);
+  }
+
+  if (query) {
+    list = list.filter(item =>
+      item.name.toLowerCase().includes(query) ||
+      item.type.toLowerCase().includes(query) ||
+      item.address.toLowerCase().includes(query)
+    );
+  }
+
+  list.sort((a, b) => a.distanceKm - b.distanceKm);
+
+  if (countBar) {
+    countBar.textContent = `Located ${list.length} verified medical hubs`;
+  }
+
+  container.innerHTML = list.map(item => createMedicalCardHtml(item)).join('');
+}
+
+function createMedicalCardHtml(item) {
+  const is24x7 = item.category === 'pharmacy' ? '💊 24x7 Chemist' :
+                 item.category === 'hospital' ? '🚑 Trauma Unit' :
+                 item.category === 'blood_bank' ? '🩸 Blood Bank' : '📞 Helpline';
+
+  return `
+    <div class="medical-card" style="background:#fff; border:1.5px solid var(--border-light); border-radius:16px; padding:14px; display:flex; flex-direction:column; justify-content:space-between; box-shadow:0 3px 10px rgba(0,0,0,0.03); transition:all 0.2s ease;">
+      <div>
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:6px;">
+          <div>
+            <h4 style="margin:0; font-size:14px; font-weight:800; color:#0f172a;">${item.name}</h4>
+            <span style="font-size:11px; color:#64748b;">${item.bengali || ''}</span>
+          </div>
+          <span style="background:#fee2e2; color:#991b1b; padding:3px 8px; border-radius:6px; font-size:10px; font-weight:800; white-space:nowrap;">
+            ${is24x7}
+          </span>
+        </div>
+
+        <p style="margin:2px 0 6px 0; font-size:11px; color:#475569;">
+          🏥 ${item.type}
+        </p>
+
+        <div style="display:flex; flex-wrap:wrap; gap:4px; margin-bottom:8px;">
+          ${(item.facilities || []).slice(0, 3).map(f => `
+            <span style="background:#f1f5f9; color:#334155; font-size:10px; font-weight:700; padding:2px 6px; border-radius:4px;">
+              ✓ ${f}
+            </span>
+          `).join('')}
+        </div>
+
+        <p style="margin:0 0 4px 0; font-size:11px; color:#64748b;">
+          🚩 ${item.address}
+        </p>
+      </div>
+
+      <div style="display:flex; justify-content:space-between; align-items:center; border-top:1px solid #f1f5f9; padding-top:10px; margin-top:8px;">
+        <span style="font-size:11.5px; font-weight:800; color:#0284c7;">
+          📍 ${item.distanceKm.toFixed(1)} km away
+        </span>
+        <div style="display:flex; gap:6px;">
+          <a href="tel:${item.emergencyPhone || item.phone}" class="btn-secondary" style="padding:6px 10px; font-size:11px; text-decoration:none; display:inline-flex; align-items:center; gap:4px; font-weight:800; color:#1e293b;">
+            📞 Call
+          </a>
+          <button type="button" class="btn-festive" onclick="navigateEmergencyTo('${item.id}')" style="background:#dc2626; border-color:#b91c1c; padding:6px 12px; font-size:11px; font-weight:800;">
+            🚑 Route
+          </button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function filterSectionMedicalCat(cat, btn) {
+  currentMedicalFilter = cat;
+  document.querySelectorAll('#section-medical-chips .filter-chip').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  renderSectionMedicalList();
+}
+
+function filterMedicalCat(cat, btn) {
+  currentMedicalFilter = cat;
+  document.querySelectorAll('.medical-chips .filter-chip').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  renderMedicalList();
+}
+
+function toggleMapMedicalLayer() {
+  isMedicalLayerActive = !isMedicalLayerActive;
+  const btns = [document.getElementById('btn-section-toggle-medical-layer'), document.getElementById('btn-toggle-medical-layer')];
+  btns.forEach(b => {
+    if (b) {
+      b.classList.toggle('active', isMedicalLayerActive);
+      b.textContent = isMedicalLayerActive ? '✅ Medical Visible' : '🗺️ Medical on Map';
+    }
+  });
+
+  if (!medicalMarkersLayer) return;
+  medicalMarkersLayer.clearLayers();
+
+  if (isMedicalLayerActive) {
+    MEDICAL_SERVICES.forEach(med => {
+      const icon = L.divIcon({
+        className: 'medical-map-pin',
+        html: `
+          <div style="width:34px; height:34px; border-radius:50%; background:linear-gradient(135deg, #ef4444, #991b1b); border:2.5px solid #fff; box-shadow:0 3px 10px rgba(0,0,0,0.3); display:flex; align-items:center; justify-content:center; font-size:16px;">
+            🏥
+          </div>
+        `,
+        iconSize: [34, 34],
+        iconAnchor: [17, 17]
+      });
+
+      const m = L.marker([med.location.lat, med.location.lng], { icon });
+      m.bindPopup(`
+        <div style="font-family:'Outfit',sans-serif; min-width:180px; padding:4px;">
+          <h4 style="margin:0 0 4px 0; font-size:13px; font-weight:800; color:#b91c1c;">🏥 ${med.name}</h4>
+          <p style="margin:2px 0; font-size:11px; color:#475569;">${med.type}</p>
+          <p style="margin:2px 0; font-size:10.5px; color:#64748b;">${med.address}</p>
+          <div style="margin-top:8px; display:flex; gap:6px;">
+            <a href="tel:${med.emergencyPhone || med.phone}" style="background:#f1f5f9; color:#0f172a; text-decoration:none; padding:4px 8px; border-radius:6px; font-size:11px; font-weight:700; text-align:center; flex:1;">
+              📞 Call
+            </a>
+            <button onclick="navigateEmergencyTo('${med.id}')" style="background:#dc2626; color:#fff; border:none; padding:4px 8px; border-radius:6px; font-size:11px; font-weight:700; cursor:pointer; flex:1;">
+              🚑 Route
+            </button>
+          </div>
+        </div>
+      `);
+      m.addTo(medicalMarkersLayer);
+    });
+    showToast('🏥 Displayed 17+ 24x7 medical & emergency centers on map');
+  } else {
+    showToast('Hidden medical centers from map');
+  }
+}
+
+function zoomToMedicalPlace(id) {
+  const item = MEDICAL_SERVICES.find(p => p.id === id);
+  if (!item) return;
+  closeMedicalModal();
+  switchTab('map');
+  if (map) {
+    map.flyTo([item.location.lat, item.location.lng], 16, { animate: true });
+    if (!isMedicalLayerActive) toggleMapMedicalLayer();
+  }
+}
+
+function navigateEmergencyTo(id) {
+  const item = MEDICAL_SERVICES.find(p => p.id === id);
+  if (!item) return;
+  closeMedicalModal();
+  switchTab('finder');
+  
+  const destSelect = document.getElementById('route-dest-select');
+  if (destSelect) {
+    destSelect.value = id;
+    calculateAndDisplayMultiRoutes();
+  }
+}
+
+function navigateToMedicalPlace(id) {
+  navigateEmergencyTo(id);
+}
+
+function openMedicalModal() {
+  openNextVisitSection('medical');
+}
+
+function closeMedicalModal() {
+  const modal = document.getElementById('modal-medical');
+  if (modal) modal.classList.remove('active');
+}
+
+// ----------------------------------------------------------------------------
+// 24. A ➔ B Multi-Route Navigator (Low-Traffic Paths & Stopages) Handlers
+// ----------------------------------------------------------------------------
+function populateRouteLocationDropdowns() {
+  const origSelect = document.getElementById('route-origin-select');
+  const destSelect = document.getElementById('route-dest-select');
+  if (!origSelect || !destSelect) return;
+
+  const currentOrig = origSelect.value;
+  const currentDest = destSelect.value;
+
+  const buildOptions = (isOrigin) => {
+    let html = '';
+    if (isOrigin) {
+      html += `<option value="my_location">📍 My Current GPS Location</option>`;
+    }
+    
+    html += `<optgroup label="🌟 Famous Bengal Pandals">`;
+    pandals.forEach(p => {
+      html += `<option value="${p.id}">${p.name} (${p.zone})</option>`;
+    });
+    html += `</optgroup>`;
+
+    html += `<optgroup label="🍛 Pet Pujo (Food & Sweets)">`;
+    PET_PUJO_PLACES.forEach(f => {
+      html += `<option value="${f.id}">${f.name}</option>`;
+    });
+    html += `</optgroup>`;
+
+    html += `<optgroup label="🏥 24x7 Medical & Emergency">`;
+    MEDICAL_SERVICES.forEach(m => {
+      html += `<option value="${m.id}">${m.name}</option>`;
+    });
+    html += `</optgroup>`;
+
+    return html;
+  };
+
+  origSelect.innerHTML = buildOptions(true);
+  destSelect.innerHTML = buildOptions(false);
+
+  if (currentOrig) origSelect.value = currentOrig;
+  if (currentDest) {
+    destSelect.value = currentDest;
+  } else if (pandals.length > 0) {
+    destSelect.value = pandals[0].id;
+  }
+}
+
+function swapRouteLocations() {
+  const origSelect = document.getElementById('route-origin-select');
+  const destSelect = document.getElementById('route-dest-select');
+  if (!origSelect || !destSelect) return;
+
+  const valA = origSelect.value;
+  const valB = destSelect.value;
+
+  if (valA === 'my_location') {
+    showToast('Cannot set GPS Location as static destination');
+    return;
+  }
+
+  origSelect.value = valB;
+  destSelect.value = valA;
+  calculateAndDisplayMultiRoutes();
+}
+
+function setRouteMode(mode) {
+  currentFinderMode = mode;
+  document.querySelectorAll('.route-mode-chips .mode-chip').forEach(b => {
+    b.classList.toggle('active', b.dataset.mode === mode);
+  });
+  calculateAndDisplayMultiRoutes();
+}
+
+function onRouteChange() {
+  const resultsCard = document.getElementById('multi-routes-results');
+  if (resultsCard) resultsCard.style.display = 'none';
+}
+
+function switchFinderSubtab(tab) {
+  const navSection = document.getElementById('finder-nav-section');
+  const matrixSection = document.getElementById('finder-matrix-section');
+  const btnNav = document.getElementById('subtab-route-nav');
+  const btnMatrix = document.getElementById('subtab-route-matrix');
+
+  if (tab === 'nav') {
+    if (navSection) navSection.style.display = 'block';
+    if (matrixSection) matrixSection.style.display = 'none';
+    if (btnNav) btnNav.classList.add('active');
+    if (btnMatrix) btnMatrix.classList.remove('active');
+    populateRouteLocationDropdowns();
+  } else {
+    if (navSection) navSection.style.display = 'none';
+    if (matrixSection) matrixSection.style.display = 'block';
+    if (btnNav) btnNav.classList.remove('active');
+    if (btnMatrix) btnMatrix.classList.add('active');
+    renderShortestFinder();
+  }
+}
+
+function getLocationCoordsById(locId) {
+  if (locId === 'my_location') {
+    return { ...userLocation, name: 'My Current Location' };
+  }
+  const pandal = pandals.find(p => p.id === locId);
+  if (pandal) return { ...pandal.location, name: pandal.name };
+
+  const food = PET_PUJO_PLACES.find(f => f.id === locId);
+  if (food) return { ...food.location, name: food.name };
+
+  const med = MEDICAL_SERVICES.find(m => m.id === locId);
+  if (med) return { ...med.location, name: med.name };
+
+  return { ...userLocation, name: 'Origin' };
+}
+
+function calculateAndDisplayMultiRoutes() {
+  const origSelect = document.getElementById('route-origin-select');
+  const destSelect = document.getElementById('route-dest-select');
+  if (!origSelect || !destSelect) return;
+
+  const origId = origSelect.value;
+  const destId = destSelect.value;
+
+  if (origId === destId) {
+    showToast('Origin and Destination cannot be the same');
+    return;
+  }
+
+  const origin = getLocationCoordsById(origId);
+  const dest = getLocationCoordsById(destId);
+
+  const directDistKm = calculateDistanceKm(origin, dest);
+  const mode = currentFinderMode || 'car';
+
+  // Base speeds & traffic congestion factors
+  const speedKmH = mode === 'walk' ? 4.5 : (mode === 'bike' ? 24 : (mode === 'bus' ? 14 : 20));
+
+  // 1. Route 1: Low Traffic Recommended (Elevated Flyover / Bypass Corridor)
+  const dist1 = Number((directDistKm * 1.14).toFixed(1));
+  const trafficFactor1 = mode === 'walk' ? 1.0 : 1.15; // Smooth flow on elevated corridors
+  const dur1 = Math.max(3, Math.round((dist1 / speedKmH) * 60 * trafficFactor1));
+
+  // 2. Route 2: City Heritage Arterial (Central Ave / Rashbehari / SP Mukherjee)
+  const dist2 = Number((directDistKm * 1.05).toFixed(1));
+  const trafficFactor2 = mode === 'walk' ? 1.0 : 1.70; // Heavy pandal crowd crossings
+  const dur2 = Math.max(4, Math.round((dist2 / speedKmH) * 60 * trafficFactor2));
+
+  // 3. Route 3: Scenic Riverbank / Peripheral Bypass (Strand Rd / Ring Road)
+  const dist3 = Number((directDistKm * 1.28).toFixed(1));
+  const trafficFactor3 = mode === 'walk' ? 1.0 : 1.25;
+  const dur3 = Math.max(5, Math.round((dist3 / speedKmH) * 60 * trafficFactor3));
+
+  activeMultiRoutes = [
+    {
+      id: 0,
+      title: '🟢 Route 1: Flyover & Elevated Bypass (Fastest)',
+      tag: 'RECOMMENDED • LOW TRAFFIC',
+      tagColor: '#059669',
+      distKm: dist1,
+      durationMins: dur1,
+      trafficStatus: 'Low Traffic on Elevated Corridor',
+      corridor: 'Via Maa Flyover / AJC Bose Elevated / EM Bypass',
+      stopages: [
+        { name: `${origin.name} (Start Departure)`, type: 'origin', time: '0 min' },
+        { name: 'Maa Flyover Ramp / Elevated Approach', type: 'flyover', time: `+${Math.round(dur1 * 0.25)} min` },
+        { name: 'Park Circus 7-Point Elevated Transit', type: 'junction', time: `+${Math.round(dur1 * 0.5)} min` },
+        { name: 'EM Bypass / Heritage Link Ramp', type: 'crossing', time: `+${Math.round(dur1 * 0.8)} min` },
+        { name: `${dest.name} (Destination Arrival)`, type: 'destination', time: `${dur1} min` }
+      ],
+      color: '#059669'
+    },
+    {
+      id: 1,
+      title: '🟡 Route 2: Heritage Central Arterial',
+      tag: 'CITY ARTERIAL • MODERATE CROWD',
+      tagColor: '#d97706',
+      distKm: dist2,
+      durationMins: dur2,
+      trafficStatus: 'Moderate Crowd Delays near Pandals',
+      corridor: 'Via Chittaranjan Ave / SP Mukherjee / Rashbehari Ave',
+      stopages: [
+        { name: `${origin.name} (Start Departure)`, type: 'origin', time: '0 min' },
+        { name: 'Central Avenue / Heritage Metro Hub', type: 'metro', time: `+${Math.round(dur2 * 0.3)} min` },
+        { name: 'College Square / Bowbazar Tram Crossing', type: 'crossing', time: `+${Math.round(dur2 * 0.6)} min` },
+        { name: 'Gariahat / Southern Crossing', type: 'junction', time: `+${Math.round(dur2 * 0.85)} min` },
+        { name: `${dest.name} (Destination Arrival)`, type: 'destination', time: `${dur2} min` }
+      ],
+      color: '#d97706'
+    },
+    {
+      id: 2,
+      title: '🔵 Route 3: Scenic Riverbank Bypass',
+      tag: 'SCENIC • AVOIDS INNER CITY RUSH',
+      tagColor: '#2563eb',
+      distKm: dist3,
+      durationMins: dur3,
+      trafficStatus: 'Smooth Peripheral Riverbank Corridors',
+      corridor: 'Via Strand Road / River Circular / Vidyasagar Approach',
+      stopages: [
+        { name: `${origin.name} (Start Departure)`, type: 'origin', time: '0 min' },
+        { name: 'Strand Road Ghats / Riverbank Boulevard', type: 'river', time: `+${Math.round(dur3 * 0.28)} min` },
+        { name: 'Princep Memorial / Circular Rail Crossing', type: 'heritage', time: `+${Math.round(dur3 * 0.55)} min` },
+        { name: 'Vidyasagar Toll Interchange / Ring Road', type: 'flyover', time: `+${Math.round(dur3 * 0.82)} min` },
+        { name: `${dest.name} (Destination Arrival)`, type: 'destination', time: `${dur3} min` }
+      ],
+      color: '#2563eb'
+    }
+  ];
+
+  selectedRouteIndex = 0;
+  currentRouteNavDest = { ...dest, id: destId };
+
+  // Render cards
+  const cardsList = document.getElementById('routes-cards-list');
+  if (cardsList) {
+    cardsList.innerHTML = activeMultiRoutes.map((r, idx) => `
+      <div class="route-alt-card ${idx === 0 ? 'selected' : ''}" onclick="selectAlternativeRoute(${idx})" id="route-card-${idx}" style="background:#fff; border:2px solid ${idx === 0 ? r.color : '#e2e8f0'}; border-radius:14px; padding:12px 14px; cursor:pointer; transition:all 0.2s ease; margin-bottom:10px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+          <span style="font-size:10px; font-weight:800; color:${r.tagColor}; background:${r.tagColor}15; padding:2px 8px; border-radius:6px;">
+            ${r.tag}
+          </span>
+          <span style="font-size:14px; font-weight:900; color:${r.color};">
+            ~${r.durationMins} mins
+          </span>
+        </div>
+        <h4 style="margin:2px 0; font-size:13.5px; font-weight:800; color:#0f172a;">${r.title}</h4>
+        <p style="margin:2px 0 0 0; font-size:11px; color:#64748b;">${r.corridor} • <strong>${r.distKm} km</strong></p>
+      </div>
+    `).join('');
+  }
+
+  renderRouteStopages(activeMultiRoutes[0]);
+
+  const resultsCard = document.getElementById('multi-routes-results');
+  if (resultsCard) resultsCard.style.display = 'block';
+
+  showToast(`🚦 Found 3 alternative low-traffic routes to ${dest.name}`);
+}
+
+function selectAlternativeRoute(index) {
+  selectedRouteIndex = index;
+  const selectedRoute = activeMultiRoutes[index];
+  if (!selectedRoute) return;
+
+  activeMultiRoutes.forEach((r, idx) => {
+    const card = document.getElementById(`route-card-${idx}`);
+    if (card) {
+      card.style.borderColor = (idx === index) ? r.color : '#e2e8f0';
+      card.classList.toggle('selected', idx === index);
+    }
+  });
+
+  renderRouteStopages(selectedRoute);
+}
+
+function renderRouteStopages(route) {
+  const timelineList = document.getElementById('stopages-timeline-list');
+  const title = document.getElementById('stopages-title');
+  if (!timelineList || !route) return;
+
+  if (title) title.textContent = `Road Plan: ${route.title}`;
+
+  timelineList.innerHTML = route.stopages.map((s, idx) => `
+    <div style="display:flex; gap:12px; position:relative; padding-bottom:12px;">
+      <div style="display:flex; flex-direction:column; align-items:center;">
+        <div style="width:24px; height:24px; border-radius:50%; background:${idx === 0 ? '#10b981' : (idx === route.stopages.length - 1 ? '#ef4444' : route.color)}; color:#fff; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:800; z-index:2;">
+          ${idx === 0 ? 'A' : (idx === route.stopages.length - 1 ? 'B' : idx)}
+        </div>
+        ${idx < route.stopages.length - 1 ? `<div style="width:2px; flex:1; background:#cbd5e1; margin:2px 0;"></div>` : ''}
+      </div>
+      <div style="flex:1;">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <strong style="font-size:12.5px; color:#0f172a;">${s.name}</strong>
+          <span style="font-size:11px; font-weight:700; color:#64748b;">${s.time}</span>
+        </div>
+        <span style="font-size:10.5px; color:#94a3b8;">Traffic check passed • Smooth junction</span>
+      </div>
+    </div>
+  `).join('');
+}
+
+function previewSelectedRouteOnMap() {
+  const selectedRoute = activeMultiRoutes[selectedRouteIndex];
+  if (!selectedRoute || !currentRouteNavDest) return;
+
+  switchTab('map');
+  drawRouteOnMap(userLocation, currentRouteNavDest, selectedRoute.color);
+}
+
+function startSelectedRouteNavigation() {
+  const selectedRoute = activeMultiRoutes[selectedRouteIndex];
+  if (!selectedRoute || !currentRouteNavDest) return;
+
+  switchTab('map');
+  drawRouteOnMap(userLocation, currentRouteNavDest, selectedRoute.color);
+
+  const banner = document.getElementById('active-route-banner');
+  const info = document.getElementById('route-banner-info');
+  if (banner && info) {
+    info.textContent = `🚗 Navigating to ${currentRouteNavDest.name} (~${selectedRoute.durationMins}m • ${selectedRoute.distKm} km)`;
+    banner.style.display = 'flex';
+  }
+
+  showToast(`🚀 Live navigation started along ${selectedRoute.title}!`);
+}
+
+function updateLiveNavigationProgress() {
+  if (!currentRouteNavDest) return;
+
+  const distKm = calculateDistanceKm(userLocation, currentRouteNavDest);
+  const info = document.getElementById('route-banner-info');
+  if (info) {
+    const estMins = Math.max(1, Math.round(distKm * 3.2));
+    info.textContent = `🚗 To ${currentRouteNavDest.name}: ${distKm.toFixed(2)} km left (~${estMins}m) • Live GPS`;
+  }
+
+  if (distKm < 0.05) {
+    showToast(`🎯 You have arrived at ${currentRouteNavDest.name}!`);
+  }
+}
+
+function drawRouteOnMap(start, end, color = '#dc2626') {
+  if (!map || !navRouteLayer) return;
+  navRouteLayer.clearLayers();
+
+  const latlngs = [
+    [start.lat, start.lng],
+    [start.lat + (end.lat - start.lat) * 0.45 + 0.002, start.lng + (end.lng - start.lng) * 0.45 - 0.002],
+    [end.lat, end.lng]
+  ];
+
+  const polyline = L.polyline(latlngs, {
+    color: color,
+    weight: 5.5,
+    opacity: 0.9,
+    dashArray: '10, 8',
+    lineJoin: 'round'
+  }).addTo(navRouteLayer);
+
+  map.fitBounds(polyline.getBounds(), { padding: [60, 60] });
+}
+
+// ----------------------------------------------------------------------------
+// 25. Pandal Hopper Trip Planner (Next Visit) Handlers
+// ----------------------------------------------------------------------------
+function switchItinerarySubtab(tab) {
+  switchNextVisitTab(tab === 'smart' ? 'hopper' : 'saved');
+}
+
+function setPlannerPandalCount(count) {
+  currentPlannerCount = count;
+  document.querySelectorAll('.count-presets-row .preset-count-btn').forEach(btn => {
+    btn.classList.toggle('active', Number(btn.dataset.count) === count);
+  });
+  const customInput = document.getElementById('plan-custom-count');
+  if (customInput) customInput.value = '';
+
+  const label = document.getElementById('plan-count-preview-label');
+  if (label) label.textContent = `${count} Pandals`;
+}
+
+function handleCustomPandalCount(val) {
+  const num = parseInt(val, 10);
+  if (!isNaN(num) && num > 0) {
+    currentPlannerCount = Math.min(num, 30);
+    document.querySelectorAll('.count-presets-row .preset-count-btn').forEach(b => b.classList.remove('active'));
+    const label = document.getElementById('plan-count-preview-label');
+    if (label) label.textContent = `${currentPlannerCount} Pandals (Custom)`;
+  }
+}
+
+function updateStrategyUi() {
+  const radio = document.querySelector('input[name="plan-strategy"]:checked');
+  if (radio) {
+    currentPlannerStrategy = radio.value;
+    document.querySelectorAll('.strategy-radio-card').forEach(card => card.classList.remove('active'));
+    const parentCard = radio.closest('.strategy-radio-card');
+    if (parentCard) parentCard.classList.add('active');
+  }
+}
+
+function setPlannerTravelMode(mode) {
+  currentPlannerTravelMode = mode;
+  document.querySelectorAll('.travel-mode-row .travel-chip').forEach(c => {
+    c.classList.toggle('active', c.dataset.mode === mode);
+  });
+}
+
+function toggleBreakOption(type) {
+  // Checkbox triggers live recalculation if needed
+}
+
+function generateHopperTripPlan() {
+  const areaSelect = document.getElementById('plan-area-select');
+  const dateSelect = document.getElementById('plan-date-select');
+  const startInput = document.getElementById('plan-start-time');
+  const endInput = document.getElementById('plan-end-time');
+
+  const selectedArea = areaSelect ? areaSelect.value : 'all';
+  const selectedDate = dateSelect ? dateSelect.value : 'Oct 17 - Maha Saptami';
+  const startTime = startInput ? (startInput.value || '16:00') : '16:00';
+  const endTime = endInput ? (endInput.value || '23:00') : '23:00';
+
+  let eligiblePandals = [...pandals];
+  if (selectedArea !== 'all') {
+    const areaLower = selectedArea.toLowerCase();
+    eligiblePandals = eligiblePandals.filter(p =>
+      (p.zone && p.zone.toLowerCase().includes(areaLower)) ||
+      (p.address && p.address.toLowerCase().includes(areaLower))
+    );
+    if (eligiblePandals.length === 0) {
+      eligiblePandals = [...pandals];
+    }
+  }
+
+  // Pandal count
+  const targetCount = Math.min(currentPlannerCount || 5, eligiblePandals.length);
+
+  // Strategy: Shortest (Greedy TSP from user GPS) vs Random
+  let selectedPandals = [];
+  if (currentPlannerStrategy === 'random') {
+    selectedPandals = [...eligiblePandals].sort(() => 0.5 - Math.random()).slice(0, targetCount);
+  } else {
+    // Greedy Nearest Neighbor
+    let pool = [...eligiblePandals];
+    let curPoint = { ...userLocation };
+    while (pool.length > 0 && selectedPandals.length < targetCount) {
+      pool.sort((a, b) => calculateDistanceKm(curPoint, a.location) - calculateDistanceKm(curPoint, b.location));
+      const nextPandal = pool.shift();
+      selectedPandals.push(nextPandal);
+      curPoint = nextPandal.location;
+    }
+  }
+
+  // Travel Mode speed & festive traffic factor
+  const mode = currentPlannerTravelMode || 'car';
+  const speedKmH = mode === 'walk' ? 4.5 : (mode === 'bike' ? 24 : (mode === 'bus' ? 12 : 18));
+  const trafficDelayMultiplier = mode === 'walk' ? 1.0 : (mode === 'bus' ? 1.4 : 1.35);
+
+  // Breaks
+  const foodBreakBox = document.getElementById('plan-include-food-break');
+  const hasFoodBreak = foodBreakBox ? foodBreakBox.checked : true;
+  const foodDuration = parseInt(document.getElementById('plan-food-break-duration')?.value || '45', 10);
+
+  const restBreakBox = document.getElementById('plan-include-rest-break');
+  const hasRestBreak = restBreakBox ? restBreakBox.checked : true;
+  const restDuration = parseInt(document.getElementById('plan-rest-break-duration')?.value || '20', 10);
+
+  // Build Chronological Timeline
+  const [startH, startM] = startTime.split(':').map(Number);
+  let currentClockMins = startH * 60 + startM;
+
+  let totalDistKm = 0;
+  let prevLoc = { ...userLocation };
+  const timeline = [];
+
+  // Departure step
+  timeline.push({
+    type: 'start',
+    time: formatMinutesToTimeString(currentClockMins),
+    title: 'Tour Departure from Starting Location',
+    desc: `Starting Puja Parikrama tour via ${mode.toUpperCase()} mode`
+  });
+
+  const foodBreakIndex = Math.floor(selectedPandals.length / 2);
+
+  selectedPandals.forEach((p, idx) => {
+    const legDist = calculateDistanceKm(prevLoc, p.location);
+    totalDistKm += legDist;
+    const travelMins = Math.max(4, Math.round((legDist / speedKmH) * 60 * trafficDelayMultiplier));
+    
+    currentClockMins += travelMins;
+
+    // Travel leg
+    timeline.push({
+      type: 'travel',
+      time: formatMinutesToTimeString(currentClockMins),
+      title: `Travel to Stop #${idx + 1}: ${p.name}`,
+      desc: `${legDist.toFixed(1)} km road path (~${travelMins} mins via ${mode})`
+    });
+
+    // Pandal Darshan (Queue wait + 15m darshan)
+    const darshanDuration = (p.estimatedQueueMins || 20) + 15;
+    const arriveTime = currentClockMins;
+    currentClockMins += darshanDuration;
+
+    timeline.push({
+      type: 'pandal',
+      time: formatMinutesToTimeString(arriveTime),
+      finishTime: formatMinutesToTimeString(currentClockMins),
+      pandal: p,
+      title: `#${idx + 1}: ${p.name}`,
+      desc: `Queue wait: ~${p.estimatedQueueMins || 20}m • Theme: ${p.theme || 'Traditional Mandir'}`
+    });
+
+    // Insert Food Break after middle pandal
+    if (hasFoodBreak && idx === foodBreakIndex) {
+      const foodStart = currentClockMins;
+      currentClockMins += foodDuration;
+      timeline.push({
+        type: 'food_break',
+        time: formatMinutesToTimeString(foodStart),
+        finishTime: formatMinutesToTimeString(currentClockMins),
+        title: `🍛 Food Break (Pet Pujo) — ~${foodDuration} mins`,
+        desc: `Biryani, Kathi Rolls & Dinner adda at nearby culinary hub`
+      });
+    }
+
+    // Insert Rest Break after 2nd pandal
+    if (hasRestBreak && idx === 1 && selectedPandals.length > 2) {
+      const restStart = currentClockMins;
+      currentClockMins += restDuration;
+      timeline.push({
+        type: 'rest_break',
+        time: formatMinutesToTimeString(restStart),
+        finishTime: formatMinutesToTimeString(currentClockMins),
+        title: `☕ Chai & Hydration Break — ~${restDuration} mins`,
+        desc: `Hot tea, ice cream, water bottles & brief foot rest`
+      });
+    }
+
+    prevLoc = p.location;
+  });
+
+  // Check window feasibility
+  const [endH, endM] = endTime.split(':').map(Number);
+  let endWindowMins = endH * 60 + endM;
+  if (endWindowMins < startH * 60 + startM) {
+    endWindowMins += 24 * 60; // Next day midnight
+  }
+
+  const fitsWindow = currentClockMins <= endWindowMins;
+  const totalTourMins = currentClockMins - (startH * 60 + startM);
+
+  plannedTourData = {
+    area: selectedArea,
+    date: selectedDate,
+    startTime,
+    endTime,
+    pandals: selectedPandals,
+    totalDistKm: Number(totalDistKm.toFixed(1)),
+    totalDurationMins: totalTourMins,
+    completionTimeString: formatMinutesToTimeString(currentClockMins),
+    fitsWindow,
+    diffMins: Math.abs(endWindowMins - currentClockMins),
+    timeline
+  };
+
+  renderGeneratedPlanOutput(plannedTourData);
+
+  const resultsCard = document.getElementById('planner-results-card');
+  if (resultsCard) {
+    resultsCard.style.display = 'block';
+    resultsCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  showToast(`✨ Generated schedule with ${selectedPandals.length} pandals & breaks!`);
+}
+
+function formatMinutesToTimeString(totalMins) {
+  const norm = totalMins % (24 * 60);
+  const h24 = Math.floor(norm / 60);
+  const m = norm % 60;
+  const ampm = h24 >= 12 ? 'PM' : 'AM';
+  const h12 = h24 % 12 || 12;
+  return `${h12}:${m < 10 ? '0' + m : m} ${ampm}`;
+}
+
+function renderGeneratedPlanOutput(plan) {
+  document.getElementById('plan-result-title').textContent = `${plan.date} Tour Timetable`;
+  
+  const fitBadge = document.getElementById('plan-fit-badge');
+  if (fitBadge) {
+    if (plan.fitsWindow) {
+      fitBadge.style.background = '#059669';
+      fitBadge.style.color = '#fff';
+      fitBadge.textContent = `✅ Fits Schedule (${Math.floor(plan.diffMins / 60)}h ${plan.diffMins % 60}m to spare)`;
+    } else {
+      fitBadge.style.background = '#dc2626';
+      fitBadge.style.color = '#fff';
+      fitBadge.textContent = `⚠️ Exceeds Window by ~${plan.diffMins}m`;
+    }
+  }
+
+  document.getElementById('metric-total-pandals').textContent = plan.pandals.length;
+  document.getElementById('metric-total-dist').textContent = `${plan.totalDistKm} km`;
+  
+  const h = Math.floor(plan.totalDurationMins / 60);
+  const m = plan.totalDurationMins % 60;
+  document.getElementById('metric-total-duration').textContent = `${h}h ${m}m`;
+  document.getElementById('metric-completion-time').textContent = plan.completionTimeString;
+
+  const timelineContainer = document.getElementById('plan-timeline-list');
+  if (timelineContainer) {
+    timelineContainer.innerHTML = plan.timeline.map((step, idx) => `
+      <div style="display:flex; gap:12px; margin-bottom:12px; position:relative;">
+        <div style="display:flex; flex-direction:column; align-items:center;">
+          <div style="width:26px; height:26px; border-radius:50%; background:${
+            step.type === 'start' ? '#10b981' : 
+            step.type === 'pandal' ? '#dc2626' : 
+            step.type === 'food_break' ? '#ea580c' : 
+            step.type === 'rest_break' ? '#d97706' : '#64748b'
+          }; color:#fff; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:800; z-index:2;">
+            ${step.type === 'food_break' ? '🍛' : (step.type === 'rest_break' ? '☕' : (step.type === 'travel' ? '🚗' : '🪔'))}
+          </div>
+          ${idx < plan.timeline.length - 1 ? `<div style="width:2px; flex:1; background:#e2e8f0; margin:2px 0;"></div>` : ''}
+        </div>
+        <div style="flex:1; background:#fff; border:1px solid #e2e8f0; border-radius:12px; padding:10px 12px; box-shadow:0 2px 4px rgba(0,0,0,0.02);">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:2px;">
+            <strong style="font-size:13px; color:#0f172a;">${step.title}</strong>
+            <span style="font-size:11px; font-weight:800; color:#b91c1c;">${step.time}</span>
+          </div>
+          <p style="margin:0; font-size:11px; color:#64748b;">${step.desc}</p>
+        </div>
+      </div>
+    `).join('');
+  }
+}
+
+function viewPlannedTourOnLiveMap() {
+  if (!plannedTourData || !plannedTourData.pandals.length) return;
+  switchTab('map');
+
+  if (!tourMarkersLayer) return;
+  tourMarkersLayer.clearLayers();
+
+  const latlngs = [[userLocation.lat, userLocation.lng]];
+
+  plannedTourData.pandals.forEach((p, idx) => {
+    latlngs.push([p.location.lat, p.location.lng]);
+
+    const icon = L.divIcon({
+      className: 'tour-stop-pin',
+      html: `
+        <div style="width:32px; height:32px; border-radius:50%; background:#b91c1c; border:2.5px solid #fef08a; color:#fff; font-weight:900; font-size:13px; display:flex; align-items:center; justify-content:center; box-shadow:0 4px 12px rgba(185,28,28,0.4);">
+          ${idx + 1}
+        </div>
+      `,
+      iconSize: [32, 32],
+      iconAnchor: [16, 16]
+    });
+
+    const m = L.marker([p.location.lat, p.location.lng], { icon });
+    m.bindPopup(`
+      <div style="font-family:'Outfit',sans-serif; min-width:170px;">
+        <h4 style="margin:0; color:#b91c1c; font-size:13px;">#${idx + 1}: ${p.name}</h4>
+        <p style="margin:2px 0; font-size:11px; color:#475569;">${p.theme || 'Puja Theme'}</p>
+        <button onclick="openPandalDetail(pandals.find(x => x.id === '${p.id}'))" style="margin-top:6px; background:#b91c1c; color:#fff; border:none; padding:4px 10px; border-radius:6px; font-size:11px; cursor:pointer;">
+          View Full Details
+        </button>
+      </div>
+    `);
+    m.addTo(tourMarkersLayer);
+  });
+
+  const polyline = L.polyline(latlngs, {
+    color: '#d97706',
+    weight: 6,
+    opacity: 0.9,
+    dashArray: '8, 6'
+  }).addTo(tourMarkersLayer);
+
+  map.fitBounds(polyline.getBounds(), { padding: [80, 80] });
+  showToast(`🗺️ Plotted ${plannedTourData.pandals.length} numbered tour stops on Bengal map!`);
+}
+
+function savePlanToSavedChecklist() {
+  if (!plannedTourData) return;
+  plannedTourData.pandals.forEach(p => {
+    if (!visitPlans.some(x => x.id === p.id)) {
+      visitPlans.push({
+        id: p.id,
+        name: p.name,
+        date: plannedTourData.date,
+        time: plannedTourData.startTime,
+        completed: false
+      });
+    }
+  });
+
+  savePlans(visitPlans);
+  showToast(`💾 Saved ${plannedTourData.pandals.length} pandals to your checklist!`);
+  switchItinerarySubtab('saved');
+}
+
+function shareGeneratedTripPlan() {
+  if (!plannedTourData) return;
+  const text = `🪔 My Durga Puja 2026 Tour Schedule (${plannedTourData.date})\n` +
+    `Pandals: ${plannedTourData.pandals.map((p, i) => `${i + 1}. ${p.name}`).join(', ')}\n` +
+    `Total: ${plannedTourData.totalDistKm} km • Completion: ${plannedTourData.completionTimeString}\n` +
+    `Planned with Pandal Hopper Parikrama App!`;
+
+  if (navigator.share) {
+    navigator.share({ title: 'My Pandal Tour', text }).catch(() => {});
+  } else {
+    navigator.clipboard.writeText(text);
+    showToast('📲 Tour itinerary copied to clipboard!');
+  }
+}
+
+// ----------------------------------------------------------------------------
 // 21. Initialization on DOM Loaded
 // ----------------------------------------------------------------------------
 document.addEventListener('DOMContentLoaded', () => {
@@ -2894,6 +4476,7 @@ document.addEventListener('DOMContentLoaded', () => {
   updatePlanCounter();
   initCloudSync();
   initAuth();
+  populateRouteLocationDropdowns();
   startLiveClockAndWeather();
 
   // Search input listener
@@ -2964,7 +4547,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // Ensure default active tab is map
-  document.body.setAttribute('data-active-tab', 'map');
+  // Ensure default active tab is map and overlays are properly synced
+  switchTab('map');
 });
 

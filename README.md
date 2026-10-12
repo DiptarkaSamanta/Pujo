@@ -50,7 +50,19 @@ An interactive, mobile-first web application for exploring Durga Puja pandals ac
   - 🛡️ **Admin Manager** (quick pandal deletion panel)
 - **Map-Only Floating Controls:** Recenter, Radar, Route, Layers, Zoom, and Quick Filter buttons automatically hide when browsing Explore, Finder, or Itinerary tabs.
 
-### 6. 🪔 16 Preloaded Heritage Bengal Pujas
+### 6. 📱 Minimalist 5-Item Bottom Navigation & Consolidated "Next Visit" Hub
+The UI provides a clean, clutter-free mobile layout strictly adhering to the 5 bottom navigation items:
+1. **🗺️ Live Map (`Live Map`):** Interactive Leaflet canvas with real-time GPS tracking, directional cone, live crowd density badges, and custom festive pins.
+2. **☰ Explore (`Explore`):** Highlights 4 top feature cards (Pandal Hopping, Pet Pujo, Medical Emergency, Path Finder) leading directly into specialized tools, alongside the full 18+ Bengal Pandals directory with search and filters.
+3. **⊕ Pin the Pandal (`Pin the Pandal`):** Center raised circular button (FAB) allowing any hopper to drop pins and add new community pujas.
+4. **🧭 Shortest Path (`Shortest Path`):** A ➔ B Multi-Route Navigator with low-traffic alternative paths, intermediate transit stopages, live location updates, and the Nearest Pandals Matrix.
+5. **📅 Next Visit (`Next Visit`):** Consolidated festive expedition hub with 4 sub-sections:
+   - **🪔 Pandal Hopper Tour Planner:** Choose zone/district, festive date (Maha Sasthi through Bijoya Dashami), start and end times, pandal count presets (3, 5, 8, 10 or custom), route strategy (**⚡ Shortest Road Route** via TSP optimization vs. **🎲 Surprise Me / Random**), refreshment breaks (**🍛 Food Break (Pet Pujo)** & **☕ Chai Break**), and travel traffic speed (Walk, Car, Bus). Renders chronological timetables, plots numbered stops on the Live Map, and saves to checklist.
+   - **🍛 Pet Pujo (Food, Sweets & 24x7 Groceries):** 21+ legendary eateries (Arsalan, Shiraz, Royal India, Aminia, Oudh 1590, Kusum Rolls, Nizam's, Balaram Mullick, K.C. Das, etc.) sorted by nearest distance to your GPS, with food pins toggleable on the live map and direct route guidance.
+   - **🏥 Important Medical & Emergency Services:** 17+ facilities (SSKM Trauma Center, Calcutta Medical College, R.G. Kar, Apollo, 24x7 Frank Ross, Dhanwantary, Central Blood Bank) and instant 1-tap SOS call buttons (Ambulance 108/102, Police 100/112, Lalbazar 033-2214-3230, Women Safety 1090) with direct ambulance routes.
+   - **📋 My Saved Checklist:** Interactive list of scheduled pandal visits with checkmark completion and live counter badge.
+
+### 7. 🪔 16 Preloaded Heritage Bengal Pujas
 Pre-configured with coordinates, authentic themes, and verified landmarks:
 - Sreebhumi Sporting Club
 - Kalyani ITI More

@@ -20,7 +20,7 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 
     <!-- Custom Festive Stylesheet -->
-    <link rel="stylesheet" href="./styles.css?v=2.6" />
+    <link rel="stylesheet" href="./styles.css?v=3.0" />
   </head>
   <body data-active-tab="map">
     <div id="app-container">
@@ -104,7 +104,25 @@
             <div class="toolbox-grid">
               <!-- Column 1 (Left - Round Tool Buttons) -->
               <div class="toolbox-col">
-                <!-- 1. Calendar / Time / Song -->
+                <!-- 1. Pet Pujo (Food, Sweets & Groceries) -->
+                <button class="tool-tile tile-round" onclick="openPetPujoModal()" title="Pet Pujo — Nearest Biryani, Rolls & Sweets">
+                  <div class="tile-icon-circle icon-amber">🍛</div>
+                  <div class="tile-content">
+                    <span class="tile-title">Pet Pujo (Food)</span>
+                    <span class="tile-desc">Biryani, Rolls & Mishti</span>
+                  </div>
+                </button>
+
+                <!-- 2. Medical & Emergency Services -->
+                <button class="tool-tile tile-round" onclick="openMedicalModal()" title="24x7 Pharmacies, Hospitals & SOS">
+                  <div class="tile-icon-circle icon-crimson">🏥</div>
+                  <div class="tile-content">
+                    <span class="tile-title">Medical 24x7</span>
+                    <span class="tile-desc">Pharmacies, SSKM & SOS</span>
+                  </div>
+                </button>
+
+                <!-- 3. Calendar / Time / Song -->
                 <button class="tool-tile tile-round" onclick="openPanjikaModal()" title="Durga Puja Panjika & Festive Music">
                   <div class="tile-icon-circle icon-gold">🥁</div>
                   <div class="tile-content">
@@ -113,7 +131,7 @@
                   </div>
                 </button>
 
-                <!-- 2. My Location -->
+                <!-- 4. My Location -->
                 <button class="tool-tile tile-round" onclick="handleToolMyLocation()" title="Center GPS on my location">
                   <div class="tile-icon-circle icon-blue">📍</div>
                   <div class="tile-content">
@@ -122,36 +140,18 @@
                   </div>
                 </button>
 
-                <!-- 3. Distance / Route -->
+                <!-- 5. Distance / Route -->
                 <button class="tool-tile tile-round" onclick="handleToolDistanceRoute()" title="Shortest route navigation">
-                  <div class="tile-icon-circle icon-crimson">🧭</div>
+                  <div class="tile-icon-circle icon-emerald">🧭</div>
                   <div class="tile-content">
-                    <span class="tile-title">Distance & Route</span>
-                    <span class="tile-desc">Shortest road directions</span>
-                  </div>
-                </button>
-
-                <!-- 4. Toggle Crowd Traffic Flyer -->
-                <button class="tool-tile tile-round" onclick="handleToolTraffic()" title="Toggle Crowd Density & Traffic Flyer">
-                  <div class="tile-icon-circle icon-emerald" id="tool-traffic-circle">🚦</div>
-                  <div class="tile-content">
-                    <span class="tile-title">Live Crowd Traffic</span>
-                    <span class="tile-desc">Queue status & density</span>
-                  </div>
-                </button>
-
-                <!-- 5. Change Map Style -->
-                <button class="tool-tile tile-round" onclick="handleToolMapStyleCycle()" title="Cycle Map Styles (OSM, Hot, Satellite, Esri)">
-                  <div class="tile-icon-circle icon-indigo">🗺️</div>
-                  <div class="tile-content">
-                    <span class="tile-title">Change Map Style</span>
-                    <span class="tile-desc" id="tool-current-style-label">Classic Streets (OSM)</span>
+                    <span class="tile-title">Route Navigator</span>
+                    <span class="tile-desc">A ➔ B road directions</span>
                   </div>
                 </button>
 
                 <!-- 6. Pin Point Pandal Location -->
                 <button class="tool-tile tile-round" onclick="handleToolPinPandal()" title="Pin point pandal location on map">
-                  <div class="tile-icon-circle icon-amber">🪔</div>
+                  <div class="tile-icon-circle icon-gold">🪔</div>
                   <div class="tile-content">
                     <span class="tile-title">Pin Pandal Location</span>
                     <span class="tile-desc">Drop pin & add puja</span>
@@ -161,7 +161,16 @@
 
               <!-- Column 2 (Right - Boxed Tool Buttons) -->
               <div class="toolbox-col">
-                <!-- 1. Leaderboard -->
+                <!-- 1. Smart Hopper Tour Planner -->
+                <button class="tool-tile tile-square" onclick="handleToolItinerary()" title="Smart Pandal Hopper Tour Planner">
+                  <div class="tile-icon-box icon-purple">📅</div>
+                  <div class="tile-content">
+                    <span class="tile-title">Hopper Planner</span>
+                    <span class="tile-desc">Smart tour & break scheduler</span>
+                  </div>
+                </button>
+
+                <!-- 2. Leaderboard -->
                 <button class="tool-tile tile-square" onclick="openLeaderboardModal()" title="Top Pandals Leaderboard">
                   <div class="tile-icon-box icon-gold">📊</div>
                   <div class="tile-content">
@@ -170,16 +179,16 @@
                   </div>
                 </button>
 
-                <!-- 2. Highest Contributors -->
+                <!-- 3. Highest Contributors -->
                 <button class="tool-tile tile-square" onclick="openContributorsModal()" title="Community Contributors Leaderboard">
-                  <div class="tile-icon-box icon-purple">👑</div>
+                  <div class="tile-icon-box icon-blue">👑</div>
                   <div class="tile-content">
                     <span class="tile-title">Top Contributors</span>
                     <span class="tile-desc">Hoppers adding new pujas</span>
                   </div>
                 </button>
 
-                <!-- 3. Admin: Delete Unnecessary Pandals (Key User Requirement!) -->
+                <!-- 4. Admin: Delete Unnecessary Pandals -->
                 <button class="tool-tile tile-square tile-admin" id="btn-tool-admin-manager" onclick="handleToolAdminManager()" title="Admin: Delete Unnecessary Pandals">
                   <div class="tile-icon-box icon-red" id="tool-admin-icon-box">🗑️</div>
                   <div class="tile-content">
@@ -188,21 +197,12 @@
                   </div>
                 </button>
 
-                <!-- 4. Schedule / My Itinerary -->
-                <button class="tool-tile tile-square" onclick="handleToolItinerary()" title="My Parikrama Checklist">
-                  <div class="tile-icon-box icon-blue">📅</div>
+                <!-- 5. Change Map Style -->
+                <button class="tool-tile tile-square" onclick="handleToolMapStyleCycle()" title="Cycle Map Styles (OSM, Hot, Satellite, Esri)">
+                  <div class="tile-icon-box icon-indigo">🗺️</div>
                   <div class="tile-content">
-                    <span class="tile-title">My Itinerary</span>
-                    <span class="tile-desc">Scheduled pandal visits</span>
-                  </div>
-                </button>
-
-                <!-- 5. Force Cloud Sync Now -->
-                <button class="tool-tile tile-square" onclick="handleToolForceSync()" title="Force Refresh from Firebase Firestore">
-                  <div class="tile-icon-box icon-green">🔄</div>
-                  <div class="tile-content">
-                    <span class="tile-title">Sync Firebase Live</span>
-                    <span class="tile-desc">Pull latest cloud markers</span>
+                    <span class="tile-title">Change Map Style</span>
+                    <span class="tile-desc" id="tool-current-style-label">Classic Streets</span>
                   </div>
                 </button>
 
@@ -211,7 +211,7 @@
                   <div class="tile-icon-box icon-slate" id="tool-theme-icon-box">🌓</div>
                   <div class="tile-content">
                     <span class="tile-title">Festive Night Theme</span>
-                    <span class="tile-desc" id="tool-theme-label">Switch dark / light mode</span>
+                    <span class="tile-desc" id="tool-theme-label">Switch dark / light</span>
                   </div>
                 </button>
               </div>
@@ -225,21 +225,31 @@
         <!-- Leaflet Map Canvas -->
         <div id="map"></div>
 
-        <!-- Floating Action Pills Overlay (Top-Left on Map, Row 2 Removed) -->
+        <!-- Floating Action Pills Overlay -->
         <div id="map-top-overlay">
           <div class="overlay-row-1">
-            <!-- Find Pandal / Club Card -->
-            <div class="overlay-card-finder" onclick="switchTab('finder')" title="Find Pandal / Shortest Distance Calculator">
-              <div class="finder-icon-badge">🎯</div>
+            <!-- Find Pandal / Route Card -->
+            <div class="overlay-card-finder" onclick="switchTab('finder')" title="Route Finder & Multi-Path Navigator">
+              <div class="finder-icon-badge">🧭</div>
               <div class="finder-card-text">
-                <span class="finder-title">Find Pandal / Club</span>
-                <span class="finder-desc">Shortest distance calculator</span>
+                <span class="finder-title">Shortest Path</span>
+                <span class="finder-desc">A ➔ B low traffic & stopages</span>
               </div>
             </div>
 
-            <!-- Pin the Pandal Orange Pill -->
-            <button class="overlay-pill-orange" onclick="startPinningMode()" title="Pin a Pandal">
-              <span>🪔</span> Pin the Pandal
+            <!-- Hopper Planner Pill -->
+            <button class="overlay-pill-gold" onclick="openNextVisitSection('hopper')" title="Smart Pandal Hopper Tour Planner">
+              <span>🪔</span> Hopper Planner
+            </button>
+
+            <!-- Pet Pujo Orange Pill -->
+            <button class="overlay-pill-orange" onclick="openNextVisitSection('pet-pujo')" title="Pet Pujo - Nearest Biryani, Rolls & Sweets">
+              <span>🍛</span> Pet Pujo
+            </button>
+
+            <!-- Medical Green Pill -->
+            <button class="overlay-pill-green" onclick="openNextVisitSection('medical')" title="Emergency Medical Services & 24x7 Pharmacies">
+              <span>🏥</span> Medical 24x7
             </button>
 
             <!-- My Pinpoint Blue Pill -->
@@ -304,9 +314,87 @@
         
         <!-- View A: Explore Pandals List -->
         <section id="view-explore" class="tab-view">
+          <div class="section-top-bar">
+            <button type="button" class="btn-back-map" onclick="switchTab('map')">
+              ← Back to Live Map
+            </button>
+            <span class="section-badge" style="background:#fef2f2; color:#b91c1c; border:1px solid #fecaca;">
+              Festival Hub
+            </span>
+          </div>
+
           <div class="view-header">
-            <h2>Explore Bengal Pandals</h2>
-            <p>Filter by district, crowd traffic, and highest rated pujas</p>
+            <h2>Explore Bengal Sharadotsav</h2>
+            <p>Access the 4 Puja utility hubs or browse 18+ famous pandals with crowd traffic</p>
+          </div>
+
+          <!-- The Four Feature Boxes for Pandal Hopping, Pet Pujo, Medical Emergency, Path Finder -->
+          <div class="explore-features-grid">
+            <!-- Box 1: Pandal Hopping -->
+            <div class="explore-feature-box box-hopper" onclick="openNextVisitSection('hopper')" role="button" tabindex="0">
+              <div class="box-icon-wrap icon-hopper">🪔</div>
+              <div class="box-content">
+                <div class="box-header-row">
+                  <h3 class="box-title">Pandal Hopping</h3>
+                  <span class="box-tag tag-hopper">Tour Planner</span>
+                </div>
+                <p class="box-desc">Choose area, date, time window, pandal count (3, 5, 8, 10 or custom), food & rest breaks, and travel traffic time.</p>
+                <div class="box-footer">
+                  <span class="box-cta">Plan My Tour →</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Box 2: Pet Pujo (Food) -->
+            <div class="explore-feature-box box-pet-pujo" onclick="openNextVisitSection('pet-pujo')" role="button" tabindex="0">
+              <div class="box-icon-wrap icon-pet-pujo">🍛</div>
+              <div class="box-content">
+                <div class="box-header-row">
+                  <h3 class="box-title">Pet Pujo</h3>
+                  <span class="box-tag tag-pet-pujo">Food & Sweets</span>
+                </div>
+                <p class="box-desc">Find nearest Kolkata biryani, kathi rolls, heritage mishti, and 24x7 water & snack stalls with live road routes.</p>
+                <div class="box-footer">
+                  <span class="box-cta">Find Food Spots →</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Box 3: Medical Emergency -->
+            <div class="explore-feature-box box-medical" onclick="openNextVisitSection('medical')" role="button" tabindex="0">
+              <div class="box-icon-wrap icon-medical">🏥</div>
+              <div class="box-content">
+                <div class="box-header-row">
+                  <h3 class="box-title">Medical Emergency</h3>
+                  <span class="box-tag tag-medical">24x7 SOS</span>
+                </div>
+                <p class="box-desc">24x7 pharmacies, emergency hospitals, trauma units, blood banks, and instant 1-tap SOS call helplines.</p>
+                <div class="box-footer">
+                  <span class="box-cta">Emergency Care →</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Box 4: Path Finder -->
+            <div class="explore-feature-box box-path-finder" onclick="switchTab('finder')" role="button" tabindex="0">
+              <div class="box-icon-wrap icon-path-finder">🧭</div>
+              <div class="box-content">
+                <div class="box-header-row">
+                  <h3 class="box-title">Path Finder</h3>
+                  <span class="box-tag tag-path-finder">Shortest Path</span>
+                </div>
+                <p class="box-desc">Find 2 to 3 alternative low-traffic routes between any two points with road plans, transit stopages & live GPS updates.</p>
+                <div class="box-footer">
+                  <span class="box-cta">Find Low-Traffic Route →</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Section Divider: Bengal Pandals Directory -->
+          <div class="explore-section-divider">
+            <span class="divider-title">🪔 Bengal Pandals Directory</span>
+            <div class="divider-line"></div>
           </div>
 
           <div class="search-container">
@@ -323,27 +411,480 @@
           <div id="pandal-cards-container" class="pandal-grid"></div>
         </section>
 
-        <!-- View B: Shortest Distance Finder -->
+        <!-- ================================================================
+             SHORTEST PATH & MULTI-ROUTE NAVIGATOR
+             ================================================================ -->
         <section id="view-finder" class="tab-view">
-          <div class="view-header">
-            <h2>🎯 Shortest Distance Calculator</h2>
-            <p>Live sorted by closest proximity to your current GPS position</p>
+          <div class="section-top-bar">
+            <button type="button" class="btn-back-map" onclick="switchTab('map')">
+              ← Back to Live Map
+            </button>
+            <span class="section-badge badge-route">Shortest Path</span>
           </div>
-          <div id="finder-results-container"></div>
+
+          <div class="view-header">
+            <h2>🧭 Shortest Path & Route Finder</h2>
+            <p>Put two locations to place routes based on low traffic with 2 to 3 alternative paths, road plans, stopages, and live location updates</p>
+          </div>
+
+          <!-- Sub-Tab Switcher: Multi-Route vs Shortest Distance -->
+          <div class="finder-subtabs">
+            <button type="button" class="subtab-btn active" id="subtab-route-nav" onclick="switchFinderSubtab('nav')">
+              🚗 A ➔ B Multi-Route Navigator
+            </button>
+            <button type="button" class="subtab-btn" id="subtab-route-matrix" onclick="switchFinderSubtab('matrix')">
+              🎯 Nearest Pandals Matrix
+            </button>
+          </div>
+
+          <!-- Sub-Panel 1: Point A to Point B Route Navigator -->
+          <div id="finder-nav-section" class="finder-panel">
+            <div class="route-input-card">
+              <!-- Location A: Origin -->
+              <div class="route-input-group">
+                <label class="route-label">
+                  <span class="route-dot dot-origin"></span>
+                  <strong>Origin (Location A)</strong>
+                </label>
+                <div class="route-input-wrap">
+                  <select id="route-origin-select" class="route-select" onchange="onRouteChange()">
+                    <option value="my_location">📍 My Current GPS Location</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- Swap Button -->
+              <div class="route-swap-row">
+                <button type="button" class="btn-swap-locations" onclick="swapRouteLocations()" title="Swap Origin & Destination">
+                  ⇅ Swap Origin & Destination
+                </button>
+              </div>
+
+              <!-- Location B: Destination -->
+              <div class="route-input-group">
+                <label class="route-label">
+                  <span class="route-dot dot-destination"></span>
+                  <strong>Destination (Location B)</strong>
+                </label>
+                <div class="route-input-wrap">
+                  <select id="route-dest-select" class="route-select" onchange="onRouteChange()">
+                    <!-- Populated dynamically -->
+                  </select>
+                </div>
+              </div>
+
+              <!-- Travel Mode Selector -->
+              <div class="route-mode-row">
+                <span style="font-size: 11px; font-weight: 700; color: #64748b;">Travel Mode:</span>
+                <div class="route-mode-chips">
+                  <button type="button" class="mode-chip active" data-mode="car" onclick="setRouteMode('car')">🚗 Car / Cab</button>
+                  <button type="button" class="mode-chip" data-mode="bike" onclick="setRouteMode('bike')">🛵 Bike</button>
+                  <button type="button" class="mode-chip" data-mode="walk" onclick="setRouteMode('walk')">🚶 Walk</button>
+                  <button type="button" class="mode-chip" data-mode="bus" onclick="setRouteMode('bus')">🚌 Bus</button>
+                </div>
+              </div>
+
+              <button type="button" class="btn-festive btn-find-routes" onclick="calculateAndDisplayMultiRoutes()">
+                ⚡ Find Low-Traffic Routes & Stopages
+              </button>
+            </div>
+
+            <!-- Multi-Route Options Cards (Route 1, Route 2, Route 3) -->
+            <div id="multi-routes-results" style="display:none; margin-top: 16px;">
+              <h4 style="font-size: 14px; font-weight: 800; color: #0f172a; margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between;">
+                <span>🚦 Alternative Routes Found</span>
+                <span id="route-traffic-notice" style="font-size: 11px; color: #059669; font-weight: 700;">🟢 Low Traffic Priority</span>
+              </h4>
+
+              <div id="routes-cards-list" class="routes-list-grid"></div>
+
+              <!-- Selected Route Stopages & Road Plan Breakdown -->
+              <div id="route-stopages-card" class="stopages-card" style="margin-top: 16px;">
+                <div class="stopages-header">
+                  <span style="font-size: 20px;">🗺️</span>
+                  <div>
+                    <h4 id="stopages-title" style="margin: 0; font-size: 13.5px; font-weight: 800; color: #0f172a;">Road Plan & Key Transit Stopages</h4>
+                    <p style="margin: 2px 0 0 0; font-size: 11px; color: #64748b;">Intermediate flyovers, crossings, and metro hubs</p>
+                  </div>
+                </div>
+                <div id="stopages-timeline-list" class="stopages-timeline"></div>
+
+                <!-- Navigation CTAs -->
+                <div style="display: flex; gap: 10px; margin-top: 14px;">
+                  <button type="button" class="btn-festive" onclick="startSelectedRouteNavigation()" style="flex: 2; justify-content: center; padding: 11px; font-weight: 800;">
+                    🚀 Start Live GPS Navigation
+                  </button>
+                  <button type="button" class="btn-secondary" onclick="previewSelectedRouteOnMap()" style="flex: 1; justify-content: center; padding: 11px;">
+                    🗺️ Show on Map
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Sub-Panel 2: Nearest Pandals Matrix -->
+          <div id="finder-matrix-section" class="finder-panel" style="display:none;">
+            <div id="finder-results-container"></div>
+          </div>
         </section>
 
-        <!-- View C: Next Visit Itinerary -->
+        <!-- ================================================================
+             NEXT VISIT PLANNING HUB (HOPPER, PET PUJO, MEDICAL 24x7, CHECKLIST)
+             ================================================================ -->
         <section id="view-itinerary" class="tab-view">
-          <div class="view-header">
-            <h2>📅 My Parikrama Itinerary</h2>
-            <p>Your scheduled pandal tour checklist for Maha Saptami & Ashtami</p>
+          <div class="section-top-bar">
+            <button type="button" class="btn-back-map" onclick="switchTab('map')">
+              ← Back to Live Map
+            </button>
+            <span class="section-badge badge-itinerary">Next Visit Planning Hub</span>
           </div>
-          <div id="itinerary-container"></div>
+
+          <div class="view-header">
+            <h2>📅 Next Visit — Festive Hub</h2>
+            <p>Complete Durga Puja expedition manager: Hopper Tour Planner, Pet Pujo Food & Sweets, 24x7 Medical Emergency, and Saved Checklist</p>
+          </div>
+
+          <!-- Sub-Tab Switcher: 4 Work Suites inside Next Visit -->
+          <div class="next-visit-subtabs">
+            <button type="button" class="nv-subtab-btn active" id="nv-subtab-hopper" onclick="switchNextVisitTab('hopper')">
+              <span class="nv-tab-icon">🪔</span>
+              <span class="nv-tab-label">Pandal Hopper</span>
+            </button>
+            <button type="button" class="nv-subtab-btn" id="nv-subtab-petpujo" onclick="switchNextVisitTab('pet-pujo')">
+              <span class="nv-tab-icon">🍛</span>
+              <span class="nv-tab-label">Pet Pujo</span>
+            </button>
+            <button type="button" class="nv-subtab-btn" id="nv-subtab-medical" onclick="switchNextVisitTab('medical')">
+              <span class="nv-tab-icon">🏥</span>
+              <span class="nv-tab-label">Medical 24x7</span>
+            </button>
+            <button type="button" class="nv-subtab-btn" id="nv-subtab-saved" onclick="switchNextVisitTab('saved')">
+              <span class="nv-tab-icon">📋</span>
+              <span class="nv-tab-label">My Checklist</span>
+              <span class="nv-badge" id="itinerary-badge" style="display:none;"></span>
+            </button>
+          </div>
+
+          <!-- ============================================================
+               Sub-Panel 1: Smart Hopper Tour Planner
+               ============================================================ -->
+          <div id="nv-panel-hopper" class="nv-panel active">
+            <div class="trip-planner-form-card">
+              <!-- Row 1: Area & Date -->
+              <div class="form-grid-2">
+                <div class="form-group">
+                  <label class="planner-label">📍 Choose Area / Zone *</label>
+                  <select id="plan-area-select" class="form-select">
+                    <option value="all">🌟 All Bengal & Kolkata (Iconic Heritage)</option>
+                    <option value="North Kolkata">North Kolkata (Bagbazar, Sovabazar, College Sq)</option>
+                    <option value="South Kolkata">South Kolkata (Ekdalia, Suruchi, Maddox, Naktala)</option>
+                    <option value="Central Kolkata">Central Kolkata (Santosh Mitra, College Sq)</option>
+                    <option value="Salt Lake & East">Salt Lake, Lake Town & Sreebhumi</option>
+                    <option value="Howrah & Hooghly">Howrah & Hooghly (Belur, Chandannagar, Bally)</option>
+                    <option value="Nadia">Nadia (Kalyani ITI More)</option>
+                    <option value="Siliguri">Siliguri & North Bengal</option>
+                    <option value="Burdwan">Durgapur & Burdwan</option>
+                    <option value="Midnapore">Midnapore & Other Bengal</option>
+                  </select>
+                </div>
+
+                <div class="form-group">
+                  <label class="planner-label">📅 Festive Date *</label>
+                  <select id="plan-date-select" class="form-select">
+                    <option value="Oct 16 - Maha Sasthi">Maha Sasthi (Oct 16, 2026)</option>
+                    <option value="Oct 17 - Maha Saptami" selected>Maha Saptami (Oct 17, 2026)</option>
+                    <option value="Oct 18 - Maha Ashtami">Maha Ashtami & Sandhi Puja (Oct 18)</option>
+                    <option value="Oct 19 - Maha Nabami">Maha Nabami (Oct 19, 2026)</option>
+                    <option value="Oct 20 - Bijoya Dashami">Bijoya Dashami (Oct 20, 2026)</option>
+                    <option value="Oct 15 - Maha Panchami">Panchami Darshan (Oct 15)</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- Row 2: Start & End Time -->
+              <div class="form-grid-2">
+                <div class="form-group">
+                  <label class="planner-label">⏰ Start Time *</label>
+                  <input type="time" id="plan-start-time" class="form-input" value="16:00" />
+                </div>
+                <div class="form-group">
+                  <label class="planner-label">🏁 End Time *</label>
+                  <input type="time" id="plan-end-time" class="form-input" value="23:00" />
+                </div>
+              </div>
+
+              <!-- Row 3: Number of Pandals (Optional / Presets) -->
+              <div class="form-group">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                  <label class="planner-label" style="margin-bottom:0;">🎯 Number of Pandals (Optional)</label>
+                  <span id="plan-count-preview-label" style="font-size:11px; color:#b91c1c; font-weight:700;">5 Pandals</span>
+                </div>
+                <div class="count-presets-row">
+                  <button type="button" class="preset-count-btn" data-count="3" onclick="setPlannerPandalCount(3)">3</button>
+                  <button type="button" class="preset-count-btn active" data-count="5" onclick="setPlannerPandalCount(5)">5 (Balanced)</button>
+                  <button type="button" class="preset-count-btn" data-count="8" onclick="setPlannerPandalCount(8)">8 (Mega Tour)</button>
+                  <button type="button" class="preset-count-btn" data-count="10" onclick="setPlannerPandalCount(10)">10 (Pro)</button>
+                  <div style="display:flex; align-items:center; gap:4px; margin-left:auto;">
+                    <span style="font-size:11px; color:#64748b;">Custom:</span>
+                    <input type="number" id="plan-custom-count" min="1" max="25" placeholder="Qty" style="width:54px; padding:6px; border-radius:8px; border:1.5px solid #cbd5e1; font-size:12px; font-weight:bold; text-align:center;" oninput="handleCustomPandalCount(this.value)" />
+                  </div>
+                </div>
+              </div>
+
+              <!-- Row 4: Route Optimization & Selection Strategy -->
+              <div class="form-group">
+                <label class="planner-label">🔀 Selection & Route Strategy</label>
+                <div class="strategy-selector-row">
+                  <label class="strategy-radio-card active" id="strategy-card-shortest">
+                    <input type="radio" name="plan-strategy" value="shortest" checked onchange="updateStrategyUi()" />
+                    <div>
+                      <strong>⚡ Shortest Road Route</strong>
+                      <span>Optimized sequence (minimal driving & walking)</span>
+                    </div>
+                  </label>
+                  <label class="strategy-radio-card" id="strategy-card-random">
+                    <input type="radio" name="plan-strategy" value="random" onchange="updateStrategyUi()" />
+                    <div>
+                      <strong>🎲 Surprise Me / Random Input</strong>
+                      <span>Adventurous mix of iconic pujas</span>
+                    </div>
+                  </label>
+                </div>
+              </div>
+
+              <!-- Row 5: Breaks (Food Break & Rest Break) -->
+              <div class="planner-breaks-box">
+                <label class="planner-label" style="margin-bottom:8px;">☕ Breaks & Refreshments</label>
+                <div style="display:flex; flex-direction:column; gap:10px;">
+                  <div class="break-toggle-row">
+                    <label class="break-checkbox-label">
+                      <input type="checkbox" id="plan-include-food-break" checked onchange="toggleBreakOption('food')" />
+                      <span>🍛 <strong>Food Break (Pet Pujo)</strong> — Biryani, Rolls or Dinner</span>
+                    </label>
+                    <select id="plan-food-break-duration" class="form-select break-select">
+                      <option value="30">30 mins</option>
+                      <option value="45" selected>45 mins (Recommended)</option>
+                      <option value="60">60 mins</option>
+                    </select>
+                  </div>
+
+                  <div class="break-toggle-row">
+                    <label class="break-checkbox-label">
+                      <input type="checkbox" id="plan-include-tea-break" checked onchange="toggleBreakOption('tea')" />
+                      <span>☕ <strong>Chai & Rest Break</strong> — Street snacks & breathing room</span>
+                    </label>
+                    <select id="plan-tea-break-duration" class="form-select break-select">
+                      <option value="15">15 mins</option>
+                      <option value="20" selected>20 mins (Recommended)</option>
+                      <option value="30">30 mins</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Row 6: Travel Mode & Traffic Computation -->
+              <div class="form-group" style="margin-top:14px;">
+                <label class="planner-label">🚗 Travel Mode (Calculates Route Traffic)</label>
+                <div class="travel-mode-chips">
+                  <label class="travel-chip active" id="travel-chip-car">
+                    <input type="radio" name="plan-travel-mode" value="car" checked onchange="updateTravelModeUi()" />
+                    <span>🚗 Car / Cab (~18 km/h + evening delay)</span>
+                  </label>
+                  <label class="travel-chip" id="travel-chip-walk">
+                    <input type="radio" name="plan-travel-mode" value="walk" onchange="updateTravelModeUi()" />
+                    <span>🚶 Walk (~4.5 km/h, beats jams)</span>
+                  </label>
+                  <label class="travel-chip" id="travel-chip-bus">
+                    <input type="radio" name="plan-travel-mode" value="bus" onchange="updateTravelModeUi()" />
+                    <span>🚌 Bus / Transit (~12 km/h + wait)</span>
+                  </label>
+                </div>
+              </div>
+
+              <!-- Generate CTA Button -->
+              <button type="button" class="btn-festive btn-generate-plan" onclick="generateHopperTripPlan()">
+                ✨ Generate Optimized Tour Plan
+              </button>
+            </div>
+
+            <!-- Generated Plan Results Card (Dynamic Output) -->
+            <div id="planner-results-card" style="display:none; margin-top:20px;">
+              <!-- Summary Metrics Header -->
+              <div class="plan-summary-banner">
+                <div class="plan-summary-left">
+                  <span style="font-size:28px;">🪔</span>
+                  <div>
+                    <h3 id="plan-result-title" style="margin:0; font-size:16px; font-weight:800; color:#fff;">Maha Saptami Tour Schedule</h3>
+                    <p id="plan-result-subtitle" style="margin:2px 0 0 0; font-size:11.5px; color:#fef08a;">Calculated with live crowd queues & road traffic</p>
+                  </div>
+                </div>
+                <div id="plan-fit-badge" class="plan-fit-badge">
+                  ✅ Fits Perfect
+                </div>
+              </div>
+
+              <!-- Metric Badges Row -->
+              <div class="plan-metrics-grid">
+                <div class="metric-box">
+                  <span class="metric-val" id="metric-total-pandals">5</span>
+                  <span class="metric-lbl">Pandals</span>
+                </div>
+                <div class="metric-box">
+                  <span class="metric-val" id="metric-total-dist">12.4 km</span>
+                  <span class="metric-lbl">Total Road</span>
+                </div>
+                <div class="metric-box">
+                  <span class="metric-val" id="metric-total-duration">5h 45m</span>
+                  <span class="metric-lbl">Total Duration</span>
+                </div>
+                <div class="metric-box">
+                  <span class="metric-val" id="metric-completion-time">10:45 PM</span>
+                  <span class="metric-lbl">Completion</span>
+                </div>
+              </div>
+
+              <!-- Step-by-Step Timeline Cards List -->
+              <div class="timeline-container">
+                <h4 style="font-size:13px; font-weight:800; color:#0f172a; margin-bottom:12px;">Step-by-Step Tour Timetable</h4>
+                <div id="plan-timeline-list" class="timeline-items-wrap"></div>
+              </div>
+
+              <!-- Action Buttons -->
+              <div class="plan-action-bar">
+                <button type="button" class="btn-festive" onclick="viewPlannedTourOnLiveMap()" style="flex:2; justify-content:center; padding:12px; font-weight:800;">
+                  🗺️ Show Tour on Live Map
+                </button>
+                <button type="button" class="btn-secondary" onclick="savePlanToSavedChecklist()" style="flex:1.5; justify-content:center; padding:12px; font-weight:700;">
+                  💾 Save to Checklist
+                </button>
+                <button type="button" class="btn-secondary" onclick="shareGeneratedTripPlan()" style="padding:12px; font-size:14px;" title="Share Tour Schedule">
+                  📲
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- ============================================================
+               Sub-Panel 2: Pet Pujo (Food, Sweets & Groceries)
+               ============================================================ -->
+          <div id="nv-panel-pet-pujo" class="nv-panel" style="display:none;">
+            <!-- Search & Map Layer Toggle -->
+            <div class="section-controls-row">
+              <div class="search-input-wrap">
+                <span class="search-icon">🔍</span>
+                <input type="text" id="section-pet-pujo-search" class="search-input" placeholder="Search biryani, Arsalan, kathi roll, sweet, grocery, tea..." oninput="renderSectionPetPujoList()" />
+              </div>
+              <button type="button" onclick="toggleMapFoodLayer()" id="btn-section-toggle-food-layer" class="btn-secondary btn-layer-toggle" title="Show or hide food pins on map">
+                🗺️ Food on Map
+              </button>
+            </div>
+
+            <!-- Category Filter Chips -->
+            <div class="pet-pujo-chips" id="section-pet-pujo-chips">
+              <button class="filter-chip active" data-pujo-cat="all" onclick="filterSectionPetPujoCat('all', this)">🍽️ All Places (21+)</button>
+              <button class="filter-chip" data-pujo-cat="restaurant" onclick="filterSectionPetPujoCat('restaurant', this)">🍛 Biryani & Mughlai</button>
+              <button class="filter-chip" data-pujo-cat="streetfood" onclick="filterSectionPetPujoCat('streetfood', this)">🌯 Street Food & Rolls</button>
+              <button class="filter-chip" data-pujo-cat="mishti" onclick="filterSectionPetPujoCat('mishti', this)">🍬 Heritage Mishti</button>
+              <button class="filter-chip" data-pujo-cat="grocery" onclick="filterSectionPetPujoCat('grocery', this)">🛒 24x7 Grocery & Water</button>
+              <button class="filter-chip" data-pujo-cat="cafe" onclick="filterSectionPetPujoCat('cafe', this)">☕ Heritage Cafes</button>
+            </div>
+
+            <div id="section-pet-pujo-count-bar" class="section-count-bar">
+              Locating culinary hotspots across Kolkata & Bengal...
+            </div>
+
+            <!-- Food Places Grid -->
+            <div id="section-pet-pujo-list" class="pet-pujo-grid"></div>
+          </div>
+
+          <!-- ============================================================
+               Sub-Panel 3: Important Medical Services & Emergency
+               ============================================================ -->
+          <div id="nv-panel-medical" class="nv-panel" style="display:none;">
+            <!-- SOS Emergency Quick Call Grid (1-Tap Direct Phone Call) -->
+            <div class="medical-sos-grid">
+              <a href="tel:108" class="sos-call-card sos-ambulance">
+                <span class="sos-icon">🚑</span>
+                <div class="sos-info">
+                  <strong>108 / 102</strong>
+                  <span>Emergency Ambulance</span>
+                </div>
+                <span class="sos-tap">Tap to Call 📞</span>
+              </a>
+              <a href="tel:100" class="sos-call-card sos-police">
+                <span class="sos-icon">👮</span>
+                <div class="sos-info">
+                  <strong>100 / 112</strong>
+                  <span>Police Control Room</span>
+                </div>
+                <span class="sos-tap">Tap to Call 📞</span>
+              </a>
+              <a href="tel:03322143230" class="sos-call-card sos-lalbazar">
+                <span class="sos-icon">🚨</span>
+                <div class="sos-info">
+                  <strong>033-2214-3230</strong>
+                  <span>Lalbazar Puja Control</span>
+                </div>
+                <span class="sos-tap">Tap to Call 📞</span>
+              </a>
+              <a href="tel:1090" class="sos-call-card sos-women">
+                <span class="sos-icon">🌸</span>
+                <div class="sos-info">
+                  <strong>1090</strong>
+                  <span>Women Safety Helpline</span>
+                </div>
+                <span class="sos-tap">Tap to Call 📞</span>
+              </a>
+            </div>
+
+            <!-- Search & Map Layer Toggle -->
+            <div class="section-controls-row">
+              <div class="search-input-wrap">
+                <span class="search-icon">🔍</span>
+                <input type="text" id="section-medical-search" class="search-input" placeholder="Search 24x7 pharmacy, SSKM, Apollo, medicine shop, trauma..." oninput="renderSectionMedicalList()" />
+              </div>
+              <button type="button" onclick="toggleMapMedicalLayer()" id="btn-section-toggle-medical-layer" class="btn-secondary btn-layer-toggle" title="Show or hide medical pins on map">
+                🗺️ Medical on Map
+              </button>
+            </div>
+
+            <!-- Filter Chips -->
+            <div class="medical-chips" id="section-medical-chips">
+              <button class="filter-chip active" data-med-cat="all" onclick="filterSectionMedicalCat('all', this)">🏥 All Services (17+)</button>
+              <button class="filter-chip" data-med-cat="pharmacy" onclick="filterSectionMedicalCat('pharmacy', this)">💊 24x7 Pharmacies</button>
+              <button class="filter-chip" data-med-cat="hospital" onclick="filterSectionMedicalCat('hospital', this)">🚑 Emergency Hospitals</button>
+              <button class="filter-chip" data-med-cat="blood_bank" onclick="filterSectionMedicalCat('blood_bank', this)">🩸 Blood Banks & Oxygen</button>
+              <button class="filter-chip" data-med-cat="helpline" onclick="filterSectionMedicalCat('helpline', this)">📞 Helplines</button>
+            </div>
+
+            <div id="section-medical-count-bar" class="section-count-bar">
+              Locating 24x7 medical facilities & emergency centers...
+            </div>
+
+            <!-- Medical Grid -->
+            <div id="section-medical-list" class="medical-grid"></div>
+          </div>
+
+          <!-- ============================================================
+               Sub-Panel 4: Saved Checklist of Planned Pandals
+               ============================================================ -->
+          <div id="nv-panel-saved" class="nv-panel" style="display:none;">
+            <div class="checklist-header-box" style="margin-bottom:14px; background:#fff; border:1.5px solid var(--border-light); border-radius:16px; padding:14px 18px; display:flex; justify-content:space-between; align-items:center;">
+              <div>
+                <h4 style="margin:0; font-size:14px; font-weight:800; color:#0f172a;">📋 My Saved Pandal Itinerary</h4>
+                <p style="margin:2px 0 0 0; font-size:11px; color:#64748b;">Tick off pandals as you visit them live</p>
+              </div>
+              <button type="button" class="btn-secondary" onclick="switchNextVisitTab('hopper')" style="padding:6px 12px; font-size:11px; font-weight:700;">
+                + Add via Tour Planner
+              </button>
+            </div>
+            <div id="itinerary-container"></div>
+          </div>
         </section>
 
       </main>
 
-      <!-- 4. Bottom Navigation Bar (Matching Mockup) -->
+      <!-- 4. Bottom Navigation Bar (Strictly 5 items matching mockup) -->
       <nav id="bottom-navigation">
         <button class="bottom-nav-item active" data-tab="map" onclick="switchTab('map')">
           <span class="nav-icon">🗺️</span>
@@ -355,7 +896,7 @@
           <span class="nav-label">Explore</span>
         </button>
 
-        <!-- Center Raised Circular Button (Matching Second Picture) -->
+        <!-- Center Raised Circular Button (Pin the Pandal) -->
         <button class="bottom-nav-fab" onclick="startPinningMode()" title="Pin the Pandal" type="button">
           <div class="fab-circle">
             <svg class="fab-plus-svg" width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -374,7 +915,6 @@
         <button class="bottom-nav-item" data-tab="itinerary" onclick="switchTab('itinerary')">
           <span class="nav-icon">📅</span>
           <span class="nav-label">Next Visit</span>
-          <span id="itinerary-badge" style="display:none; background:#b91c1c; color:#fff; font-size:9px; border-radius:999px; padding:1px 5px; margin-left:2px;"></span>
         </button>
       </nav>
 
@@ -950,6 +1490,117 @@
         </div>
       </div>
 
+      <!-- Modal 9: Pet Pujo — Food, Sweets & Groceries Finder -->
+      <div id="modal-pet-pujo" class="modal-overlay">
+        <div class="modal-card" style="max-width: 620px; max-height: 88vh; display: flex; flex-direction: column;">
+          <div class="modal-header" style="background: linear-gradient(135deg, #c2410c, #ea580c); color: #fff; padding: 14px 18px;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <span style="font-size: 26px;">🍛</span>
+              <div>
+                <h3 style="color:#fff; margin:0; font-size:16px;">Pet Pujo — Food, Sweets & Groceries</h3>
+                <p style="color:#ffedd5; font-size:11px; margin:2px 0 0 0;">Iconic Kolkata Biryani, Rolls, Heritage Mishti & 24x7 Refreshments</p>
+              </div>
+            </div>
+            <button class="close-btn" style="color:#fff;" onclick="closePetPujoModal()">✕</button>
+          </div>
+          <div class="modal-body" style="overflow-y: auto; flex: 1; padding: 16px;">
+            <!-- Search & Map Layer Toggle -->
+            <div style="margin-bottom: 12px; display: flex; gap: 8px;">
+              <input type="text" id="pet-pujo-search" class="form-input" placeholder="Search biryani, kathi roll, sandesh, water, grocery..." oninput="renderPetPujoList()" style="flex: 1;" />
+              <button type="button" onclick="toggleMapFoodLayer()" id="btn-toggle-food-layer" class="btn-secondary" style="font-size: 11px; padding: 8px 12px; white-space: nowrap;">
+                🗺️ Food on Map
+              </button>
+            </div>
+
+            <!-- Category Chips -->
+            <div class="pet-pujo-chips" style="display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px;">
+              <button class="filter-chip active" data-pujo-cat="all" onclick="filterPetPujoCat('all', this)">🍽️ All Places (20+)</button>
+              <button class="filter-chip" data-pujo-cat="restaurant" onclick="filterPetPujoCat('restaurant', this)">🍛 Biryani & Restaurants</button>
+              <button class="filter-chip" data-pujo-cat="streetfood" onclick="filterPetPujoCat('streetfood', this)">🌯 Street Food & Rolls</button>
+              <button class="filter-chip" data-pujo-cat="mishti" onclick="filterPetPujoCat('mishti', this)">🍬 Heritage Mishti</button>
+              <button class="filter-chip" data-pujo-cat="grocery" onclick="filterPetPujoCat('grocery', this)">🛒 Grocery & Water</button>
+            </div>
+
+            <div id="pet-pujo-count-bar" style="font-size: 11.5px; font-weight: 700; color: #64748b; margin-bottom: 10px;">
+              Loading culinary hotspots...
+            </div>
+
+            <div id="pet-pujo-list" style="display: flex; flex-direction: column; gap: 10px;"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Modal 10: Important Medical & Emergency Services -->
+      <div id="modal-medical" class="modal-overlay">
+        <div class="modal-card" style="max-width: 620px; max-height: 88vh; display: flex; flex-direction: column;">
+          <div class="modal-header" style="background: linear-gradient(135deg, #991b1b, #b91c1c); color: #fff; padding: 14px 18px;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <span style="font-size: 26px;">🏥</span>
+              <div>
+                <h3 style="color:#fff; margin:0; font-size:16px;">Important Medical & Emergency Services</h3>
+                <p style="color:#fecaca; font-size:11px; margin:2px 0 0 0;">24x7 Pharmacies, Emergency Hospitals, Trauma Units & Direct Helplines</p>
+              </div>
+            </div>
+            <button class="close-btn" style="color:#fff;" onclick="closeMedicalModal()">✕</button>
+          </div>
+          <div class="modal-body" style="overflow-y: auto; flex: 1; padding: 16px;">
+            <!-- SOS Emergency Quick Call Banner -->
+            <div class="medical-sos-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 8px; margin-bottom: 14px;">
+              <a href="tel:108" class="sos-call-card" style="background: #fef2f2; border: 1.5px solid #fecaca; border-radius: 12px; padding: 10px; text-decoration: none; display: flex; align-items: center; gap: 8px;">
+                <span style="font-size: 22px;">🚑</span>
+                <div>
+                  <strong style="color: #991b1b; font-size: 13px; display: block;">108 / 102</strong>
+                  <span style="font-size: 10px; color: #7f1d1d;">Ambulance</span>
+                </div>
+              </a>
+              <a href="tel:100" class="sos-call-card" style="background: #eff6ff; border: 1.5px solid #bfdbfe; border-radius: 12px; padding: 10px; text-decoration: none; display: flex; align-items: center; gap: 8px;">
+                <span style="font-size: 22px;">👮</span>
+                <div>
+                  <strong style="color: #1e40af; font-size: 13px; display: block;">100 / 112</strong>
+                  <span style="font-size: 10px; color: #1e3a8a;">Police SOS</span>
+                </div>
+              </a>
+              <a href="tel:03322143230" class="sos-call-card" style="background: #fdf2f8; border: 1.5px solid #fbcfe8; border-radius: 12px; padding: 10px; text-decoration: none; display: flex; align-items: center; gap: 8px;">
+                <span style="font-size: 22px;">🚨</span>
+                <div>
+                  <strong style="color: #9d174d; font-size: 12px; display: block;">033-2214-3230</strong>
+                  <span style="font-size: 10px; color: #831843;">Lalbazar Puja</span>
+                </div>
+              </a>
+              <a href="tel:1090" class="sos-call-card" style="background: #f5f3ff; border: 1.5px solid #ddd6fe; border-radius: 12px; padding: 10px; text-decoration: none; display: flex; align-items: center; gap: 8px;">
+                <span style="font-size: 22px;">🌸</span>
+                <div>
+                  <strong style="color: #6d28d9; font-size: 13px; display: block;">1090</strong>
+                  <span style="font-size: 10px; color: #5b21b6;">Women Safety</span>
+                </div>
+              </a>
+            </div>
+
+            <!-- Search & Map Layer Toggle -->
+            <div style="margin-bottom: 12px; display: flex; gap: 8px;">
+              <input type="text" id="medical-search" class="form-input" placeholder="Search pharmacy, medicine shop, hospital, SSKM..." oninput="renderMedicalList()" style="flex: 1;" />
+              <button type="button" onclick="toggleMapMedicalLayer()" id="btn-toggle-medical-layer" class="btn-secondary" style="font-size: 11px; padding: 8px 12px; white-space: nowrap;">
+                🗺️ Medical on Map
+              </button>
+            </div>
+
+            <!-- Filter Chips -->
+            <div class="medical-chips" style="display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px;">
+              <button class="filter-chip active" data-med-cat="all" onclick="filterMedicalCat('all', this)">🏥 All Services (16+)</button>
+              <button class="filter-chip" data-med-cat="pharmacy" onclick="filterMedicalCat('pharmacy', this)">💊 24x7 Pharmacies</button>
+              <button class="filter-chip" data-med-cat="hospital" onclick="filterMedicalCat('hospital', this)">🚑 Emergency Hospitals</button>
+              <button class="filter-chip" data-med-cat="helpline" onclick="filterMedicalCat('helpline', this)">📞 Helplines</button>
+            </div>
+
+            <div id="medical-count-bar" style="font-size: 11.5px; font-weight: 700; color: #64748b; margin-bottom: 10px;">
+              Locating medical centers...
+            </div>
+
+            <div id="medical-list" style="display: flex; flex-direction: column; gap: 10px;"></div>
+          </div>
+        </div>
+      </div>
+
     </div>
 
     <!-- Leaflet JS (CDN) -->
@@ -961,6 +1612,6 @@
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-storage-compat.js"></script>
 
     <!-- Pure Vanilla Application Logic -->
-    <script src="./app.js?v=2.6"></script>
+    <script src="./app.js?v=3.0"></script>
   </body>
 </html>

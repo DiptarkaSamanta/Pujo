@@ -755,7 +755,8 @@ h1, h2, h3, .festive-font {
    Main Content & Leaflet Map Canvas
    -------------------------------------------------------------------------- */
 #main-viewport {
-  flex: 1;
+  flex: 1 1 0%;
+  min-height: 0;
   position: relative;
   width: 100%;
   height: 100%;
@@ -763,6 +764,8 @@ h1, h2, h3, .festive-font {
 }
 
 #map {
+  position: absolute;
+  inset: 0;
   width: 100%;
   height: 100%;
   z-index: 10;
@@ -2381,4 +2384,1216 @@ body[data-active-tab="itinerary"] .map-zoom-controls,
   font-size: 10px;
   color: #94a3b8;
 }
+
+/* --------------------------------------------------------------------------
+   Sub-Tabs Switchers (Route Finder & Itinerary / Next Visit)
+   -------------------------------------------------------------------------- */
+.finder-subtabs,
+.itinerary-subtabs {
+  display: flex;
+  background: #f1f5f9;
+  padding: 4px;
+  border-radius: 14px;
+  gap: 6px;
+  margin-bottom: 16px;
+  border: 1px solid var(--border-light);
+}
+
+.subtab-btn {
+  flex: 1;
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: none;
+  background: transparent;
+  color: #64748b;
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.subtab-btn:hover {
+  color: #0f172a;
+}
+
+.subtab-btn.active {
+  background: #ffffff;
+  color: #b91c1c;
+  font-weight: 800;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+/* --------------------------------------------------------------------------
+   Route Navigator (A to B Multi-Route Navigator)
+   -------------------------------------------------------------------------- */
+.route-input-card {
+  background: #ffffff;
+  border-radius: 18px;
+  border: 1.5px solid var(--border-light);
+  padding: 18px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+}
+
+.route-input-group {
+  margin-bottom: 8px;
+}
+
+.route-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: #334155;
+  margin-bottom: 6px;
+}
+
+.route-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.dot-origin {
+  background: #0284c7;
+  box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.2);
+}
+
+.dot-destination {
+  background: #dc2626;
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.2);
+}
+
+.route-select {
+  width: 100%;
+  padding: 11px 14px;
+  border-radius: 12px;
+  border: 1.5px solid var(--border-light);
+  font-size: 13px;
+  font-family: inherit;
+  font-weight: 600;
+  color: #0f172a;
+  background: #f8fafc;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.route-select:focus {
+  border-color: #b91c1c;
+  background: #ffffff;
+}
+
+.route-swap-row {
+  display: flex;
+  justify-content: flex-end;
+  margin: -2px 0 6px 0;
+}
+
+.btn-swap-locations {
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  color: #475569;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-swap-locations:hover {
+  background: #e2e8f0;
+  color: #0f172a;
+}
+
+.route-mode-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 14px 0;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.route-mode-chips {
+  display: flex;
+  gap: 6px;
+}
+
+.mode-chip {
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+  color: #475569;
+  font-size: 11.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.mode-chip.active {
+  background: #b91c1c;
+  color: #ffffff;
+  border-color: #b91c1c;
+}
+
+.btn-find-routes {
+  width: 100%;
+  justify-content: center;
+  padding: 12px;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+/* Multi-Route Results */
+.routes-list-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.route-alt-card {
+  background: #ffffff;
+  border-radius: 14px;
+  border: 2px solid #e2e8f0;
+  padding: 14px 16px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.route-alt-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.05);
+}
+
+.route-alt-card.active {
+  border-color: #059669;
+  background: #f0fdf4;
+}
+
+.route-alt-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.route-alt-title {
+  font-size: 14px;
+  font-weight: 800;
+  color: #0f172a;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.route-alt-tag {
+  font-size: 10.5px;
+  font-weight: 800;
+  padding: 3px 8px;
+  border-radius: 6px;
+}
+
+.tag-green { background: #dcfce7; color: #15803d; }
+.tag-amber { background: #fef3c7; color: #b45309; }
+.tag-blue  { background: #dbeafe; color: #1d4ed8; }
+
+.route-alt-meta {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  font-size: 12px;
+  color: #475569;
+}
+
+.route-alt-meta strong {
+  color: #0f172a;
+  font-size: 13px;
+}
+
+.route-alt-corridor {
+  font-size: 11px;
+  color: #64748b;
+}
+
+/* Stopages Timeline */
+.stopages-card {
+  background: #ffffff;
+  border-radius: 16px;
+  border: 1.5px solid var(--border-light);
+  padding: 16px;
+}
+
+.stopages-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.stopages-timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  margin-top: 14px;
+  position: relative;
+  padding-left: 20px;
+}
+
+.stopage-item {
+  position: relative;
+  padding-bottom: 16px;
+}
+
+.stopage-item:last-child {
+  padding-bottom: 0;
+}
+
+.stopage-line {
+  position: absolute;
+  top: 10px;
+  left: -13px;
+  bottom: -6px;
+  width: 2px;
+  background: #cbd5e1;
+}
+
+.stopage-item:last-child .stopage-line {
+  display: none;
+}
+
+.stopage-node {
+  position: absolute;
+  top: 4px;
+  left: -17px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #64748b;
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 1px #cbd5e1;
+}
+
+.stopage-item.origin .stopage-node {
+  background: #0284c7;
+}
+
+.stopage-item.destination .stopage-node {
+  background: #dc2626;
+  width: 12px;
+  height: 12px;
+  left: -18px;
+}
+
+.stopage-text {
+  font-size: 12px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.stopage-sub {
+  font-size: 10.5px;
+  color: #64748b;
+  margin-top: 1px;
+}
+
+/* --------------------------------------------------------------------------
+   Smart Pandal Hopper Tour Planner
+   -------------------------------------------------------------------------- */
+.trip-planner-form-card {
+  background: #ffffff;
+  border-radius: 18px;
+  border: 1.5px solid var(--border-light);
+  padding: 18px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+}
+
+.form-grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+@media (max-width: 580px) {
+  .form-grid-2 {
+    grid-template-columns: 1fr;
+  }
+}
+
+.planner-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 700;
+  margin-bottom: 6px;
+  color: #334155;
+}
+
+.count-presets-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.preset-count-btn {
+  padding: 7px 12px;
+  border-radius: 10px;
+  border: 1.5px solid #e2e8f0;
+  background: #f8fafc;
+  color: #334155;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.preset-count-btn.active {
+  background: #b91c1c;
+  color: #ffffff;
+  border-color: #b91c1c;
+}
+
+.strategy-selector-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+@media (max-width: 580px) {
+  .strategy-selector-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+.strategy-radio-card {
+  background: #f8fafc;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 10px 12px;
+  cursor: pointer;
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  transition: all 0.2s ease;
+}
+
+.strategy-radio-card input {
+  margin-top: 3px;
+}
+
+.strategy-radio-card.active {
+  border-color: #d97706;
+  background: #fffbeb;
+}
+
+.strategy-radio-card strong {
+  display: block;
+  font-size: 12px;
+  color: #0f172a;
+}
+
+.strategy-radio-card span {
+  display: block;
+  font-size: 10.5px;
+  color: #64748b;
+  margin-top: 2px;
+}
+
+.planner-breaks-box {
+  background: #f8fafc;
+  border: 1px solid var(--border-light);
+  border-radius: 14px;
+  padding: 12px 14px;
+  margin-top: 12px;
+}
+
+.break-toggle-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+
+.break-checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: #1e293b;
+  cursor: pointer;
+  flex: 1;
+}
+
+.break-select {
+  width: auto;
+  min-width: 130px;
+  padding: 6px 10px;
+  font-size: 11.5px;
+  border-radius: 8px;
+}
+
+.travel-mode-chips {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.travel-chip {
+  background: #f8fafc;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #334155;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.travel-chip.active {
+  border-color: #b91c1c;
+  background: #fef2f2;
+  color: #991b1b;
+}
+
+.btn-generate-plan {
+  width: 100%;
+  justify-content: center;
+  padding: 13px;
+  font-size: 13.5px;
+  font-weight: 800;
+  margin-top: 16px;
+}
+
+/* Plan Results Presentation */
+.plan-summary-banner {
+  background: linear-gradient(135deg, #991b1b, #c2410c);
+  border-radius: 16px;
+  padding: 16px 18px;
+  color: #ffffff;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  box-shadow: 0 4px 14px rgba(185, 28, 28, 0.25);
+}
+
+.plan-summary-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.plan-fit-badge {
+  background: #ecfdf5;
+  color: #065f46;
+  font-size: 11px;
+  font-weight: 800;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid #a7f3d0;
+  white-space: nowrap;
+}
+
+.plan-fit-badge.warning {
+  background: #fffbeb;
+  color: #92400e;
+  border-color: #fde68a;
+}
+
+.plan-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin: 12px 0 18px 0;
+}
+
+@media (max-width: 500px) {
+  .plan-metrics-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.metric-box {
+  background: #ffffff;
+  border: 1.5px solid var(--border-light);
+  border-radius: 12px;
+  padding: 10px;
+  text-align: center;
+}
+
+.metric-val {
+  display: block;
+  font-size: 16px;
+  font-weight: 900;
+  color: #0f172a;
+}
+
+.metric-lbl {
+  font-size: 10px;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+}
+
+.timeline-container {
+  background: #ffffff;
+  border-radius: 16px;
+  border: 1.5px solid var(--border-light);
+  padding: 16px;
+}
+
+.timeline-items-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.timeline-card {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.timeline-card.break-card {
+  background: #fffbeb;
+  border-color: #fde68a;
+}
+
+.timeline-card.start-card {
+  background: #eff6ff;
+  border-color: #bfdbfe;
+}
+
+.timeline-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.timeline-time-badge {
+  background: #0f172a;
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 800;
+  padding: 4px 8px;
+  border-radius: 8px;
+  white-space: nowrap;
+}
+
+.timeline-title {
+  font-size: 13.5px;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.timeline-sub {
+  font-size: 11px;
+  color: #64748b;
+  margin-top: 2px;
+}
+
+.timeline-leg-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 10.5px;
+  color: #64748b;
+  padding: 2px 28px;
+}
+
+.plan-action-bar {
+  display: flex;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+/* --------------------------------------------------------------------------
+   Pet Pujo & Medical Cards
+   -------------------------------------------------------------------------- */
+.pet-pujo-card,
+.medical-card {
+  background: #ffffff;
+  border: 1.5px solid var(--border-light);
+  border-radius: 16px;
+  padding: 14px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.02);
+  transition: all 0.2s ease;
+}
+
+.pet-pujo-card:hover,
+.medical-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.06);
+}
+
+.card-main-info h4 {
+  font-size: 14.5px;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0 0 2px 0;
+}
+
+.card-specialty {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #c2410c;
+  margin-bottom: 2px;
+}
+
+.card-address-text {
+  font-size: 11px;
+  color: #64748b;
+  margin: 0;
+}
+
+.card-meta-tag {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 6px;
+  display: inline-block;
+  margin-top: 4px;
+}
+
+.overlay-pill-green {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1.5px solid #059669;
+  background: rgba(5, 150, 105, 0.9);
+  color: #ffffff;
+  font-size: 11.5px;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 3px 10px rgba(5, 150, 105, 0.3);
+  backdrop-filter: blur(8px);
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.overlay-pill-green:hover {
+  transform: translateY(-2px);
+  background: #059669;
+}
+
+.overlay-pill-gold {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1.5px solid #d97706;
+  background: rgba(217, 119, 6, 0.9);
+  color: #ffffff;
+  font-size: 11.5px;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 3px 10px rgba(217, 119, 6, 0.3);
+  backdrop-filter: blur(8px);
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.overlay-pill-gold:hover {
+  transform: translateY(-2px);
+  background: #d97706;
+}
+
+/* ==========================================================================
+   Next Visit Sub-Tab Switcher (Hopper, Pet Pujo, Medical 24x7, My Checklist)
+   ========================================================================== */
+.next-visit-subtabs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 20px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  padding: 4px 2px;
+}
+
+.next-visit-subtabs::-webkit-scrollbar {
+  display: none;
+}
+
+.nv-subtab-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 16px;
+  border-radius: 999px;
+  border: 1.5px solid #e2e8f0;
+  background: #ffffff;
+  color: #475569;
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  font-family: inherit;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
+  position: relative;
+  flex-shrink: 0;
+}
+
+.nv-subtab-btn .nv-tab-icon {
+  font-size: 16px;
+  line-height: 1;
+}
+
+.nv-subtab-btn .nv-tab-label {
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.nv-subtab-btn:hover {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+  color: #0f172a;
+  transform: translateY(-1px);
+}
+
+.nv-subtab-btn.active {
+  background: linear-gradient(135deg, #b91c1c, #991b1b);
+  border-color: #991b1b;
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(185, 28, 28, 0.3);
+  font-weight: 800;
+}
+
+.nv-subtab-btn.active .nv-tab-label {
+  color: #ffffff;
+}
+
+.nv-badge {
+  background: #fef08a;
+  color: #854d0e;
+  font-size: 10px;
+  font-weight: 800;
+  padding: 2px 6px;
+  border-radius: 999px;
+}
+
+.badge-itinerary {
+  background: #ede9fe;
+  color: #6d28d9;
+  border: 1px solid #ddd6fe;
+}
+
+.nv-panel {
+  display: none;
+  animation: fadeIn 0.22s ease;
+}
+
+.nv-panel.active {
+  display: block !important;
+}
+
+/* Section Header Top Navigation Bar */
+.section-top-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.btn-back-map {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #f1f5f9;
+  border: 1.5px solid #cbd5e1;
+  color: #1e293b;
+  font-size: 11.5px;
+  font-weight: 800;
+  padding: 6px 14px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+
+.btn-back-map:hover {
+  background: #e2e8f0;
+  border-color: #94a3b8;
+  transform: translateX(-2px);
+}
+
+.section-badge {
+  font-size: 11px;
+  font-weight: 800;
+  padding: 4px 10px;
+  border-radius: 999px;
+  letter-spacing: 0.02em;
+}
+
+.badge-hopper {
+  background: #fef3c7;
+  color: #92400e;
+  border: 1px solid #fde68a;
+}
+
+.badge-pet-pujo {
+  background: #ffedd5;
+  color: #c2410c;
+  border: 1px solid #fed7aa;
+}
+
+.badge-medical {
+  background: #fee2e2;
+  color: #991b1b;
+  border: 1px solid #fecaca;
+}
+
+.badge-route {
+  background: #dbeafe;
+  color: #1e40af;
+  border: 1px solid #bfdbfe;
+}
+
+/* Controls & Search Row */
+.section-controls-row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 14px;
+}
+
+.search-input-wrap {
+  flex: 1;
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.search-input-wrap .search-icon {
+  position: absolute;
+  left: 12px;
+  font-size: 14px;
+  color: #94a3b8;
+  pointer-events: none;
+}
+
+.search-input-wrap .search-input {
+  width: 100%;
+  padding: 10px 14px 10px 36px;
+  border-radius: 12px;
+  border: 1.5px solid #cbd5e1;
+  font-size: 12.5px;
+  font-family: inherit;
+  background: #ffffff;
+  outline: none;
+  transition: border-color 0.2s ease;
+}
+
+.search-input-wrap .search-input:focus {
+  border-color: #ea580c;
+  box-shadow: 0 0 0 3px rgba(234, 88, 12, 0.12);
+}
+
+.btn-layer-toggle {
+  white-space: nowrap;
+  font-size: 11.5px;
+  font-weight: 800;
+  padding: 9px 14px;
+  border-radius: 12px;
+}
+
+.section-count-bar {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #64748b;
+  margin-bottom: 12px;
+}
+
+/* Grids for Food & Medical */
+.pet-pujo-grid,
+.medical-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 14px;
+}
+
+/* SOS Helpline Cards */
+.medical-sos-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(135px, 1fr));
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.sos-call-card {
+  padding: 10px 12px;
+  border-radius: 14px;
+  text-decoration: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  border: 1.5px solid;
+  transition: all 0.2s ease;
+}
+
+.sos-call-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.sos-ambulance {
+  background: #fef2f2;
+  border-color: #fca5a5;
+  color: #991b1b;
+}
+
+.sos-police {
+  background: #eff6ff;
+  border-color: #93c5fd;
+  color: #1e40af;
+}
+
+.sos-lalbazar {
+  background: #fdf2f8;
+  border-color: #f472b6;
+  color: #9d174d;
+}
+
+.sos-women {
+  background: #f5f3ff;
+  border-color: #c4b5fd;
+  color: #6d28d9;
+}
+
+.sos-tap {
+  font-size: 10px;
+  font-weight: 800;
+  opacity: 0.85;
+}
+
+/* Bottom Navigation Responsive Refinements */
+#bottom-navigation .bottom-nav-item {
+  padding: 4px 2px;
+  gap: 2px;
+}
+
+#bottom-navigation .bottom-nav-item .nav-icon {
+  font-size: 18px;
+}
+
+#bottom-navigation .bottom-nav-item .nav-label {
+  font-size: 10px;
+  font-weight: 700;
+}
+
+/* ==========================================================================
+   Explore Section: Four Feature Boxes (Hopper, Pet Pujo, Medical, Path Finder)
+   ========================================================================== */
+.explore-features-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 14px;
+  margin-bottom: 22px;
+}
+
+.explore-feature-box {
+  background: #ffffff;
+  border-radius: 18px;
+  border: 1.5px solid var(--border-light);
+  padding: 16px;
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.04);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  outline: none;
+}
+
+.explore-feature-box:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+}
+
+.box-hopper {
+  border-color: #fde68a;
+  background: linear-gradient(145deg, #ffffff 60%, #fefce8 100%);
+}
+.box-hopper:hover {
+  border-color: #f59e0b;
+  box-shadow: 0 10px 25px rgba(217, 119, 6, 0.16);
+}
+
+.box-pet-pujo {
+  border-color: #fed7aa;
+  background: linear-gradient(145deg, #ffffff 60%, #fff7ed 100%);
+}
+.box-pet-pujo:hover {
+  border-color: #ea580c;
+  box-shadow: 0 10px 25px rgba(234, 88, 12, 0.16);
+}
+
+.box-medical {
+  border-color: #fecaca;
+  background: linear-gradient(145deg, #ffffff 60%, #fef2f2 100%);
+}
+.box-medical:hover {
+  border-color: #dc2626;
+  box-shadow: 0 10px 25px rgba(220, 38, 38, 0.16);
+}
+
+.box-path-finder {
+  border-color: #bfdbfe;
+  background: linear-gradient(145deg, #ffffff 60%, #eff6ff 100%);
+}
+.box-path-finder:hover {
+  border-color: #0284c7;
+  box-shadow: 0 10px 25px rgba(2, 132, 199, 0.16);
+}
+
+.box-icon-wrap {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  flex-shrink: 0;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.icon-hopper {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+}
+.icon-pet-pujo {
+  background: linear-gradient(135deg, #ea580c, #c2410c);
+}
+.icon-medical {
+  background: linear-gradient(135deg, #ef4444, #b91c1c);
+}
+.icon-path-finder {
+  background: linear-gradient(135deg, #0284c7, #1e40af);
+}
+
+.box-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.box-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.box-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 800;
+  color: #0f172a;
+  letter-spacing: -0.01em;
+}
+
+.box-tag {
+  font-size: 10px;
+  font-weight: 800;
+  padding: 2.5px 7px;
+  border-radius: 6px;
+  white-space: nowrap;
+}
+
+.tag-hopper {
+  background: #fef3c7;
+  color: #92400e;
+}
+.tag-pet-pujo {
+  background: #ffedd5;
+  color: #c2410c;
+}
+.tag-medical {
+  background: #fee2e2;
+  color: #991b1b;
+}
+.tag-path-finder {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.box-desc {
+  margin: 2px 0 6px 0;
+  font-size: 11.5px;
+  color: #64748b;
+  line-height: 1.35;
+}
+
+.box-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+.box-cta {
+  font-size: 11.5px;
+  font-weight: 800;
+  color: #b91c1c;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: transform 0.2s ease;
+}
+
+.explore-feature-box:hover .box-cta {
+  transform: translateX(3px);
+}
+
+.explore-section-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 18px 0 14px 0;
+}
+
+.divider-title {
+  font-size: 13.5px;
+  font-weight: 800;
+  color: #0f172a;
+  white-space: nowrap;
+}
+
+.divider-line {
+  flex: 1;
+  height: 1.5px;
+  background: #e2e8f0;
+}
+
+
 
