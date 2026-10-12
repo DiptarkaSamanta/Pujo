@@ -20,7 +20,7 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 
     <!-- Custom Festive Stylesheet -->
-    <link rel="stylesheet" href="./styles.css?v=3.0" />
+    <link rel="stylesheet" href="./styles.css?v=3.1" />
   </head>
   <body data-active-tab="map">
     <div id="app-container">
@@ -225,31 +225,12 @@
         <!-- Leaflet Map Canvas -->
         <div id="map"></div>
 
-        <!-- Floating Action Pills Overlay -->
+        <!-- Floating Action Pills Overlay (Only Pin the Pandal & My Pinpoint) -->
         <div id="map-top-overlay">
           <div class="overlay-row-1">
-            <!-- Find Pandal / Route Card -->
-            <div class="overlay-card-finder" onclick="switchTab('finder')" title="Route Finder & Multi-Path Navigator">
-              <div class="finder-icon-badge">🧭</div>
-              <div class="finder-card-text">
-                <span class="finder-title">Shortest Path</span>
-                <span class="finder-desc">A ➔ B low traffic & stopages</span>
-              </div>
-            </div>
-
-            <!-- Hopper Planner Pill -->
-            <button class="overlay-pill-gold" onclick="openNextVisitSection('hopper')" title="Smart Pandal Hopper Tour Planner">
-              <span>🪔</span> Hopper Planner
-            </button>
-
-            <!-- Pet Pujo Orange Pill -->
-            <button class="overlay-pill-orange" onclick="openNextVisitSection('pet-pujo')" title="Pet Pujo - Nearest Biryani, Rolls & Sweets">
-              <span>🍛</span> Pet Pujo
-            </button>
-
-            <!-- Medical Green Pill -->
-            <button class="overlay-pill-green" onclick="openNextVisitSection('medical')" title="Emergency Medical Services & 24x7 Pharmacies">
-              <span>🏥</span> Medical 24x7
+            <!-- Pin the Pandal Orange Pill -->
+            <button class="overlay-pill-orange" onclick="startPinningMode()" title="Pin the Pandal">
+              <span>🪔</span> Pin the Pandal
             </button>
 
             <!-- My Pinpoint Blue Pill -->
@@ -314,15 +295,6 @@
         
         <!-- View A: Explore Pandals List -->
         <section id="view-explore" class="tab-view">
-          <div class="section-top-bar">
-            <button type="button" class="btn-back-map" onclick="switchTab('map')">
-              ← Back to Live Map
-            </button>
-            <span class="section-badge" style="background:#fef2f2; color:#b91c1c; border:1px solid #fecaca;">
-              Festival Hub
-            </span>
-          </div>
-
           <div class="view-header">
             <h2>Explore Bengal Sharadotsav</h2>
             <p>Access the 4 Puja utility hubs or browse 18+ famous pandals with crowd traffic</p>
@@ -415,13 +387,6 @@
              SHORTEST PATH & MULTI-ROUTE NAVIGATOR
              ================================================================ -->
         <section id="view-finder" class="tab-view">
-          <div class="section-top-bar">
-            <button type="button" class="btn-back-map" onclick="switchTab('map')">
-              ← Back to Live Map
-            </button>
-            <span class="section-badge badge-route">Shortest Path</span>
-          </div>
-
           <div class="view-header">
             <h2>🧭 Shortest Path & Route Finder</h2>
             <p>Put two locations to place routes based on low traffic with 2 to 3 alternative paths, road plans, stopages, and live location updates</p>
@@ -532,13 +497,6 @@
              NEXT VISIT PLANNING HUB (HOPPER, PET PUJO, MEDICAL 24x7, CHECKLIST)
              ================================================================ -->
         <section id="view-itinerary" class="tab-view">
-          <div class="section-top-bar">
-            <button type="button" class="btn-back-map" onclick="switchTab('map')">
-              ← Back to Live Map
-            </button>
-            <span class="section-badge badge-itinerary">Next Visit Planning Hub</span>
-          </div>
-
           <div class="view-header">
             <h2>📅 Next Visit — Festive Hub</h2>
             <p>Complete Durga Puja expedition manager: Hopper Tour Planner, Pet Pujo Food & Sweets, 24x7 Medical Emergency, and Saved Checklist</p>
