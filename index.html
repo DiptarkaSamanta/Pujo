@@ -16,11 +16,11 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800;900&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 
-    <!-- Leaflet CSS (CDN) -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <!-- Mapbox GL JS CSS (CDN) -->
+    <link href="https://api.mapbox.com/mapbox-gl-js/v3.4.0/mapbox-gl.css" rel="stylesheet" />
 
     <!-- Custom Festive Stylesheet -->
-    <link rel="stylesheet" href="./styles.css?v=3.1" />
+    <link rel="stylesheet" href="./styles.css?v=4.0" />
   </head>
   <body data-active-tab="map">
     <div id="app-container">
@@ -283,12 +283,46 @@
         <!-- Active Road Navigation Route Banner -->
         <div id="active-route-banner">
           <div style="display:flex; align-items:center; gap:8px;">
-            <span style="font-size:18px;">🚗</span>
+            <span id="route-banner-mode-icon" style="font-size:18px;">🚗</span>
             <span id="route-banner-info" style="font-size:12px; font-weight:800;">Road Route Active</span>
           </div>
-          <button onclick="clearActiveRoute()" style="background:rgba(255,255,255,0.25); color:#fff; border:none; padding:4px 10px; border-radius:8px; font-size:11px; font-weight:700; cursor:pointer;">
-            Exit ✕
-          </button>
+          <div class="route-banner-actions" style="display:flex; align-items:center; gap:6px;">
+            <div class="banner-mode-quick" style="display:flex; gap:3px;">
+              <button type="button" class="banner-mode-btn active" data-mode="car" onclick="setRouteMode('car')" title="Car / Cab">🚗</button>
+              <button type="button" class="banner-mode-btn" data-mode="bike" onclick="setRouteMode('bike')" title="Bike / Two-Wheeler">🛵</button>
+              <button type="button" class="banner-mode-btn" data-mode="walk" onclick="setRouteMode('walk')" title="Walking">🚶</button>
+              <button type="button" class="banner-mode-btn" data-mode="bus" onclick="setRouteMode('bus')" title="Bus / Transit">🚌</button>
+            </div>
+            <button type="button" onclick="clearActiveRoute()" style="background:rgba(255,255,255,0.25); color:#fff; border:none; padding:4px 10px; border-radius:8px; font-size:11px; font-weight:700; cursor:pointer;">
+              Exit ✕
+            </button>
+          </div>
+        </div>
+
+        <!-- On-Map Road Traffic Color Legend -->
+        <div id="map-traffic-legend" class="map-traffic-legend" style="display:none;">
+          <div class="legend-header">
+            <span>🚦 Kolkata Road Traffic</span>
+            <button type="button" onclick="toggleTrafficLegend()" class="legend-close" title="Hide Legend">✕</button>
+          </div>
+          <div class="legend-items">
+            <div class="legend-item" onclick="selectAlternativeRoute(0)" title="Select Best Road (Green)">
+              <span class="legend-dot green"></span>
+              <span class="legend-text"><strong>Best Road</strong> (Green • Fastest)</span>
+            </div>
+            <div class="legend-item" onclick="selectAlternativeRoute(1)" title="Select Arterial Route (Yellow)">
+              <span class="legend-dot yellow"></span>
+              <span class="legend-text"><strong>Moderate</strong> (Yellow • Arterial)</span>
+            </div>
+            <div class="legend-item" onclick="selectAlternativeRoute(2)" title="Select Bypass Route (Orange)">
+              <span class="legend-dot orange"></span>
+              <span class="legend-text"><strong>Slower</strong> (Orange • Bypass)</span>
+            </div>
+            <div class="legend-item" onclick="selectAlternativeRoute(3)" title="Select Pandal Rush Route (Red)">
+              <span class="legend-dot red"></span>
+              <span class="legend-text"><strong>Pandal Rush</strong> (Red • Congested)</span>
+            </div>
+          </div>
         </div>
 
         <!-- 3. Slide-over TAB VIEWS -->
@@ -405,16 +439,33 @@
           <!-- Sub-Panel 1: Point A to Point B Route Navigator -->
           <div id="finder-nav-section" class="finder-panel">
             <div class="route-input-card">
+
               <!-- Location A: Origin -->
               <div class="route-input-group">
                 <label class="route-label">
                   <span class="route-dot dot-origin"></span>
                   <strong>Origin (Location A)</strong>
                 </label>
-                <div class="route-input-wrap">
-                  <select id="route-origin-select" class="route-select" onchange="onRouteChange()">
-                    <option value="my_location">📍 My Current GPS Location</option>
-                  </select>
+                <!-- Location A Display -->
+                <div class="loc-picker-display" id="loc-a-display" onclick="openLocationPicker('A')">
+                  <span class="loc-picker-icon">📍</span>
+                  <span class="loc-picker-text" id="loc-a-text">My Current GPS Location</span>
+                  <span class="loc-picker-chevron">›</span>
+                </div>
+                <!-- Location A Action Buttons -->
+                <div class="loc-action-row">
+                  <button type="button" class="loc-action-btn loc-gps-btn" onclick="setLocationGPS('A')" title="Use My Live GPS Location">
+                    📍 My GPS
+                  </button>
+                  <button type="button" class="loc-action-btn loc-map-btn" id="loc-a-map-btn" onclick="startMapPickerMode('A')" title="Tap on Map to Mark Location A">
+                    🗺️ Mark on Map
+                  </button>
+                  <button type="button" class="loc-action-btn loc-search-btn" onclick="openLocationPicker('A')" title="Search Pandals or Enter Custom Location">
+                    🔍 Search / Choose
+                  </button>
+                  <button type="button" class="loc-action-btn loc-pandal-btn" onclick="openPandalPickerForRoute('A')" title="Pick from Pandal List">
+                    🪔 Pandals
+                  </button>
                 </div>
               </div>
 
@@ -431,10 +482,23 @@
                   <span class="route-dot dot-destination"></span>
                   <strong>Destination (Location B)</strong>
                 </label>
-                <div class="route-input-wrap">
-                  <select id="route-dest-select" class="route-select" onchange="onRouteChange()">
-                    <!-- Populated dynamically -->
-                  </select>
+                <!-- Location B Display -->
+                <div class="loc-picker-display" id="loc-b-display" onclick="openLocationPicker('B')">
+                  <span class="loc-picker-icon">🎯</span>
+                  <span class="loc-picker-text" id="loc-b-text">Select Destination...</span>
+                  <span class="loc-picker-chevron">›</span>
+                </div>
+                <!-- Location B Action Buttons -->
+                <div class="loc-action-row">
+                  <button type="button" class="loc-action-btn loc-map-btn" id="loc-b-map-btn" onclick="startMapPickerMode('B')" title="Tap on Map to Mark Location B">
+                    🗺️ Mark on Map
+                  </button>
+                  <button type="button" class="loc-action-btn loc-search-btn" onclick="openLocationPicker('B')" title="Search Pandals or Enter Custom Location">
+                    🔍 Search / Choose
+                  </button>
+                  <button type="button" class="loc-action-btn loc-pandal-btn" onclick="openPandalPickerForRoute('B')" title="Pick from Pandal List">
+                    🪔 Pandals
+                  </button>
                 </div>
               </div>
 
@@ -647,6 +711,10 @@
                   <label class="travel-chip active" id="travel-chip-car">
                     <input type="radio" name="plan-travel-mode" value="car" checked onchange="updateTravelModeUi()" />
                     <span>🚗 Car / Cab (~18 km/h + evening delay)</span>
+                  </label>
+                  <label class="travel-chip" id="travel-chip-bike">
+                    <input type="radio" name="plan-travel-mode" value="bike" onchange="updateTravelModeUi()" />
+                    <span>🛵 Bike / Scooter (~26 km/h, lane nimble)</span>
                   </label>
                   <label class="travel-chip" id="travel-chip-walk">
                     <input type="radio" name="plan-travel-mode" value="walk" onchange="updateTravelModeUi()" />
@@ -1559,10 +1627,86 @@
         </div>
       </div>
 
+      <!-- ================================================================
+           LOCATION PICKER MODAL (for Route A & B selection)
+           ================================================================ -->
+      <div id="modal-location-picker" class="modal-overlay loc-picker-modal">
+        <div class="modal-card loc-picker-card">
+          <div class="modal-header">
+            <div style="display:flex; align-items:center; gap:8px;">
+              <span id="loc-picker-modal-icon" style="font-size:20px;">📍</span>
+              <div>
+                <h3 style="margin:0; font-size:15px; font-weight:800; color:#0f172a;" id="loc-picker-modal-title">Choose Origin (Location A)</h3>
+                <p style="margin:0; font-size:11px; color:#64748b;">Search pandals, food spots, hospitals or enter custom address</p>
+              </div>
+            </div>
+            <button class="close-btn" onclick="closeLocationPicker()">✕</button>
+          </div>
+
+          <div class="modal-body" style="padding:0;">
+            <!-- Search Bar -->
+            <div style="padding:14px 16px 0;">
+              <div style="position:relative;">
+                <span style="position:absolute; left:12px; top:50%; transform:translateY(-50%); font-size:14px;">🔍</span>
+                <input type="text" id="loc-picker-search" class="form-input"
+                  style="padding-left:36px; border-radius:12px; font-size:13px;"
+                  placeholder="Search pandal name, zone, food place..."
+                  oninput="renderLocationPickerList()" />
+              </div>
+            </div>
+
+            <!-- Category Tabs -->
+            <div style="display:flex; gap:6px; padding:10px 16px; overflow-x:auto; border-bottom:1px solid #f1f5f9;">
+              <button type="button" class="loc-cat-tab active" data-cat="all" onclick="switchLocPickerCat('all', this)">🌟 All</button>
+              <button type="button" class="loc-cat-tab" data-cat="gps" onclick="switchLocPickerCat('gps', this)">📍 GPS</button>
+              <button type="button" class="loc-cat-tab" data-cat="pandal" onclick="switchLocPickerCat('pandal', this)">🪔 Pandals</button>
+              <button type="button" class="loc-cat-tab" data-cat="food" onclick="switchLocPickerCat('food', this)">🍛 Food</button>
+              <button type="button" class="loc-cat-tab" data-cat="medical" onclick="switchLocPickerCat('medical', this)">🏥 Medical</button>
+              <button type="button" class="loc-cat-tab" data-cat="custom" onclick="switchLocPickerCat('custom', this)">✏️ Custom</button>
+            </div>
+
+            <!-- Custom Input Section (hidden by default) -->
+            <div id="loc-picker-custom-section" style="display:none; padding:14px 16px; border-bottom:1px solid #f1f5f9;">
+              <p style="font-size:12px; font-weight:700; color:#334155; margin-bottom:8px;">Enter a custom place name or address:</p>
+              <input type="text" id="loc-picker-custom-input" class="form-input"
+                style="border-radius:12px; font-size:13px; margin-bottom:8px;"
+                placeholder="e.g. Kolkata Airport, Howrah Station..." />
+              <p style="font-size:11px; color:#64748b; margin-bottom:8px;">Enter lat,lng coordinates (optional):</p>
+              <div style="display:flex; gap:8px; margin-bottom:10px;">
+                <input type="number" id="loc-picker-custom-lat" class="form-input" step="0.000001"
+                  style="flex:1; border-radius:12px; font-size:12px;" placeholder="Latitude (e.g. 22.5726)" />
+                <input type="number" id="loc-picker-custom-lng" class="form-input" step="0.000001"
+                  style="flex:1; border-radius:12px; font-size:12px;" placeholder="Longitude (e.g. 88.3639)" />
+              </div>
+              <button type="button" class="btn-festive" onclick="confirmCustomLocation()" style="width:100%; justify-content:center; padding:11px; font-weight:800;">
+                ✅ Use This Location
+              </button>
+            </div>
+
+            <!-- List of Locations -->
+            <div id="loc-picker-list" style="max-height:360px; overflow-y:auto; padding:8px 10px;">
+              <!-- Populated dynamically -->
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Map Picker Mode Banner (for picking A or B by tapping map) -->
+      <div id="map-picker-banner" style="display:none; position:fixed; bottom:80px; left:50%; transform:translateX(-50%); z-index:9999; background:linear-gradient(135deg, #7c3aed, #4f46e5); color:#fff; border-radius:18px; padding:12px 20px; display:none; align-items:center; gap:12px; box-shadow:0 8px 24px rgba(0,0,0,0.3); backdrop-filter:blur(12px);">
+        <span style="font-size:20px; animation:bounce 1s infinite;">📍</span>
+        <div>
+          <strong style="display:block; font-size:13px; font-weight:800;" id="map-picker-banner-title">Tap Map to Set Location A</strong>
+          <span style="font-size:11px; opacity:0.9;">Tap anywhere on the map to pin your location</span>
+        </div>
+        <button type="button" onclick="cancelMapPickerMode()" style="background:rgba(255,255,255,0.2); color:#fff; border:none; padding:6px 14px; border-radius:10px; font-size:11px; font-weight:700; cursor:pointer; white-space:nowrap;">
+          ✕ Cancel
+        </button>
+      </div>
+
     </div>
 
-    <!-- Leaflet JS (CDN) -->
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <!-- Mapbox GL JS (CDN) -->
+    <script src="https://api.mapbox.com/mapbox-gl-js/v3.4.0/mapbox-gl.js"></script>
 
     <!-- Firebase SDK (Compat Version for Vanilla JS & Zero Bundlers) -->
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
@@ -1570,6 +1714,6 @@
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-storage-compat.js"></script>
 
     <!-- Pure Vanilla Application Logic -->
-    <script src="./app.js?v=3.0"></script>
+    <script src="./app.js?v=4.0"></script>
   </body>
 </html>
