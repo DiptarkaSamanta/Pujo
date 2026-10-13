@@ -197,12 +197,12 @@
                   </div>
                 </button>
 
-                <!-- 5. Change Map Style -->
-                <button class="tool-tile tile-square" onclick="handleToolMapStyleCycle()" title="Cycle Map Styles (OSM, Hot, Satellite, Esri)">
+                <!-- 5. Change Map Style & 3D -->
+                <button class="tool-tile tile-square" onclick="openMapStylesModal()" title="Choose from 7 Mapbox Styles & 3D Perspective">
                   <div class="tile-icon-box icon-indigo">🗺️</div>
                   <div class="tile-content">
-                    <span class="tile-title">Change Map Style</span>
-                    <span class="tile-desc" id="tool-current-style-label">Classic Streets</span>
+                    <span class="tile-title">Map Styles & 3D</span>
+                    <span class="tile-desc" id="tool-current-style-label">Map View</span>
                   </div>
                 </button>
 
@@ -222,10 +222,10 @@
 
       <!-- 2. Main Viewport -->
       <main id="main-viewport">
-        <!-- Leaflet Map Canvas -->
+        <!-- Leaflet / Mapbox Canvas -->
         <div id="map"></div>
 
-        <!-- Floating Action Pills Overlay (Only Pin the Pandal & My Pinpoint) -->
+        <!-- Floating Action Pills Overlay (Pin Pandal, My Pinpoint, Styles & 3D) -->
         <div id="map-top-overlay">
           <div class="overlay-row-1">
             <!-- Pin the Pandal Orange Pill -->
@@ -236,6 +236,11 @@
             <!-- My Pinpoint Blue Pill -->
             <button class="overlay-pill-blue" onclick="recenterMap()" title="Center on My Location">
               <span>📍</span> My Pinpoint
+            </button>
+
+            <!-- Map View Pill (Unified with 3D & Cartography Styles) -->
+            <button class="overlay-pill-purple" onclick="openMapStylesModal()" title="Map View & 3D Cartography Options">
+              <span>🗺️</span> <span id="overlay-style-label">Map View</span>
             </button>
           </div>
         </div>
@@ -1701,6 +1706,53 @@
         <button type="button" onclick="cancelMapPickerMode()" style="background:rgba(255,255,255,0.2); color:#fff; border:none; padding:6px 14px; border-radius:10px; font-size:11px; font-weight:700; cursor:pointer; white-space:nowrap;">
           ✕ Cancel
         </button>
+      </div>
+
+      <!-- Mapbox Styles & 3D City View Modal -->
+      <div id="modal-map-styles" class="modal-overlay">
+        <div class="modal-card modal-map-styles-card">
+          <div class="modal-header">
+            <div class="modal-title-with-badge">
+              <h3>🗺️ Map Types & 3D Perspective</h3>
+              <span class="badge-mapbox-live">Mapbox GL v3</span>
+            </div>
+            <button class="btn-close-modal" onclick="closeMapStylesModal()" title="Close">✕</button>
+          </div>
+          <div class="modal-body map-styles-modal-body">
+            <!-- 3D Master Mode Toggle Card -->
+            <div class="master-3d-card" id="master-3d-card">
+              <div class="master-3d-info">
+                <div class="master-3d-icon-badge">🏙️</div>
+                <div>
+                  <div class="master-3d-title-row">
+                    <strong class="master-3d-title">3D City & Elevation Perspective</strong>
+                    <span class="badge-3d-status" id="badge-3d-status">OFF</span>
+                  </div>
+                  <p class="master-3d-desc">Extruded 3D skyscrapers, pandal canopies, elevation contours & 60° tilt.</p>
+                </div>
+              </div>
+              <label class="switch-toggle-wrap" title="Toggle 3D View">
+                <input type="checkbox" id="switch-3d-mode" onchange="handle3DSwitchChange(this.checked)" />
+                <span class="switch-toggle-slider"></span>
+              </label>
+            </div>
+
+            <!-- Section Title -->
+            <div class="styles-grid-header">
+              <span class="styles-section-title">Select Cartography Style</span>
+              <span class="styles-counter-tag">7 High-Definition Styles</span>
+            </div>
+
+            <!-- 7 Mapbox Styles Grid (Populated dynamically and statically backed) -->
+            <div class="mapbox-styles-grid" id="mapbox-styles-grid">
+              <!-- Populated via renderMapStylesCards() in app.js -->
+            </div>
+          </div>
+          <div class="modal-footer map-styles-footer">
+            <span class="styles-footer-sync-note">✨ All routes, markers & pandals remain live across styles</span>
+            <button type="button" class="btn-styles-done" onclick="closeMapStylesModal()">Done</button>
+          </div>
+        </div>
       </div>
 
     </div>

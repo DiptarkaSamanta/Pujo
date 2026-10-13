@@ -721,14 +721,379 @@ async function fetchRealRoadRoute(start, end, mode = null) {
 }
 
 // ----------------------------------------------------------------------------
-// 5. Mapbox GL JS Initialization & Real-Time Traffic Layer
+// 5. Mapbox GL JS Styles Dictionary & 3D Environment Engine
 // ----------------------------------------------------------------------------
-const MAPBOX_STYLE_URLS = {
-  osm: 'mapbox://styles/mapbox/streets-v12',
-  hot: 'mapbox://styles/mapbox/outdoors-v12',
-  satellite: 'mapbox://styles/mapbox/satellite-streets-v12',
-  esri_streets: 'mapbox://styles/mapbox/navigation-day-v1'
+const MAPBOX_STYLES = {
+  streets: {
+    id: 'streets',
+    name: 'Map View',
+    icon: '🗺️',
+    url: 'mapbox://styles/mapbox/streets-v12',
+    desc: 'Standard city cartography with integrated 3D extruded buildings, pandal corridors & terrain',
+    tag: '3D & 2D',
+    tagClass: 'badge-default'
+  },
+  satellite: {
+    id: 'satellite',
+    name: 'Satellite Hybrid',
+    icon: '🛰️',
+    url: 'mapbox://styles/mapbox/satellite-streets-v12',
+    desc: 'High-res aerial satellite photography with crisp street labels and borders',
+    tag: 'Satellite',
+    tagClass: 'badge-satellite'
+  },
+  dark: {
+    id: 'dark',
+    name: 'Festive Midnight',
+    icon: '🌙',
+    url: 'mapbox://styles/mapbox/dark-v11',
+    desc: 'Deep dark backdrop with glowing gold & amber pandal routes for night hopping',
+    tag: 'Night Hop',
+    tagClass: 'badge-dark'
+  },
+  light: {
+    id: 'light',
+    name: 'Clean Light',
+    icon: '☀️',
+    url: 'mapbox://styles/mapbox/light-v11',
+    desc: 'Minimalist high-contrast cartography, ultra readable and sharp',
+    tag: 'Minimal',
+    tagClass: 'badge-light'
+  },
+  outdoors: {
+    id: 'outdoors',
+    name: 'Outdoors & Topo',
+    icon: '🌲',
+    url: 'mapbox://styles/mapbox/outdoors-v12',
+    desc: 'Elevation contour lines, green parks, water bodies and nature trails',
+    tag: 'Elevation',
+    tagClass: 'badge-outdoors'
+  },
+  navigation: {
+    id: 'navigation',
+    name: 'Traffic Navigation',
+    icon: '🚦',
+    url: 'mapbox://styles/mapbox/navigation-day-v1',
+    desc: 'Real-time road congestion flow, lane highlights & prominent junctions',
+    tag: 'Live Nav',
+    tagClass: 'badge-nav'
+  },
+  navigation_night: {
+    id: 'navigation_night',
+    name: 'Navigation Night',
+    icon: '🌌',
+    url: 'mapbox://styles/mapbox/navigation-night-v1',
+    desc: 'Dark high-contrast driver guidance with luminous route cues and turn markers',
+    tag: 'Night Nav',
+    tagClass: 'badge-nav-night'
+  }
 };
+
+const MAPBOX_STYLE_URLS = {
+  osm: MAPBOX_STYLES.streets.url,
+  streets: MAPBOX_STYLES.streets.url,
+  map_view: MAPBOX_STYLES.streets.url,
+  '3d_city': MAPBOX_STYLES.streets.url,
+  hot: MAPBOX_STYLES.outdoors.url,
+  outdoors: MAPBOX_STYLES.outdoors.url,
+  satellite: MAPBOX_STYLES.satellite.url,
+  dark: MAPBOX_STYLES.dark.url,
+  light: MAPBOX_STYLES.light.url,
+  navigation: MAPBOX_STYLES.navigation.url,
+  navigation_night: MAPBOX_STYLES.navigation_night.url,
+  esri_streets: MAPBOX_STYLES.navigation.url
+};
+
+let currentMapboxStyle = 'streets';
+let is3DMode = false;
+
+function setupTrafficLayer() {
+  if (!map) return;
+  try {
+    if (!map.getSource('mapbox-traffic')) {
+      map.addSource('mapbox-traffic', {
+        type: 'vector',
+        url: 'mapbox://mapbox.mapbox-traffic-v1'
+      });
+    }
+    if (!map.getLayer('traffic-flow-layer')) {
+      map.addLayer({
+        id: 'traffic-flow-layer',
+        type: 'line',
+        source: 'mapbox-traffic',
+        'source-layer': 'traffic',
+        paint: {
+          'line-width': 2.5,
+          'line-color': [
+            'case',
+            ['==', ['get', 'congestion'], 'low'], '#10b981',
+            ['==', ['get', 'congestion'], 'moderate'], '#f59e0b',
+            ['==', ['get', 'congestion'], 'heavy'], '#f97316',
+            ['==', ['get', 'congestion'], 'severe'], '#ef4444',
+            '#38bdf8'
+          ],
+          'line-opacity': 0.75
+        }
+      });
+    }
+  } catch (e) {
+    console.warn('Traffic layer setup:', e);
+  }
+}
+
+function apply3DEnvironment() {
+  if (!map) return;
+
+  // 1. Terrain DEM elevation
+  try {
+    if (!map.getSource('mapbox-dem')) {
+      map.addSource('mapbox-dem', {
+        type: 'raster-dem',
+        url: 'mapbox://mapbox.mapbox-terrain-dem-v1',
+        tileSize: 512,
+        maxzoom: 14
+      });
+    }
+    map.setTerrain({ source: 'mapbox-dem', exaggeration: 1.5 });
+  } catch (err) {
+    console.warn('Mapbox Terrain DEM setup:', err);
+  }
+
+  // 2. Sky Atmosphere / Fog
+  try {
+    map.setFog({
+      range: [0.5, 10],
+      color: '#1e293b',
+      'high-color': '#0f172a',
+      'space-color': '#020617',
+      'horizon-blend': 0.15
+    });
+  } catch (err) {}
+
+  // 3. 3D Extruded Buildings Layer (Composite vector tile source)
+  try {
+    if (!map.getLayer('3d-buildings')) {
+      const layers = (map.getStyle() && map.getStyle().layers) ? map.getStyle().layers : [];
+      const labelLayerId = layers.find(
+        (l) => l.type === 'symbol' && l.layout && l.layout['text-field']
+      )?.id;
+
+      map.addLayer({
+        id: '3d-buildings',
+        source: 'composite',
+        'source-layer': 'building',
+        filter: ['==', 'extrude', 'true'],
+        type: 'fill-extrusion',
+        minzoom: 13,
+        paint: {
+          'fill-extrusion-color': [
+            'interpolate',
+            ['linear'],
+            ['get', 'height'],
+            0, '#cbd5e1',
+            30, '#94a3b8',
+            70, '#64748b',
+            120, '#38bdf8',
+            220, '#f59e0b'
+          ],
+          'fill-extrusion-height': [
+            'interpolate',
+            ['linear'],
+            ['zoom'],
+            13, 0,
+            14.5, ['get', 'height']
+          ],
+          'fill-extrusion-base': [
+            'interpolate',
+            ['linear'],
+            ['zoom'],
+            13, 0,
+            14.5, ['get', 'min_height']
+          ],
+          'fill-extrusion-opacity': 0.88
+        }
+      }, labelLayerId);
+    }
+  } catch (err) {
+    console.warn('3D Buildings layer setup:', err);
+  }
+}
+
+function enable3DMode() {
+  if (!map) return;
+  is3DMode = true;
+
+  map.easeTo({
+    pitch: 62,
+    bearing: -18,
+    duration: 1200
+  });
+
+  apply3DEnvironment();
+  update3DUIState();
+}
+
+function disable3DMode() {
+  if (!map) return;
+  is3DMode = false;
+
+  map.easeTo({
+    pitch: 0,
+    bearing: 0,
+    duration: 1000
+  });
+
+  try {
+    map.setTerrain(null);
+  } catch (e) {}
+
+  try {
+    if (map.getLayer('3d-buildings')) {
+      map.removeLayer('3d-buildings');
+    }
+  } catch (e) {}
+
+  try {
+    map.setFog(null);
+  } catch (e) {}
+
+  update3DUIState();
+}
+
+function toggle3DMode() {
+  if (!map) return;
+  if (!is3DMode) {
+    enable3DMode();
+    showToast('🏙️ 3D Perspective & Extruded Buildings Activated');
+  } else {
+    disable3DMode();
+    showToast('🗺️ Returned to 2D Top-Down View');
+  }
+  updateMapStylesUI();
+}
+
+function handle3DSwitchChange(checked) {
+  if (checked) {
+    enable3DMode();
+    showToast('🏙️ 3D Perspective Activated');
+  } else {
+    disable3DMode();
+    showToast('🗺️ 2D Top-Down View Activated');
+  }
+  updateMapStylesUI();
+}
+
+function update3DUIState() {
+  const btn = document.getElementById('btn-map-3d-toggle');
+  const btnText = document.getElementById('btn-3d-text');
+  const switchEl = document.getElementById('switch-3d-mode');
+  const badgeEl = document.getElementById('badge-3d-status');
+
+  if (btn) {
+    btn.classList.toggle('active-3d', is3DMode);
+  }
+  if (btnText) {
+    btnText.textContent = is3DMode ? '3D Active' : '3D View';
+  }
+  if (switchEl) {
+    switchEl.checked = is3DMode;
+  }
+  if (badgeEl) {
+    badgeEl.textContent = is3DMode ? 'ON • 60° TILT' : 'OFF';
+    badgeEl.className = is3DMode ? 'badge-3d-status active' : 'badge-3d-status';
+  }
+}
+
+function openMapStylesModal() {
+  if (typeof closeToolboxWindow === 'function') closeToolboxWindow();
+  const modal = document.getElementById('modal-map-styles');
+  if (modal) {
+    modal.classList.add('active');
+    renderMapStylesCards();
+    update3DUIState();
+  }
+}
+
+function closeMapStylesModal() {
+  const modal = document.getElementById('modal-map-styles');
+  if (modal) modal.classList.remove('active');
+}
+
+function setMapboxStyle(styleKey) {
+  if (!map) return;
+  const styleDef = MAPBOX_STYLES[styleKey] || MAPBOX_STYLES.streets;
+  currentMapboxStyle = styleKey;
+
+  if (styleDef.force3D) {
+    is3DMode = true;
+  }
+
+  map.setStyle(styleDef.url);
+
+  updateMapStylesUI();
+  update3DUIState();
+
+  const toolLabel = document.getElementById('tool-current-style-label');
+  if (toolLabel) toolLabel.textContent = styleDef.name;
+  const overlayLabel = document.getElementById('overlay-style-label');
+  if (overlayLabel) {
+    overlayLabel.textContent = (styleDef.id === 'streets') ? 'Map View' : styleDef.name.replace(/^(Classic|Festive|Live|Clean)\s+/, '');
+  }
+
+  showToast(`${styleDef.icon} Switched style to ${styleDef.name}`);
+}
+
+function setTileStyle(styleKey) {
+  setMapboxStyle(styleKey);
+}
+
+function renderMapStylesCards() {
+  const container = document.getElementById('mapbox-styles-grid');
+  if (!container) return;
+
+  const styleKeys = Object.keys(MAPBOX_STYLES);
+  container.innerHTML = styleKeys.map(key => {
+    const s = MAPBOX_STYLES[key];
+    const isSelected = (currentMapboxStyle === key);
+    return `
+      <div class="style-card ${isSelected ? 'selected' : ''}" data-style="${s.id}" onclick="setMapboxStyle('${s.id}')">
+        <div class="style-card-header">
+          <div class="style-card-badge-wrap">
+            <span class="style-card-icon">${s.icon}</span>
+            <span class="style-tag ${s.tagClass || ''}">${s.tag}</span>
+          </div>
+          <span class="style-check-indicator">${isSelected ? '✓ Active' : ''}</span>
+        </div>
+        <div class="style-card-info">
+          <strong class="style-card-title">${s.name}</strong>
+          <p class="style-card-desc">${s.desc}</p>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function updateMapStylesUI() {
+  const container = document.getElementById('mapbox-styles-grid');
+  if (container) {
+    container.querySelectorAll('.style-card').forEach(card => {
+      const isSelected = card.dataset.style === currentMapboxStyle;
+      card.classList.toggle('selected', isSelected);
+      const indicator = card.querySelector('.style-check-indicator');
+      if (indicator) {
+        indicator.textContent = isSelected ? '✓ Active' : '';
+      }
+    });
+  }
+
+  const currentDef = MAPBOX_STYLES[currentMapboxStyle] || MAPBOX_STYLES.streets;
+  const toolLabel = document.getElementById('tool-current-style-label');
+  if (toolLabel) toolLabel.textContent = currentDef.name;
+  const overlayLabel = document.getElementById('overlay-style-label');
+  if (overlayLabel) {
+    overlayLabel.textContent = (currentDef.id === 'streets') ? 'Map View' : currentDef.name.replace(/^(Classic|Festive|Live|Clean)\s+/, '');
+  }
+}
 
 function initMap() {
   const container = document.getElementById('map');
@@ -738,7 +1103,7 @@ function initMap() {
 
   map = new mapboxgl.Map({
     container: 'map',
-    style: MAPBOX_STYLE_URLS.osm,
+    style: MAPBOX_STYLES.streets.url,
     center: [userLocation.lng, userLocation.lat],
     zoom: 13,
     attributionControl: false
@@ -753,51 +1118,33 @@ function initMap() {
   map.addControl(new mapboxgl.NavigationControl({ showCompass: true, showZoom: false }), 'bottom-right');
 
   map.on('load', () => {
-    // Add real-time traffic layer from Mapbox
-    if (!map.getSource('mapbox-traffic')) {
-      try {
-        map.addSource('mapbox-traffic', {
-          type: 'vector',
-          url: 'mapbox://mapbox.mapbox-traffic-v1'
-        });
-        map.addLayer({
-          id: 'traffic-flow-layer',
-          type: 'line',
-          source: 'mapbox-traffic',
-          'source-layer': 'traffic',
-          paint: {
-            'line-width': 2.5,
-            'line-color': [
-              'case',
-              ['==', ['get', 'congestion'], 'low'], '#10b981',
-              ['==', ['get', 'congestion'], 'moderate'], '#f59e0b',
-              ['==', ['get', 'congestion'], 'heavy'], '#f97316',
-              ['==', ['get', 'congestion'], 'severe'], '#ef4444',
-              '#38bdf8'
-            ],
-            'line-opacity': 0.75
-          }
-        });
-      } catch (e) {
-        console.warn('Traffic layer init:', e);
-      }
+    setupTrafficLayer();
+    if (is3DMode) {
+      apply3DEnvironment();
     }
-
     renderUserMarker();
     renderPandalMarkers();
     if (activeMultiRoutes && activeMultiRoutes.length > 0) {
       drawAllRoutesOnMap(activeMultiRoutes, selectedRouteIndex);
     }
+    renderMapStylesCards();
+    update3DUIState();
   });
 
   map.on('style.load', () => {
+    setupTrafficLayer();
+    if (is3DMode) {
+      apply3DEnvironment();
+    }
     renderUserMarker();
     renderPandalMarkers();
     if (isFoodLayerActive) toggleMapFoodLayer(true);
     if (isMedicalLayerActive) toggleMapMedicalLayer(true);
     if (activeMultiRoutes && activeMultiRoutes.length > 0) {
+      activeRouteLayerIds = [];
       drawAllRoutesOnMap(activeMultiRoutes, selectedRouteIndex);
     }
+    update3DUIState();
   });
 
   // Invalidate size to guarantee immediate full rendering
@@ -826,17 +1173,6 @@ function initMap() {
 
   renderUserMarker();
   renderPandalMarkers();
-}
-
-function setTileStyle(styleKey) {
-  if (!map) return;
-  const styleUrl = MAPBOX_STYLE_URLS[styleKey] || MAPBOX_STYLE_URLS.osm;
-  map.setStyle(styleUrl);
-  document.querySelectorAll('.tile-option').forEach(el => {
-    el.classList.toggle('selected', el.dataset.style === styleKey);
-  });
-  const dropdown = document.getElementById('tile-dropdown');
-  if (dropdown) dropdown.style.display = 'none';
 }
 
 // ----------------------------------------------------------------------------
@@ -1144,10 +1480,7 @@ function mapZoomOut() {
 }
 
 function cycleMapLayer() {
-  currentTileIndex = (currentTileIndex + 1) % TILE_KEYS.length;
-  const key = TILE_KEYS[currentTileIndex];
-  setTileStyle(key);
-  showToast(`Map Style: ${key.toUpperCase()}`);
+  openMapStylesModal();
 }
 
 function openPandalDetail(pandal) {
@@ -2889,22 +3222,8 @@ function handleToolTraffic() {
   if (circle) circle.textContent = isTrafficFilterActive ? '🔴' : '🚦';
 }
 
-const MAP_STYLES = ['osm', 'hot', 'satellite', 'esri_streets'];
-const MAP_STYLE_NAMES = {
-  osm: 'Classic Streets (OSM)',
-  hot: 'Festive Streets (Hot)',
-  satellite: 'Satellite Imagery',
-  esri_streets: 'Esri World Streets'
-};
-let currentStyleIndex = 0;
-
 function handleToolMapStyleCycle() {
-  currentStyleIndex = (currentStyleIndex + 1) % MAP_STYLES.length;
-  const nextStyle = MAP_STYLES[currentStyleIndex];
-  setTileStyle(nextStyle);
-  const label = document.getElementById('tool-current-style-label');
-  if (label) label.textContent = MAP_STYLE_NAMES[nextStyle] || nextStyle;
-  showToast(`🗺️ Map Style: ${MAP_STYLE_NAMES[nextStyle]}`);
+  openMapStylesModal();
 }
 
 function handleToolPinPandal() {
