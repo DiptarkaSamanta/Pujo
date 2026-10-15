@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
@@ -1350,7 +1350,7 @@
               <span style="font-size:26px;">🪔</span>
               <div>
                 <h3 style="color:#fff; margin:0; font-size:16px;">Durga Puja Parikrama Bengal</h3>
-                <p style="color:#fef08a; font-size:11px; margin:2px 0 0 0;">Welcome! Choose how you would like to enter</p>
+                <p style="color:#fef08a; font-size:11px; margin:2px 0 0 0;">Welcome! Sign in to continue your Pandal Hopping journey</p>
               </div>
             </div>
             <button class="close-btn" style="color:#fff;" onclick="closeAuthModal()" id="btn-close-auth-modal">✕</button>
@@ -1366,31 +1366,54 @@
               </button>
             </div>
 
-            <!-- Panel 1: User Form -->
+            <!-- Panel 1: User Form (Sign Up / Log In) -->
             <form id="form-auth-user" onsubmit="handleUserLogin(event)">
+              <!-- Mode Toggle: Sign Up vs Log In -->
+              <div style="display:flex; gap:6px; margin-bottom:14px; background:#f8fafc; padding:3px; border-radius:10px; border:1px solid #e2e8f0;">
+                <button type="button" id="user-mode-signup" onclick="switchUserMode('signup')" style="flex:1; padding:6px; font-size:11.5px; font-weight:700; border:none; border-radius:8px; cursor:pointer; background:#b91c1c; color:#fff; transition:all 0.2s;">
+                  ✨ New Account
+                </button>
+                <button type="button" id="user-mode-login" onclick="switchUserMode('login')" style="flex:1; padding:6px; font-size:11.5px; font-weight:700; border:none; border-radius:8px; cursor:pointer; background:transparent; color:#64748b; transition:all 0.2s;">
+                  🔑 Log In
+                </button>
+              </div>
+
               <div class="form-group">
-                <label>Your Name / Nickname</label>
-                <input type="text" id="input-user-name" class="form-input" placeholder="e.g. Sayan, Ananya, Puja Hopper" required />
+                <label>Username *</label>
+                <input type="text" id="input-user-name" class="form-input" placeholder="Choose a unique username (e.g. sayan_hopper)" required autocomplete="username" />
+              </div>
+              <div class="form-group" id="user-display-name-group">
+                <label>Display Name</label>
+                <input type="text" id="input-user-displayname" class="form-input" placeholder="Your real name or nickname (e.g. Sayan)" autocomplete="name" />
+              </div>
+              <div class="form-group">
+                <label>Password *</label>
+                <input type="password" id="input-user-pass" class="form-input" placeholder="At least 6 characters" required autocomplete="current-password" minlength="6" />
               </div>
               <div style="background:#eff6ff; border:1px solid #bfdbfe; border-radius:12px; padding:10px; font-size:11.5px; color:#1e40af; margin-bottom:14px; line-height:1.4;">
                 ✨ <b>User Panel Access:</b> Live GPS movement tracking, shortest road directions, queue wait times, and pinning new community pandals!
               </div>
-              <button type="submit" class="btn-festive" style="width:100%; justify-content:center; padding:12px; font-size:13px;">
-                Enter as Pandal Hopper 🪔
+              <div id="user-auth-status" style="display:none; font-size:11.5px; padding:8px 12px; border-radius:10px; margin-bottom:12px; line-height:1.4;"></div>
+              <button type="submit" id="btn-user-login-submit" class="btn-festive" style="width:100%; justify-content:center; padding:12px; font-size:13px;">
+                ✨ Create Account &amp; Enter 🪔
               </button>
             </form>
 
-            <!-- Panel 2: Admin Form -->
+            <!-- Panel 2: Admin Form (no hints) -->
             <form id="form-auth-admin" onsubmit="handleAdminLogin(event)" style="display:none;">
               <div class="form-group">
-                <label>Admin Passcode</label>
-                <input type="password" id="input-admin-pass" class="form-input" placeholder="Enter admin passcode" required />
-                <p style="font-size:10px; color:#64748b; margin-top:4px;">Default admin passcode: <b>admin123</b></p>
+                <label>Admin Username *</label>
+                <input type="text" id="input-admin-user" class="form-input" placeholder="Enter admin username" required autocomplete="username" />
+              </div>
+              <div class="form-group">
+                <label>Admin Password *</label>
+                <input type="password" id="input-admin-pass" class="form-input" placeholder="Enter admin password" required autocomplete="current-password" />
               </div>
               <div style="background:#fef2f2; border:1px solid #fecaca; border-radius:12px; padding:10px; font-size:11.5px; color:#991b1b; margin-bottom:14px; line-height:1.4;">
                 🛡️ <b>Admin Panel Privileges:</b> All user features + exclusive authority to <b>delete unnecessary pandals</b> from live map and Firebase database!
               </div>
-              <button type="submit" class="btn-danger-admin" style="width:100%; justify-content:center; padding:12px; font-size:13px;">
+              <div id="admin-auth-status" style="display:none; font-size:11.5px; padding:8px 12px; border-radius:10px; margin-bottom:12px; line-height:1.4;"></div>
+              <button type="submit" id="btn-admin-login-submit" class="btn-danger-admin" style="width:100%; justify-content:center; padding:12px; font-size:13px;">
                 Login as Administrator 🛡️
               </button>
             </form>

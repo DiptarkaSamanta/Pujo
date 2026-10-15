@@ -1,4 +1,4 @@
-/**
+﻿/**
  * ============================================================================
  * Durga Puja Parikrama Bengal — Complete Pure JavaScript Application
  * Zero Node.js Required • Vanilla JS • Leaflet • Free GitHub Pages & Render
@@ -447,7 +447,7 @@ const STORAGE_KEYS = {
   AUTH: 'puja_parikrama_auth_v1'
 };
 
-const ADMIN_PASSCODE = 'admin123';
+// Admin credentials are stored securely in Firebase Firestore ('admins' collection)
 
 let currentAuth = {
   role: 'user', // 'user' or 'admin'
@@ -2863,8 +2863,85 @@ function updateCloudPandalsCount() {
 }
 
 // ----------------------------------------------------------------------------
-// 14. Authentication & Role Management (User Panel vs Admin Panel)
+// 14. Authentication & Role Management (Firebase Firestore Database Login)
 // ----------------------------------------------------------------------------
+
+/**
+ * Computes a SHA-256 hash of the input string using the Web Crypto API.
+ * This is used to securely hash passwords before comparing with the DB.
+ * @param {string} message
+ * @returns {Promise<string>} hex-encoded SHA-256 digest
+ */
+async function sha256(message) {
+  const msgBuffer = new TextEncoder().encode(message);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+/**
+ * Shows an auth status message in the login form.
+ * @param {string} elementId - 'user-auth-status' or 'admin-auth-status'
+ * @param {string} message
+ * @param {'error'|'success'|'loading'} type
+ */
+function showAuthStatus(elementId, message, type) {
+  const el = document.getElementById(elementId);
+  if (!el) return;
+  el.style.display = 'block';
+  if (type === 'error') {
+    el.style.background = '#fef2f2';
+    el.style.border = '1px solid #fecaca';
+    el.style.color = '#991b1b';
+    el.textContent = '❌ ' + message;
+  } else if (type === 'success') {
+    el.style.background = '#f0fdf4';
+    el.style.border = '1px solid #bbf7d0';
+    el.style.color = '#166534';
+    el.textContent = '✅ ' + message;
+  } else {
+    el.style.background = '#eff6ff';
+    el.style.border = '1px solid #bfdbfe';
+    el.style.color = '#1e40af';
+    el.textContent = '⏳ ' + message;
+  }
+}
+
+function hideAuthStatus(elementId) {
+  const el = document.getElementById(elementId);
+  if (el) el.style.display = 'none';
+}
+
+// Current auth mode for user panel: 'signup' or 'login'
+let userAuthMode = 'signup';
+
+/**
+ * Switches the user login panel between Sign Up and Log In modes.
+ */
+function switchUserMode(mode) {
+  userAuthMode = mode;
+  const signupBtn = document.getElementById('user-mode-signup');
+  const loginBtn = document.getElementById('user-mode-login');
+  const displayNameGroup = document.getElementById('user-display-name-group');
+  const submitBtn = document.getElementById('btn-user-login-submit');
+  const passInput = document.getElementById('input-user-pass');
+  hideAuthStatus('user-auth-status');
+
+  if (mode === 'signup') {
+    if (signupBtn) { signupBtn.style.background = '#b91c1c'; signupBtn.style.color = '#fff'; }
+    if (loginBtn) { loginBtn.style.background = 'transparent'; loginBtn.style.color = '#64748b'; }
+    if (displayNameGroup) displayNameGroup.style.display = 'block';
+    if (submitBtn) submitBtn.textContent = '✨ Create Account & Enter 🪔';
+    if (passInput) passInput.placeholder = 'At least 6 characters';
+  } else {
+    if (loginBtn) { loginBtn.style.background = '#b91c1c'; loginBtn.style.color = '#fff'; }
+    if (signupBtn) { signupBtn.style.background = 'transparent'; signupBtn.style.color = '#64748b'; }
+    if (displayNameGroup) displayNameGroup.style.display = 'none';
+    if (submitBtn) submitBtn.textContent = '🔑 Log In & Enter 🪔';
+    if (passInput) passInput.placeholder = 'Your password';
+  }
+}
+
 function initAuth() {
   const saved = localStorage.getItem(STORAGE_KEYS.AUTH);
   if (saved) {
@@ -2874,14 +2951,14 @@ function initAuth() {
       return;
     } catch (e) {}
   }
-  // Default to guest hopper user
+  // Default to guest — show login modal
   currentAuth = {
     role: 'user',
-    name: 'Pandal Hopper'
+    name: 'Pandal Hopper',
+    username: ''
   };
   localStorage.setItem(STORAGE_KEYS.AUTH, JSON.stringify(currentAuth));
   updateAuthUI();
-  // Open startup modal
   openAuthModal();
 }
 
@@ -2889,9 +2966,14 @@ function openAuthModal() {
   const modal = document.getElementById('modal-auth-login');
   if (modal) {
     modal.classList.add('active');
+    // Pre-fill username if returning user
     const inputName = document.getElementById('input-user-name');
-    if (inputName && currentAuth && currentAuth.name && currentAuth.name !== 'Pandal Hopper') {
-      inputName.value = currentAuth.name;
+    if (inputName && currentAuth && currentAuth.username && currentAuth.username !== '') {
+      inputName.value = currentAuth.username;
+      // Switch to login mode if they already have an account
+      switchUserMode('login');
+    } else {
+      switchUserMode('signup');
     }
   }
 }
@@ -2920,36 +3002,188 @@ function switchAuthTab(tab) {
   }
 }
 
-function handleUserLogin(e) {
+/**
+ * Handles user Sign Up / Log In via Firebase Firestore.
+ * Collection: 'users' / Document: username (lowercase)
+ * Document fields: { username, displayName, passwordHash, createdAt, role: 'user' }
+ */
+async function handleUserLogin(e) {
   e.preventDefault();
-  const nameInput = document.getElementById('input-user-name');
-  const name = (nameInput && nameInput.value.trim()) ? nameInput.value.trim() : 'Pandal Hopper';
-  currentAuth = {
-    role: 'user',
-    name: name
-  };
-  localStorage.setItem(STORAGE_KEYS.AUTH, JSON.stringify(currentAuth));
-  updateAuthUI();
-  closeAuthModal();
-  showToast(`👋 Logged in as ${name} (User Mode)`);
-}
+  const usernameInput = document.getElementById('input-user-name');
+  const displayNameInput = document.getElementById('input-user-displayname');
+  const passInput = document.getElementById('input-user-pass');
+  const submitBtn = document.getElementById('btn-user-login-submit');
 
-function handleAdminLogin(e) {
-  e.preventDefault();
-  const passInput = document.getElementById('input-admin-pass');
-  const pass = passInput ? passInput.value.trim() : '';
+  const username = (usernameInput && usernameInput.value.trim()) ? usernameInput.value.trim().toLowerCase() : '';
+  const displayName = (displayNameInput && displayNameInput.value.trim()) ? displayNameInput.value.trim() : username;
+  const password = passInput ? passInput.value : '';
 
-  if (pass === ADMIN_PASSCODE || pass === 'bengal2026') {
-    currentAuth = {
-      role: 'admin',
-      name: 'Administrator'
-    };
+  if (!username) { showAuthStatus('user-auth-status', 'Please enter a username.', 'error'); return; }
+  if (password.length < 6) { showAuthStatus('user-auth-status', 'Password must be at least 6 characters.', 'error'); return; }
+
+  // Disable submit button
+  if (submitBtn) { submitBtn.disabled = true; submitBtn.style.opacity = '0.7'; }
+
+  try {
+    const passwordHash = await sha256(password + username); // salt with username
+
+    if (userAuthMode === 'signup') {
+      showAuthStatus('user-auth-status', 'Creating your account...', 'loading');
+
+      // Try Firebase Firestore first
+      if (firestoreDb) {
+        const userRef = firestoreDb.collection('users').doc(username);
+        const snap = await userRef.get();
+        if (snap.exists) {
+          showAuthStatus('user-auth-status', 'Username already taken. Please choose another or log in.', 'error');
+          if (submitBtn) { submitBtn.disabled = false; submitBtn.style.opacity = '1'; }
+          return;
+        }
+        await userRef.set({
+          username: username,
+          displayName: displayName || username,
+          passwordHash: passwordHash,
+          role: 'user',
+          createdAt: new Date().toISOString()
+        });
+      }
+
+      // Store session
+      currentAuth = { role: 'user', name: displayName || username, username: username };
+      localStorage.setItem(STORAGE_KEYS.AUTH, JSON.stringify(currentAuth));
+      updateAuthUI();
+      closeAuthModal();
+      showToast(`👋 Welcome, ${displayName || username}! Your Pandal Hopper account is ready.`);
+
+    } else {
+      // LOGIN mode
+      showAuthStatus('user-auth-status', 'Verifying credentials...', 'loading');
+
+      if (firestoreDb) {
+        const userRef = firestoreDb.collection('users').doc(username);
+        const snap = await userRef.get();
+        if (!snap.exists) {
+          showAuthStatus('user-auth-status', 'No account found with this username. Please sign up first.', 'error');
+          if (submitBtn) { submitBtn.disabled = false; submitBtn.style.opacity = '1'; }
+          return;
+        }
+        const userData = snap.data();
+        if (userData.passwordHash !== passwordHash) {
+          showAuthStatus('user-auth-status', 'Incorrect password. Please try again.', 'error');
+          if (submitBtn) { submitBtn.disabled = false; submitBtn.style.opacity = '1'; }
+          return;
+        }
+        // Success
+        currentAuth = { role: 'user', name: userData.displayName || username, username: username };
+      } else {
+        // Offline fallback: check localStorage cache
+        const cachedRaw = localStorage.getItem('puja_user_cache_' + username);
+        if (cachedRaw) {
+          const cached = JSON.parse(cachedRaw);
+          if (cached.passwordHash !== passwordHash) {
+            showAuthStatus('user-auth-status', 'Incorrect password.', 'error');
+            if (submitBtn) { submitBtn.disabled = false; submitBtn.style.opacity = '1'; }
+            return;
+          }
+          currentAuth = { role: 'user', name: cached.displayName || username, username: username };
+        } else {
+          // No Firebase & no cache — allow login as guest with this name
+          currentAuth = { role: 'user', name: displayName || username, username: username };
+        }
+      }
+
+      localStorage.setItem(STORAGE_KEYS.AUTH, JSON.stringify(currentAuth));
+      // Cache credentials locally for offline fallback
+      localStorage.setItem('puja_user_cache_' + username, JSON.stringify({
+        username, displayName: currentAuth.name, passwordHash
+      }));
+      updateAuthUI();
+      closeAuthModal();
+      showToast(`👋 Welcome back, ${currentAuth.name}!`);
+    }
+  } catch (err) {
+    console.error('User auth error:', err);
+    showAuthStatus('user-auth-status', 'Connection error. Trying offline login...', 'error');
+    // Graceful offline fallback
+    currentAuth = { role: 'user', name: displayName || username, username: username };
     localStorage.setItem(STORAGE_KEYS.AUTH, JSON.stringify(currentAuth));
     updateAuthUI();
     closeAuthModal();
-    showToast('🛡️ Welcome, Admin! Pandal deletion privileges enabled.');
-  } else {
-    alert('Incorrect Admin Passcode!\nHint: Default passcode is admin123');
+    showToast(`👋 Logged in as ${currentAuth.name} (Offline Mode)`);
+  } finally {
+    if (submitBtn) { submitBtn.disabled = false; submitBtn.style.opacity = '1'; }
+  }
+}
+
+/**
+ * Handles Admin login via Firebase Firestore.
+ * Collection: 'admins' / Document: username (lowercase)
+ * Document fields: { username, passwordHash, displayName, role: 'admin' }
+ *
+ * To seed the first admin, run this in the Firebase console:
+ *   db.collection('admins').doc('YOUR_USERNAME').set({
+ *     username: 'YOUR_USERNAME',
+ *     displayName: 'Administrator',
+ *     passwordHash: sha256('YOUR_PASSWORD' + 'YOUR_USERNAME'),  // salted
+ *     role: 'admin'
+ *   });
+ */
+async function handleAdminLogin(e) {
+  e.preventDefault();
+  const userInput = document.getElementById('input-admin-user');
+  const passInput = document.getElementById('input-admin-pass');
+  const submitBtn = document.getElementById('btn-admin-login-submit');
+
+  const username = (userInput && userInput.value.trim()) ? userInput.value.trim().toLowerCase() : '';
+  const password = passInput ? passInput.value : '';
+
+  if (!username) { showAuthStatus('admin-auth-status', 'Please enter your admin username.', 'error'); return; }
+  if (!password) { showAuthStatus('admin-auth-status', 'Please enter your admin password.', 'error'); return; }
+
+  if (submitBtn) { submitBtn.disabled = true; submitBtn.style.opacity = '0.7'; }
+  showAuthStatus('admin-auth-status', 'Authenticating with server...', 'loading');
+
+  try {
+    const passwordHash = await sha256(password + username); // salt with username
+
+    if (firestoreDb) {
+      // Primary: Firebase Firestore admin verification
+      const adminRef = firestoreDb.collection('admins').doc(username);
+      const snap = await adminRef.get();
+
+      if (!snap.exists) {
+        showAuthStatus('admin-auth-status', 'Admin account not found. Contact the system administrator.', 'error');
+        if (submitBtn) { submitBtn.disabled = false; submitBtn.style.opacity = '1'; }
+        return;
+      }
+
+      const adminData = snap.data();
+      if (adminData.passwordHash !== passwordHash) {
+        showAuthStatus('admin-auth-status', 'Invalid credentials. Access denied.', 'error');
+        if (submitBtn) { submitBtn.disabled = false; submitBtn.style.opacity = '1'; }
+        return;
+      }
+
+      // Verified: Grant admin access
+      currentAuth = {
+        role: 'admin',
+        name: adminData.displayName || 'Administrator',
+        username: username
+      };
+      localStorage.setItem(STORAGE_KEYS.AUTH, JSON.stringify(currentAuth));
+      updateAuthUI();
+      closeAuthModal();
+      showToast('🛡️ Welcome, ' + currentAuth.name + '! Admin privileges enabled.');
+
+    } else {
+      // No Firebase — deny admin login (cannot verify without DB)
+      showAuthStatus('admin-auth-status', 'Database connection required for admin login. Please check your internet connection.', 'error');
+      if (submitBtn) { submitBtn.disabled = false; submitBtn.style.opacity = '1'; }
+    }
+  } catch (err) {
+    console.error('Admin auth error:', err);
+    showAuthStatus('admin-auth-status', 'Authentication error: ' + (err.message || 'Unknown error'), 'error');
+    if (submitBtn) { submitBtn.disabled = false; submitBtn.style.opacity = '1'; }
   }
 }
 
@@ -2978,7 +3212,7 @@ function updateAuthUI() {
     adminTitle.textContent = isAdmin ? 'Delete Pandals' : 'Admin: Unlock Delete';
   }
   if (adminDesc) {
-    adminDesc.textContent = isAdmin ? 'Admin deletion panel' : 'Passcode required to delete';
+    adminDesc.textContent = isAdmin ? 'Admin deletion panel' : 'Credentials required to delete';
   }
   if (adminIconBox) {
     adminIconBox.textContent = isAdmin ? '🗑️' : '🔒';
