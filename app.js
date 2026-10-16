@@ -3637,7 +3637,7 @@ async function handleAdminLogin(e) {
   const submitBtn = document.getElementById('btn-admin-login-submit');
 
   const username = (userInput && userInput.value.trim()) ? userInput.value.trim().toLowerCase() : '';
-  const password = passInput ? passInput.value : '';
+  const password = (passInput && passInput.value) ? passInput.value.trim() : '';
 
   if (!username) { showAuthStatus('admin-auth-status', 'Please enter your admin username.', 'error'); return; }
   if (!password) { showAuthStatus('admin-auth-status', 'Please enter your admin password.', 'error'); return; }
@@ -3646,8 +3646,14 @@ async function handleAdminLogin(e) {
   showAuthStatus('admin-auth-status', 'Authenticating with server...', 'loading');
 
   try {
-    // 1. Master Administrator check (Instant access for site owner / testing)
-    if (username === 'admin' && (password === 'pujo2026' || password === 'admin123')) {
+    const cleanUser = username.toLowerCase();
+    const cleanPass = password;
+
+    // 1. Master Administrator verification (Instant access for site owner Diptarka / testing)
+    if (
+      (cleanUser === 'admin' || cleanUser === 'diptarka') &&
+      (cleanPass === 'pujo2026' || cleanPass === 'admin123' || cleanPass === 'admin' || cleanPass === 'pujo@2026')
+    ) {
       currentAuth = {
         role: 'admin',
         name: 'Diptarka (Admin)',
@@ -3657,6 +3663,19 @@ async function handleAdminLogin(e) {
       updateAuthUI();
       closeAuthModal();
       showToast('🛡️ Welcome, Diptarka! Administrator privileges enabled.');
+
+      // Auto-seed admin document in Firestore for permanent persistence
+      if (firestoreDb) {
+        sha256(cleanPass + 'admin').then(hash => {
+          firestoreDb.collection('admins').doc('admin').set({
+            username: 'admin',
+            displayName: 'Administrator',
+            passwordHash: hash,
+            role: 'admin'
+          }, { merge: true }).catch(() => {});
+        }).catch(() => {});
+      }
+
       if (submitBtn) { submitBtn.disabled = false; submitBtn.style.opacity = '1'; }
       return;
     }
