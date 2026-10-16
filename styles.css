@@ -2224,6 +2224,32 @@ body[data-active-tab="itinerary"] .map-zoom-controls,
   color: #64748b;
 }
 
+.btn-admin-delete-photo {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  background: rgba(220, 38, 38, 0.92);
+  color: #ffffff;
+  border: none;
+  border-radius: 50%;
+  width: 28px;
+  height: 28px;
+  font-size: 12px;
+  font-weight: bold;
+  cursor: pointer;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.btn-admin-delete-photo:hover {
+  background: #b91c1c;
+  transform: scale(1.12);
+}
+
 .gallery-empty-state {
   grid-column: 1 / -1;
   text-align: center;

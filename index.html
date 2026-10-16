@@ -1157,6 +1157,9 @@
             <div class="form-group">
               <label style="display:block; font-size:12px; font-weight:700; margin-bottom:6px; color:#334155;">Your Name / Hopper Handle *</label>
               <input type="text" id="photo-author-input" class="form-input" placeholder="e.g. Diptarka S." required />
+              <span style="font-size:10.5px; color:#64748b; margin-top:4px; display:block;">
+                🔒 <strong>Permanent Attribution:</strong> Your hopper name is permanently tagged on this photo darshan across Bengal so no one can claim wrong credit.
+              </span>
             </div>
 
             <div style="display:flex; gap:10px; margin-top:12px;">
@@ -1288,6 +1291,9 @@
             <div class="lightbox-meta">
               <span id="lightbox-author" class="lightbox-badge-author">👤 Uploaded by Hopper</span>
               <span id="lightbox-date" class="lightbox-date">Just now</span>
+              <button type="button" id="lightbox-admin-delete-btn" onclick="adminDeleteCurrentLightboxPhoto()" style="display:none; margin-top:6px; background:#dc2626; color:#fff; border:none; border-radius:8px; padding:5px 12px; font-size:11px; font-weight:800; cursor:pointer; align-items:center; gap:4px;">
+                🗑️ Delete Irrelevant Photo
+              </button>
             </div>
           </div>
         </div>

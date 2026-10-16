@@ -1901,13 +1901,27 @@ function renderCommunityGallery(pandal) {
     const escapedAuthor = (photo.authorName || 'Hopper').replace(/'/g, "\\'");
     const escapedDate = (photo.timestamp || 'Live').replace(/'/g, "\\'");
     const escapedPandal = (pandal.name || '').replace(/'/g, "\\'");
+    const photoId = photo.id || ('photo_' + idx);
     const isLatest = idx === 0;
+    const authorRoleBadge = (photo.authorRole === 'Admin') ? '👑 Admin' : '🌟 Hopper';
     html += `
-      <div class="gallery-photo-card" onclick="openPhotoLightbox('${photo.url}', '${escapedCaption}', '${escapedAuthor}', '${escapedDate}', '${escapedPandal}')" title="Click to view full photo" style="position:relative;">
+      <div class="gallery-photo-card" onclick="openPhotoLightbox('${photo.url}', '${escapedCaption}', '${escapedAuthor}', '${escapedDate}', '${escapedPandal}', '${photoId}', '${pandal.id}')" title="Click to view full photo contributed by ${photo.authorName || 'Hopper'}" style="position:relative;">
         ${isLatest ? `<span class="badge-recent-photo-ribbon">✨ Recent Darshan</span>` : ''}
+        ${(currentAuth && currentAuth.role === 'admin') ? `
+          <button type="button" class="btn-admin-delete-photo" onclick="event.stopPropagation(); adminDeletePhoto('${pandal.id}', '${photoId}', '${escapedAuthor}', '${photo.url}')" title="Admin: Delete Irrelevant Photo">
+            🗑️
+          </button>
+        ` : ''}
         <img class="gallery-photo-img" src="${photo.url}" alt="${photo.caption || pandal.name}" loading="lazy" onerror="this.onerror=null; this.src='${DEFAULT_DURGA_IDOL_IMG}'">
-        <div class="gallery-photo-info">
-          <span class="gallery-photo-author">👤 ${photo.authorName || 'Hopper'}</span>
+        <div class="gallery-photo-info" style="padding: 6px 8px;">
+          <div style="display:flex; align-items:center; justify-content:space-between; gap:4px; margin-bottom:2px;">
+            <span class="gallery-photo-author" title="Contributed by ${photo.authorName || 'Bengal Hopper'}">
+              📸 ${photo.authorName || 'Bengal Hopper'}
+            </span>
+            <span style="font-size:9px; background:#fef3c7; color:#b45309; padding:1px 4px; border-radius:4px; font-weight:700; flex-shrink:0;">
+              ${authorRoleBadge}
+            </span>
+          </div>
           <span class="gallery-photo-date">${photo.timestamp || 'Live'}</span>
         </div>
       </div>
@@ -1915,15 +1929,21 @@ function renderCommunityGallery(pandal) {
   });
 
   // 2. Official Pandal Images
-  officialImages.forEach((imgUrl) => {
+  officialImages.forEach((imgUrl, oIdx) => {
     if (!userPhotos.some(up => up.url === imgUrl)) {
       const escapedCaption = `${pandal.name} - Official Darshan View`.replace(/'/g, "\\'");
       const escapedAuthor = 'Committee / Official'.replace(/'/g, "\\'");
       const escapedPandal = (pandal.name || '').replace(/'/g, "\\'");
+      const officialPhotoId = 'official_' + oIdx;
       html += `
-        <div class="gallery-photo-card" onclick="openPhotoLightbox('${imgUrl}', '${escapedCaption}', '${escapedAuthor}', 'Durga Puja 2026', '${escapedPandal}')" title="Click to view full photo">
+        <div class="gallery-photo-card" onclick="openPhotoLightbox('${imgUrl}', '${escapedCaption}', '${escapedAuthor}', 'Durga Puja 2026', '${escapedPandal}', '${officialPhotoId}', '${pandal.id}')" title="Click to view official photo" style="position:relative;">
+          ${(currentAuth && currentAuth.role === 'admin') ? `
+            <button type="button" class="btn-admin-delete-photo" onclick="event.stopPropagation(); adminDeletePhoto('${pandal.id}', null, 'Official', '${imgUrl}')" title="Admin: Delete Irrelevant Photo">
+              🗑️
+            </button>
+          ` : ''}
           <img class="gallery-photo-img" src="${imgUrl}" alt="${pandal.name}" loading="lazy" onerror="this.onerror=null; this.src='${DEFAULT_DURGA_IDOL_IMG}'">
-          <div class="gallery-photo-info">
+          <div class="gallery-photo-info" style="padding: 6px 8px;">
             <span class="gallery-photo-author" style="color: #b91c1c;">✨ Official Photo</span>
             <span class="gallery-photo-date">Puja Darshan</span>
           </div>
@@ -2243,17 +2263,43 @@ async function handleEditCoverFile(e) {
 }
 
 // ----------------------------------------------------------------------------
-// 9E. Fullscreen Photo Lightbox Handlers
+// 9E. Fullscreen Photo Lightbox Handlers & Admin Image Moderation
 // ----------------------------------------------------------------------------
-function openPhotoLightbox(photoUrl, caption, author, date, pandalName) {
+let currentLightboxPhoto = null;
+
+function openPhotoLightbox(photoUrl, caption, author, date, pandalName, photoId, pandalId) {
   const lightbox = document.getElementById('modal-photo-lightbox');
   if (!lightbox) return;
+
+  const targetPandalId = pandalId || (selectedPandal ? selectedPandal.id : null);
+  currentLightboxPhoto = {
+    url: photoUrl,
+    caption: caption,
+    author: author,
+    date: date,
+    pandalName: pandalName,
+    photoId: photoId,
+    pandalId: targetPandalId
+  };
 
   document.getElementById('lightbox-img').src = photoUrl;
   document.getElementById('lightbox-pandal-name').textContent = pandalName || (selectedPandal ? selectedPandal.name : 'Pandal Photo');
   document.getElementById('lightbox-caption').textContent = caption || 'Durga Puja Parikrama Darshan';
-  document.getElementById('lightbox-author').textContent = author ? `👤 ${author}` : '👤 Hopper';
-  document.getElementById('lightbox-date').textContent = date || 'Live';
+
+  const authorEl = document.getElementById('lightbox-author');
+  if (authorEl) {
+    authorEl.innerHTML = `📸 <strong>Darshan by:</strong> ${author || 'Bengal Hopper'} <span style="background:rgba(255,255,255,0.2); padding:1px 6px; border-radius:6px; font-size:10px; margin-left:4px;">Verified Hopper</span>`;
+  }
+
+  const dateEl = document.getElementById('lightbox-date');
+  if (dateEl) {
+    dateEl.textContent = `🕒 ${date || 'Live'}`;
+  }
+
+  const delBtn = document.getElementById('lightbox-admin-delete-btn');
+  if (delBtn) {
+    delBtn.style.display = (currentAuth && currentAuth.role === 'admin') ? 'inline-flex' : 'none';
+  }
 
   lightbox.classList.add('active');
 }
@@ -2264,6 +2310,77 @@ function closePhotoLightbox(e) {
   }
   const lightbox = document.getElementById('modal-photo-lightbox');
   if (lightbox) lightbox.classList.remove('active');
+  currentLightboxPhoto = null;
+}
+
+function adminDeleteCurrentLightboxPhoto() {
+  if (!currentLightboxPhoto) return;
+  adminDeletePhoto(currentLightboxPhoto.pandalId, currentLightboxPhoto.photoId, currentLightboxPhoto.author, currentLightboxPhoto.url);
+}
+
+function adminDeletePhoto(pandalId, photoId, authorName, photoUrl) {
+  if (!currentAuth || currentAuth.role !== 'admin') {
+    alert('Access restricted: Only administrators can delete photos.');
+    return;
+  }
+
+  const p = pandals.find(pandal => pandal.id === pandalId) || selectedPandal;
+  if (!p) {
+    alert('Pandal not found.');
+    return;
+  }
+
+  const authorText = authorName || 'this user';
+  const confirmed = confirm(
+    `⚠️ Admin Moderation Warning:\n\nAre you sure you want to permanently delete this photo contributed by "${authorText}"?\n\nThis will remove the picture from the live pandal gallery and all hopper feeds across Bengal.`
+  );
+
+  if (!confirmed) return;
+
+  // 1. Remove from userPhotos
+  if (Array.isArray(p.userPhotos)) {
+    p.userPhotos = p.userPhotos.filter(ph => {
+      if (photoId && ph.id) return ph.id !== photoId;
+      if (photoUrl && ph.url) return ph.url !== photoUrl;
+      return true;
+    });
+  }
+
+  // 2. Remove from official images array if present
+  if (Array.isArray(p.images)) {
+    p.images = p.images.filter(img => img !== photoUrl);
+  }
+
+  // 3. If thumbnail was this photo, fallback to next photo or default idol image
+  if (p.thumbnail === photoUrl || (photoId && p.userPhotos && p.userPhotos.every(ph => ph.id !== photoId))) {
+    if (p.userPhotos && p.userPhotos.length > 0) {
+      p.thumbnail = p.userPhotos[0].url;
+    } else if (p.images && p.images.length > 0 && p.images[0] !== DEFAULT_DURGA_IDOL_IMG) {
+      p.thumbnail = p.images[0];
+    } else {
+      p.thumbnail = DEFAULT_DURGA_IDOL_IMG;
+    }
+  }
+
+  p.photosPostedCount = Math.max(0, (p.photosPostedCount || (p.userPhotos ? p.userPhotos.length + 1 : 1)) - 1);
+
+  // 4. Save to local storage & broadcast to Firestore in real-time
+  savePandals(pandals);
+  broadcastPandalUpdate(p);
+
+  // 5. Update detail modal cover image if open
+  const detailImg = document.getElementById('modal-detail-img');
+  if (detailImg && selectedPandal && selectedPandal.id === p.id) {
+    detailImg.src = p.thumbnail;
+  }
+
+  // 6. Close lightbox if open
+  closePhotoLightbox();
+
+  // 7. Refresh gallery & pandal list
+  renderCommunityGallery(p);
+  renderPandalList();
+  showToast(`🗑️ Photo by "${authorText}" deleted by Administrator.`);
 }
 
 // ----------------------------------------------------------------------------
@@ -2396,17 +2513,41 @@ function deletePandal(pandalId) {
   }
 
   const target = pandals.find(p => p.id === pandalId);
-  const name = target ? target.name : 'this pandal';
+  if (!target) return;
+  const name = target.name || 'this pandal';
+  const photoCount = (target.userPhotos || []).length + (target.images || []).length;
 
-  if (!confirm(`Are you sure you want to delete "${name}" from the live map? This will remove it for all connected users.`)) {
-    return;
-  }
+  // Explicit single admin warning for complete purge of pandal, images, and location data
+  const confirmed = confirm(
+    `⚠️ ADMIN WARNING: PERMANENTLY PURGE PANDAL & ALL DATA?\n\n` +
+    `You are about to delete:\n` +
+    `"${name}" (${target.zone || 'Bengal'})\n\n` +
+    `This will immediately purge:\n` +
+    `• Pandal profile & club details\n` +
+    `• All ${photoCount} uploaded idol & darshan images\n` +
+    `• GPS coordinate pin & map markers across Bengal\n` +
+    `• Live crowd reports, reviews & ratings\n\n` +
+    `Are you sure you want to permanently delete this pandal?`
+  );
+
+  if (!confirmed) return;
 
   // 1. Remove from local pandals array
   pandals = pandals.filter(p => p.id !== pandalId);
   savePandals(pandals);
 
-  // 2. Remove from Firebase Firestore (propagates live deletion to all users!)
+  // 2. Clear active selected pandal if deleted
+  if (selectedPandal && selectedPandal.id === pandalId) {
+    selectedPandal = null;
+  }
+
+  // 3. Remove route line from map if active
+  if (typeof routePolyline !== 'undefined' && routePolyline && typeof map !== 'undefined' && map) {
+    try { map.removeLayer(routePolyline); } catch (e) {}
+    routePolyline = null;
+  }
+
+  // 4. Remove from Firebase Firestore (propagates live deletion to all users!)
   if (firestoreDb) {
     firestoreDb.collection('pandals').doc(pandalId).delete()
       .then(() => {
@@ -2417,7 +2558,7 @@ function deletePandal(pandalId) {
       });
   }
 
-  // 3. Remove from community backup storage
+  // 5. Remove from community backup storage
   try {
     const raw = localStorage.getItem(STORAGE_KEYS.COMMUNITY_SYNC) || '[]';
     const list = JSON.parse(raw).filter(p => p.id !== pandalId);
@@ -2428,7 +2569,7 @@ function deletePandal(pandalId) {
   renderPandalMarkers();
   renderPandalList();
   renderShortestFinder();
-  showToast(`🗑️ "${name}" deleted from the live map!`);
+  showToast(`🗑️ "${name}" and all associated image & location data permanently deleted!`);
 }
 
 // ----------------------------------------------------------------------------
