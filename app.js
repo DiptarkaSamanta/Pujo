@@ -1,4 +1,4 @@
-﻿/**
+/**
  * ============================================================================
  * Durga Puja Parikrama Bengal — Complete Pure JavaScript Application
  * Zero Node.js Required • Vanilla JS • Leaflet • Free GitHub Pages & Render
@@ -6,8 +6,10 @@
  */
 
 // ----------------------------------------------------------------------------
-// 1. Initial Master Dataset: 16 Authentic Pandals across West Bengal
+// Authentic Durga Puja Idol Image Default & Master Dataset
 // ----------------------------------------------------------------------------
+const DEFAULT_DURGA_IDOL_IMG = 'assets/durga_pujo_idol.jpg';
+
 const DEFAULT_PANDALS = [
   {
     id: 'pandal-1',
@@ -20,10 +22,10 @@ const DEFAULT_PANDALS = [
     address: 'Lake Town, VIP Road, North 24 Parganas / Kolkata',
     zone: 'North 24 Parganas',
     images: [
-      'https://images.unsplash.com/photo-1601055283742-8b27e81b5553?auto=format&fit=crop&w=800&q=80',
+      DEFAULT_DURGA_IDOL_IMG,
       'https://images.unsplash.com/photo-1571597438372-540dd352bf41?auto=format&fit=crop&w=800&q=80'
     ],
-    thumbnail: 'https://images.unsplash.com/photo-1601055283742-8b27e81b5553?auto=format&fit=crop&w=300&q=80',
+    thumbnail: DEFAULT_DURGA_IDOL_IMG,
     rating: 4.9,
     reviewCount: 1420,
     visitCount: 48500,
@@ -251,9 +253,9 @@ const DEFAULT_PANDALS = [
     address: 'Hakimpara, Siliguri, Darjeeling District',
     zone: 'Siliguri',
     images: [
-      'https://images.unsplash.com/photo-1601055283742-8b27e81b5553?auto=format&fit=crop&w=800&q=80'
+      DEFAULT_DURGA_IDOL_IMG
     ],
-    thumbnail: 'https://images.unsplash.com/photo-1601055283742-8b27e81b5553?auto=format&fit=crop&w=300&q=80',
+    thumbnail: DEFAULT_DURGA_IDOL_IMG,
     rating: 4.8,
     reviewCount: 920,
     visitCount: 34000,
@@ -343,9 +345,9 @@ const DEFAULT_PANDALS = [
     address: 'Rangamati, Midnapore Town, Paschim Medinipur',
     zone: 'Midnapore',
     images: [
-      'https://images.unsplash.com/photo-1601055283742-8b27e81b5553?auto=format&fit=crop&w=800&q=80'
+      DEFAULT_DURGA_IDOL_IMG
     ],
-    thumbnail: 'https://images.unsplash.com/photo-1601055283742-8b27e81b5553?auto=format&fit=crop&w=300&q=80',
+    thumbnail: DEFAULT_DURGA_IDOL_IMG,
     rating: 4.7,
     reviewCount: 510,
     visitCount: 22000,
@@ -389,9 +391,9 @@ const DEFAULT_PANDALS = [
     address: 'Near The New Town School, Action Area 1, New Town, Kolkata',
     zone: 'North 24 Parganas',
     images: [
-      'https://images.unsplash.com/photo-1601055283742-8b27e81b5553?auto=format&fit=crop&w=800&q=80'
+      DEFAULT_DURGA_IDOL_IMG
     ],
-    thumbnail: 'https://images.unsplash.com/photo-1601055283742-8b27e81b5553?auto=format&fit=crop&w=300&q=80',
+    thumbnail: DEFAULT_DURGA_IDOL_IMG,
     rating: 4.9,
     reviewCount: 420,
     visitCount: 16500,
@@ -525,8 +527,91 @@ let searchQuery = '';
 let selectedPandal = null;
 
 // ----------------------------------------------------------------------------
-// 3. Storage Utilities
+// 3. Storage Utilities & Image Resolution
 // ----------------------------------------------------------------------------
+function sanitizePandalImages(p) {
+  if (!p) return p;
+
+  // Clean userPhotos: remove any referencing the medical test photo
+  if (Array.isArray(p.userPhotos)) {
+    p.userPhotos = p.userPhotos.filter(ph => ph && ph.url && !ph.url.includes('1601055283742'));
+  } else {
+    p.userPhotos = [];
+  }
+
+  // Clean images: remove bad unsplash photo and remove DEFAULT_DURGA_IDOL_IMG so it is never treated as an uploaded community photo!
+  if (Array.isArray(p.images)) {
+    p.images = p.images.filter(img => img && typeof img === 'string' && !img.includes('1601055283742') && img !== DEFAULT_DURGA_IDOL_IMG);
+  } else {
+    p.images = [];
+  }
+
+  // Ensure cover thumbnail fallback
+  if (!p.thumbnail || p.thumbnail.includes('1601055283742')) {
+    p.thumbnail = (p.userPhotos.length > 0) ? p.userPhotos[0].url : (p.images.length > 0 ? p.images[0] : DEFAULT_DURGA_IDOL_IMG);
+  }
+
+  // Default photos posted count reflects genuine uploaded photos
+  p.photosPostedCount = p.userPhotos.length + p.images.length;
+
+  // For custom contributed pandals: default rating MUST strictly be zero!
+  if (p.id && p.id.startsWith('pandal-custom')) {
+    // Purge any fake initial contributor ratings
+    if (Array.isArray(p.userRatings)) {
+      p.userRatings = p.userRatings.filter(r => r && r.userName !== 'Pandal Contributor' && r.userName !== 'Pandal Creator');
+    } else {
+      p.userRatings = [];
+    }
+
+    const userVote = getUserRatingForPandal(p.id);
+    if (userVote) {
+      // Current user has rated this pandal
+      const hopperId = getHopperId();
+      const hopperName = (currentAuth && currentAuth.name) || localStorage.getItem('puja_last_author') || 'Bengal Hopper';
+      p.userRatings = [{
+        userId: hopperId,
+        userName: hopperName,
+        rating: Number(userVote),
+        timestamp: Date.now()
+      }];
+      p.rating = Number(Number(userVote).toFixed(1));
+      p.reviewCount = 1;
+      p.ratingSum = Number(userVote);
+      p.ratingCount = 1;
+    } else if (p.userRatings.length > 0) {
+      const sum = p.userRatings.reduce((acc, r) => acc + (Number(r.rating) || 0), 0);
+      p.ratingCount = p.userRatings.length;
+      p.reviewCount = p.userRatings.length;
+      p.ratingSum = sum;
+      p.rating = Number((sum / p.ratingCount).toFixed(1));
+    } else {
+      // No genuine user ratings cast: DEFAULT MUST BE ZERO!
+      p.userRatings = [];
+      p.rating = 0;
+      p.reviewCount = 0;
+      p.ratingSum = 0;
+      p.ratingCount = 0;
+    }
+  }
+
+  return p;
+}
+
+function getPandalMainImage(pandal) {
+  if (!pandal) return DEFAULT_DURGA_IDOL_IMG;
+  // If community hopper uploaded photos exist, the newest uploaded photo is always at userPhotos[0]!
+  if (Array.isArray(pandal.userPhotos) && pandal.userPhotos.length > 0 && pandal.userPhotos[0] && pandal.userPhotos[0].url) {
+    return pandal.userPhotos[0].url;
+  }
+  if (pandal.thumbnail && !pandal.thumbnail.includes('1601055283742')) {
+    return pandal.thumbnail;
+  }
+  if (Array.isArray(pandal.images) && pandal.images.length > 0 && pandal.images[0] && !pandal.images[0].includes('1601055283742')) {
+    return pandal.images[0];
+  }
+  return DEFAULT_DURGA_IDOL_IMG;
+}
+
 function loadStoredPandals() {
   let list = [...DEFAULT_PANDALS];
   try {
@@ -543,6 +628,7 @@ function loadStoredPandals() {
   } catch (e) {
     console.error('Failed reading localStorage pandals:', e);
   }
+  list = list.map(sanitizePandalImages);
   localStorage.setItem(STORAGE_KEYS.PANDALS, JSON.stringify(list));
   return list;
 }
@@ -1483,9 +1569,263 @@ function cycleMapLayer() {
   openMapStylesModal();
 }
 
+// ----------------------------------------------------------------------------
+// 9A. Collective Rating System & Real-Time Averaging Algorithm
+// ----------------------------------------------------------------------------
+function getHopperId() {
+  let id = localStorage.getItem('puja_hopper_id');
+  if (!id) {
+    id = 'hopper_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
+    localStorage.setItem('puja_hopper_id', id);
+  }
+  return id;
+}
+
+function getUserRatingForPandal(pandalId) {
+  try {
+    const raw = localStorage.getItem('puja_user_ratings');
+    const map = raw ? JSON.parse(raw) : {};
+    return map[pandalId] ? Number(map[pandalId]) : null;
+  } catch (e) {
+    return null;
+  }
+}
+
+function setUserRatingForPandal(pandalId, rating) {
+  try {
+    const raw = localStorage.getItem('puja_user_ratings');
+    const map = raw ? JSON.parse(raw) : {};
+    map[pandalId] = rating;
+    localStorage.setItem('puja_user_ratings', JSON.stringify(map));
+  } catch (e) {}
+}
+
+const RATING_LABELS = {
+  1: '1★ Needs Improvement',
+  2: '2★ Fair / Decent',
+  3: '3★ Good Pratima & Ambience',
+  4: '4★ Very Impressive Pandal',
+  5: '5★ Divine & Mindblowing Darshan!'
+};
+
+function renderPandalRatingSection(pandal) {
+  if (!pandal) return;
+  const target = pandal;
+
+  const scoreEl = document.getElementById('detail-rating-score');
+  const countEl = document.getElementById('detail-rating-count');
+  const starsDisplayEl = document.getElementById('detail-stars-display');
+  const userPillEl = document.getElementById('user-rating-status-pill');
+  const hintEl = document.getElementById('interactive-star-hint');
+  const feedbackEl = document.getElementById('user-rated-feedback');
+  const modalDetailRating = document.getElementById('modal-detail-rating');
+
+  const count = (typeof target.reviewCount === 'number') ? target.reviewCount : (target.ratingCount || 0);
+  const hasRatings = count > 0 && typeof target.rating === 'number' && target.rating > 0;
+  const rating = hasRatings ? Number(target.rating).toFixed(1) : 'New';
+
+  if (scoreEl) scoreEl.textContent = hasRatings ? rating : '0.0';
+  if (countEl) countEl.textContent = hasRatings ? `(${Number(count).toLocaleString()} ratings)` : '(0 ratings • Be first to rate!)';
+  if (modalDetailRating) modalDetailRating.textContent = hasRatings ? `★ ${rating} (${Number(count).toLocaleString()} reviews)` : `⭐ Not rated yet (0 reviews)`;
+
+  // Generate gold / empty stars display
+  if (starsDisplayEl) {
+    if (hasRatings) {
+      const num = Math.round(Number(target.rating));
+      let starStr = '';
+      for (let i = 1; i <= 5; i++) {
+        starStr += i <= num ? '★' : '☆';
+      }
+      starsDisplayEl.textContent = starStr;
+    } else {
+      starsDisplayEl.textContent = '☆☆☆☆☆';
+    }
+  }
+
+  // Check user's own rating
+  const myRating = getUserRatingForPandal(target.id);
+  const stars = document.querySelectorAll('#star-rating-selector .interactive-star');
+
+  stars.forEach(s => {
+    const val = parseInt(s.getAttribute('data-val'), 10);
+    if (myRating && val <= myRating) {
+      s.classList.add('active');
+    } else {
+      s.classList.remove('active');
+    }
+    s.classList.remove('hovered');
+  });
+
+  if (myRating) {
+    if (userPillEl) {
+      userPillEl.innerHTML = `⭐ You rated: <strong>${myRating}★</strong>`;
+      userPillEl.classList.add('has-rated');
+    }
+    if (hintEl) {
+      hintEl.textContent = `${RATING_LABELS[myRating]} (Click any star to change)`;
+    }
+    if (feedbackEl) {
+      feedbackEl.style.display = 'block';
+      feedbackEl.innerHTML = `✅ Your rating of <strong>${myRating}★</strong> is factored into this collective average score.`;
+    }
+  } else {
+    if (userPillEl) {
+      userPillEl.textContent = '⭐ Not rated yet';
+      userPillEl.classList.remove('has-rated');
+    }
+    if (hintEl) {
+      hintEl.textContent = 'Tap any star to cast your rating';
+    }
+    if (feedbackEl) {
+      feedbackEl.style.display = 'none';
+    }
+  }
+}
+
+function previewStarHover(val) {
+  const stars = document.querySelectorAll('#star-rating-selector .interactive-star');
+  const hintEl = document.getElementById('interactive-star-hint');
+  stars.forEach(s => {
+    const starVal = parseInt(s.getAttribute('data-val'), 10);
+    if (starVal <= val) {
+      s.classList.add('hovered');
+    } else {
+      s.classList.remove('hovered');
+    }
+  });
+  if (hintEl && RATING_LABELS[val]) {
+    hintEl.textContent = RATING_LABELS[val];
+  }
+}
+
+function resetStarHover() {
+  const stars = document.querySelectorAll('#star-rating-selector .interactive-star');
+  stars.forEach(s => s.classList.remove('hovered'));
+  if (selectedPandal) {
+    const myRating = getUserRatingForPandal(selectedPandal.id);
+    const hintEl = document.getElementById('interactive-star-hint');
+    if (hintEl) {
+      hintEl.textContent = myRating ? `${RATING_LABELS[myRating]} (Click any star to change)` : 'Tap any star to cast your rating';
+    }
+  }
+}
+
+function submitPandalRating(starValue, pandalId) {
+  const targetId = pandalId || (selectedPandal && selectedPandal.id);
+  if (!targetId) return;
+
+  const target = pandals.find(p => p.id === targetId);
+  if (!target) return;
+
+  const star = Math.max(1, Math.min(5, parseInt(starValue, 10)));
+  const hopperId = getHopperId();
+  const hopperName = (currentAuth && currentAuth.name) || localStorage.getItem('puja_last_author') || 'Bengal Hopper';
+
+  if (!Array.isArray(target.userRatings)) {
+    target.userRatings = [];
+  }
+
+  // Purge any residual fake ratings on custom pandals
+  if (target.id && target.id.startsWith('pandal-custom')) {
+    target.userRatings = target.userRatings.filter(r => r && r.userName !== 'Pandal Contributor' && r.userName !== 'Pandal Creator');
+    if (target.userRatings.length === 0) {
+      target.ratingSum = 0;
+      target.ratingCount = 0;
+      target.reviewCount = 0;
+      target.rating = 0;
+    }
+  }
+
+  const existingVoteIndex = target.userRatings.findIndex(r => r.userId === hopperId);
+  const prevRating = getUserRatingForPandal(target.id);
+
+  // Initialize ratingSum and ratingCount strictly based on existing valid ratings (no hardcoded 5 star default!)
+  if (typeof target.ratingSum !== 'number' || typeof target.ratingCount !== 'number' || isNaN(target.ratingSum)) {
+    const baseCount = (typeof target.reviewCount === 'number' && target.reviewCount > 0) ? target.reviewCount : 0;
+    const baseScore = (typeof target.rating === 'number' && !isNaN(target.rating) && target.rating > 0) ? target.rating : 0;
+    target.ratingSum = Math.round(baseScore * baseCount * 10) / 10;
+    target.ratingCount = baseCount;
+  }
+
+  if (prevRating) {
+    // Modify existing user rating
+    target.ratingSum = Math.max(0, target.ratingSum - prevRating + star);
+    if (existingVoteIndex !== -1) {
+      target.userRatings[existingVoteIndex] = {
+        userId: hopperId,
+        userName: hopperName,
+        rating: star,
+        timestamp: Date.now()
+      };
+    }
+  } else {
+    // New voter rating starting from first rating
+    target.ratingSum += star;
+    target.ratingCount += 1;
+    target.reviewCount = target.ratingCount;
+    target.userRatings.unshift({
+      userId: hopperId,
+      userName: hopperName,
+      rating: star,
+      timestamp: Date.now()
+    });
+  }
+
+  // Collective average algorithm: sum / count (rounded to 1 decimal place)
+  target.rating = Number((target.ratingSum / target.ratingCount).toFixed(1));
+
+  setUserRatingForPandal(target.id, star);
+  savePandals(pandals);
+  broadcastPandalUpdate(target);
+
+  if (selectedPandal && selectedPandal.id === target.id) {
+    selectedPandal = target;
+    renderPandalRatingSection(target);
+  }
+
+  renderPandalList();
+  showToast(`⭐ You voted ${star}★! Collective rating is now ★ ${target.rating} (${target.ratingCount.toLocaleString()} hoppers)`);
+}
+
+function openRatingPrompt(pandalId) {
+  openPandalDetailById(pandalId);
+  setTimeout(() => {
+    scrollToRatingSection();
+  }, 180);
+}
+
+function scrollToRatingSection() {
+  const card = document.getElementById('pandal-rating-card');
+  if (card) {
+    card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    card.style.transition = 'box-shadow 0.3s ease';
+    card.style.boxShadow = '0 0 0 3px #f59e0b, 0 8px 24px rgba(245, 158, 11, 0.3)';
+    setTimeout(() => {
+      card.style.boxShadow = '';
+    }, 1500);
+  }
+}
+
+function triggerDeviceCamera() {
+  const cameraInput = document.getElementById('photo-camera-input');
+  if (cameraInput) {
+    cameraInput.click();
+  } else {
+    const fileInput = document.getElementById('photo-file-input');
+    if (fileInput) fileInput.click();
+  }
+}
+
+function triggerDeviceGallery() {
+  const fileInput = document.getElementById('photo-file-input');
+  if (fileInput) {
+    fileInput.click();
+  }
+}
+
 function openPandalDetail(pandal) {
-  selectedPandal = pandal;
-  const dist = calculateDistanceKm(userLocation, pandal.location);
+  selectedPandal = sanitizePandalImages(pandal);
+  const dist = calculateDistanceKm(userLocation, selectedPandal.location);
 
   document.getElementById('modal-detail-title').textContent = pandal.name;
   document.getElementById('modal-detail-puja').textContent = pandal.pujaName || pandal.name;
@@ -1494,10 +1834,13 @@ function openPandalDetail(pandal) {
   document.getElementById('modal-detail-address').textContent = pandal.address;
   document.getElementById('modal-detail-distance').textContent = `${dist} km away`;
   document.getElementById('modal-detail-wait').textContent = `~${pandal.estimatedQueueMins}m queue`;
-  document.getElementById('modal-detail-rating').textContent = `★ ${pandal.rating} (${pandal.reviewCount || 100}+ reviews)`;
   
   const imgEl = document.getElementById('modal-detail-img');
-  imgEl.src = pandal.thumbnail || pandal.images[0];
+  imgEl.src = getPandalMainImage(pandal);
+  imgEl.onerror = function() { this.onerror = null; this.src = DEFAULT_DURGA_IDOL_IMG; };
+
+  // Render Interactive Rating Card & collective score
+  renderPandalRatingSection(pandal);
 
   // Render Google Maps Style Community Gallery
   renderCommunityGallery(pandal);
@@ -1524,19 +1867,24 @@ function renderCommunityGallery(pandal) {
   const photoBadge = document.getElementById('modal-detail-photo-badge');
   if (!container) return;
 
-  const userPhotos = Array.isArray(pandal.userPhotos) ? pandal.userPhotos : [];
-  const officialImages = Array.isArray(pandal.images) ? pandal.images : [pandal.thumbnail].filter(Boolean);
+  // Genuine uploaded user photos (delete any bad placeholder)
+  const userPhotos = (Array.isArray(pandal.userPhotos) ? pandal.userPhotos : [])
+    .filter(p => p && p.url && !p.url.includes('1601055283742'));
+
+  // Genuine official images - completely exclude placeholder default idol image and bad photos so 0 photos is shown by default!
+  const officialImages = (Array.isArray(pandal.images) ? pandal.images : [])
+    .filter(img => img && typeof img === 'string' && !img.includes('1601055283742') && img !== DEFAULT_DURGA_IDOL_IMG && !userPhotos.some(up => up.url === img));
   
   const totalCount = userPhotos.length + officialImages.length;
   if (countBadge) countBadge.textContent = `${totalCount}`;
-  if (photoBadge) photoBadge.textContent = `📷 ${totalCount} Photo${totalCount === 1 ? '' : 's'}`;
+  if (photoBadge) photoBadge.textContent = totalCount === 0 ? '📷 0 Photos' : `📷 ${totalCount} Photo${totalCount === 1 ? '' : 's'}`;
 
   if (totalCount === 0) {
     container.innerHTML = `
       <div class="gallery-empty-state">
         <span style="font-size: 32px; display: block; margin-bottom: 6px;">📸</span>
-        <strong style="font-size: 13px; color: #0f172a; display: block;">No photos uploaded yet</strong>
-        <p style="font-size: 11px; color: #64748b; margin-top: 3px;">Be the first hopper to share a live picture of this pandal!</p>
+        <strong style="font-size: 13px; color: #0f172a; display: block;">No photos uploaded yet (0 Photos)</strong>
+        <p style="font-size: 11px; color: #64748b; margin-top: 3px;">Be the first hopper to share a live camera photo of this pandal!</p>
         <button type="button" onclick="openAddPhotoModal()" class="btn-festive" style="margin-top: 10px; padding: 7px 16px; font-size: 11.5px; border-radius: 999px;">
           + Upload Live Photo
         </button>
@@ -1547,15 +1895,17 @@ function renderCommunityGallery(pandal) {
 
   let html = '';
 
-  // 1. User-Uploaded Community Photos (Priority at top)
-  userPhotos.forEach(photo => {
+  // 1. User-Uploaded Community Photos (Priority at top - newest first)
+  userPhotos.forEach((photo, idx) => {
     const escapedCaption = (photo.caption || 'Durga Puja Parikrama').replace(/'/g, "\\'");
     const escapedAuthor = (photo.authorName || 'Hopper').replace(/'/g, "\\'");
     const escapedDate = (photo.timestamp || 'Live').replace(/'/g, "\\'");
     const escapedPandal = (pandal.name || '').replace(/'/g, "\\'");
+    const isLatest = idx === 0;
     html += `
-      <div class="gallery-photo-card" onclick="openPhotoLightbox('${photo.url}', '${escapedCaption}', '${escapedAuthor}', '${escapedDate}', '${escapedPandal}')" title="Click to view full photo">
-        <img class="gallery-photo-img" src="${photo.url}" alt="${photo.caption || pandal.name}" loading="lazy" onerror="this.src='${pandal.thumbnail || ''}'">
+      <div class="gallery-photo-card" onclick="openPhotoLightbox('${photo.url}', '${escapedCaption}', '${escapedAuthor}', '${escapedDate}', '${escapedPandal}')" title="Click to view full photo" style="position:relative;">
+        ${isLatest ? `<span class="badge-recent-photo-ribbon">✨ Recent Darshan</span>` : ''}
+        <img class="gallery-photo-img" src="${photo.url}" alt="${photo.caption || pandal.name}" loading="lazy" onerror="this.onerror=null; this.src='${DEFAULT_DURGA_IDOL_IMG}'">
         <div class="gallery-photo-info">
           <span class="gallery-photo-author">👤 ${photo.authorName || 'Hopper'}</span>
           <span class="gallery-photo-date">${photo.timestamp || 'Live'}</span>
@@ -1572,7 +1922,7 @@ function renderCommunityGallery(pandal) {
       const escapedPandal = (pandal.name || '').replace(/'/g, "\\'");
       html += `
         <div class="gallery-photo-card" onclick="openPhotoLightbox('${imgUrl}', '${escapedCaption}', '${escapedAuthor}', 'Durga Puja 2026', '${escapedPandal}')" title="Click to view full photo">
-          <img class="gallery-photo-img" src="${imgUrl}" alt="${pandal.name}" loading="lazy">
+          <img class="gallery-photo-img" src="${imgUrl}" alt="${pandal.name}" loading="lazy" onerror="this.onerror=null; this.src='${DEFAULT_DURGA_IDOL_IMG}'">
           <div class="gallery-photo-info">
             <span class="gallery-photo-author" style="color: #b91c1c;">✨ Official Photo</span>
             <span class="gallery-photo-date">Puja Darshan</span>
@@ -1741,6 +2091,7 @@ async function submitUserPhoto(e) {
       selectedPandal.userPhotos = [];
     }
     selectedPandal.userPhotos.unshift(newPhoto);
+    selectedPandal.thumbnail = newPhoto.url; // Make newest photo the cover thumbnail
 
     if (!Array.isArray(selectedPandal.images)) {
       selectedPandal.images = [selectedPandal.thumbnail].filter(Boolean);
@@ -1754,8 +2105,15 @@ async function submitUserPhoto(e) {
     // Broadcast to Firebase Firestore in real time for all users
     broadcastPandalUpdate(selectedPandal);
 
+    // Immediately update modal cover photo to this fresh upload
+    const detailImg = document.getElementById('modal-detail-img');
+    if (detailImg) {
+      detailImg.src = newPhoto.url;
+    }
+
     // Refresh UI
     renderCommunityGallery(selectedPandal);
+    renderPandalList(); // Refresh pandal cards across the board to display recent photo
     closeAddPhotoModal();
 
     if (uploadResult.provider === 'firebase_storage') {
@@ -2222,11 +2580,13 @@ async function submitNewPandal(e) {
   const zone = document.getElementById('add-zone').value;
   const theme = document.getElementById('add-theme').value.trim() || 'Festive Pratima & Illumination';
   const desc = document.getElementById('add-desc').value.trim() || 'Community contributed pandal.';
-  let imgUrl = document.getElementById('add-img').value.trim() || 'https://images.unsplash.com/photo-1601055283742-8b27e81b5553?auto=format&fit=crop&w=800&q=80';
+  const rawImgInput = document.getElementById('add-img').value.trim();
+  const hasCustomImg = Boolean(rawImgInput);
+  let imgUrl = rawImgInput || DEFAULT_DURGA_IDOL_IMG;
 
   if (!name) return alert('Please enter a pandal name');
 
-  if (imgUrl.startsWith('data:')) {
+  if (hasCustomImg && imgUrl.startsWith('data:')) {
     const up = await uploadImageToCloudStorage(imgUrl, 'pandal_covers');
     if (up && up.url) imgUrl = up.url;
   }
@@ -2243,12 +2603,16 @@ async function submitNewPandal(e) {
     location: loc,
     address: `${zone}, West Bengal`,
     zone: zone,
-    images: [imgUrl],
-    thumbnail: imgUrl,
-    rating: 5.0,
-    reviewCount: 1,
+    images: hasCustomImg ? [imgUrl] : [],
+    thumbnail: hasCustomImg ? imgUrl : DEFAULT_DURGA_IDOL_IMG,
+    userPhotos: [],
+    rating: 0,
+    reviewCount: 0,
+    ratingSum: 0,
+    ratingCount: 0,
+    userRatings: [],
     visitCount: 1,
-    photosPostedCount: 1,
+    photosPostedCount: hasCustomImg ? 1 : 0,
     trafficLevel: 'moderate',
     estimatedQueueMins: 15,
     isBeautyPick: true,
@@ -2418,10 +2782,16 @@ function renderPandalList() {
   else if (currentFilter === 'rating') list.sort((a, b) => b.rating - a.rating);
   else if (currentFilter === 'visits') list.sort((a, b) => b.visitCount - a.visitCount);
 
-  container.innerHTML = list.map(p => `
+  container.innerHTML = list.map(p => {
+    const mainImg = getPandalMainImage(p);
+    const hasRecentPhoto = Array.isArray(p.userPhotos) && p.userPhotos.length > 0;
+    const recentAuthor = hasRecentPhoto ? (p.userPhotos[0].authorName || 'Hopper') : null;
+
+    return `
     <div class="pandal-card" onclick="openPandalDetailById('${p.id}')">
       <div class="card-image-wrap">
-        <img src="${p.thumbnail || p.images[0]}" alt="${p.name}" loading="lazy">
+        <img src="${mainImg}" alt="${p.name}" loading="lazy" onerror="this.onerror=null; this.src='${DEFAULT_DURGA_IDOL_IMG}';">
+        ${hasRecentPhoto ? `<span class="card-recent-photo-pill" title="Live photo uploaded by ${recentAuthor}">📸 Live • ${recentAuthor}</span>` : ''}
         <span class="card-distance-badge">📍 ${p.distanceKm} km</span>
         <span class="card-traffic-badge" style="background: ${p.trafficLevel === 'low' ? '#10b981' : p.trafficLevel === 'moderate' ? '#f59e0b' : '#ef4444'}">
           ${p.trafficLevel.toUpperCase()}
@@ -2439,13 +2809,21 @@ function renderPandalList() {
         <p class="card-theme">🎨 ${p.theme}</p>
         <p class="card-address">🚩 ${p.address}</p>
         <div class="card-footer">
-          <span class="card-rating">★ ${p.rating} <span style="font-size:10px; color:#64748b; font-weight:600;">(${p.reviewCount || 100})</span></span>
+          <span class="card-rating card-rating-interactive" onclick="event.stopPropagation(); openRatingPrompt('${p.id}')" title="Click to Rate this Pandal">
+            ${(typeof p.reviewCount === 'number' && p.reviewCount > 0 && typeof p.rating === 'number' && p.rating > 0)
+              ? `★ ${p.rating} <span style="font-size:10px; color:#64748b; font-weight:600;">(${p.reviewCount})</span>`
+              : `<span style="font-size:11px; color:#d97706; font-weight:800;">⭐ Not rated yet (0)</span>`
+            }
+          </span>
           <div class="card-action-btns">
             <button type="button" class="btn-card-action btn-card-route" onclick="event.stopPropagation(); startNavigationToById('${p.id}')" title="Get Road Route">
               🚗 Route
             </button>
             <button type="button" class="btn-card-action btn-card-photo" onclick="event.stopPropagation(); openAddPhotoModal('${p.id}')" title="Upload Photo for this Pandal">
               📸 +Photo
+            </button>
+            <button type="button" class="btn-card-action" onclick="event.stopPropagation(); openRatingPrompt('${p.id}')" title="Rate this Pandal" style="color:#d97706; background:#fef3c7; border:1px solid #fde68a;">
+              ⭐ Rate
             </button>
             <button type="button" class="btn-card-action btn-card-details" onclick="event.stopPropagation(); openEditPandalModal('${p.id}')" title="Edit Pandal Details">
               ✏️ Edit
@@ -2462,7 +2840,8 @@ function renderPandalList() {
         </div>
       </div>
     </div>
-  `).join('');
+  `;
+  }).join('');
 }
 
 function renderShortestFinder() {
@@ -2741,9 +3120,13 @@ function startCommunityRelaySync() {
         if (Array.isArray(parsed)) {
           let updated = false;
           parsed.forEach(cp => {
-            if (!pandals.some(p => p.id === cp.id)) {
-              pandals.unshift(cp);
+            const cleanCp = sanitizePandalImages(cp);
+            const idx = pandals.findIndex(p => p.id === cleanCp.id);
+            if (idx === -1) {
+              pandals.unshift(cleanCp);
               updated = true;
+            } else {
+              pandals[idx] = sanitizePandalImages(pandals[idx]);
             }
           });
           if (updated) {
@@ -3550,7 +3933,7 @@ function renderAdminManagerList() {
   container.innerHTML = filtered.map(p => `
     <div style="background:#fff; border: 1.5px solid var(--border-light); border-radius:14px; padding:12px 14px; display:flex; justify-content:space-between; align-items:center; gap:12px; box-shadow: 0 2px 6px rgba(0,0,0,0.03);">
       <div style="display:flex; align-items:center; gap:10px; overflow:hidden;">
-        <img src="${p.thumbnail || (p.images && p.images[0]) || ''}" style="width:42px; height:42px; border-radius:10px; object-fit:cover; flex-shrink:0; border:1px solid #e2e8f0;" onerror="this.src='https://images.unsplash.com/photo-1601055283742-8b27e81b5553?auto=format&fit=crop&w=100&q=80'" />
+        <img src="${getPandalMainImage(p)}" style="width:42px; height:42px; border-radius:10px; object-fit:cover; flex-shrink:0; border:1px solid #e2e8f0;" onerror="this.onerror=null; this.src=DEFAULT_DURGA_IDOL_IMG;" />
         <div style="overflow:hidden;">
           <h4 style="margin:0; font-size:13px; font-weight:800; color:#0f172a; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${p.name}</h4>
           <p style="margin:2px 0 0 0; font-size:11px; color:#64748b;">🚩 ${p.zone} • ${p.clubName || p.name}</p>
