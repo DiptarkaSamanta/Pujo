@@ -381,29 +381,6 @@ const DEFAULT_PANDALS = [
     isHeritage: true
   },
   {
-    id: 'pandal-newtown-1',
-    name: 'New Town Sarbojanin (Action Area 1)',
-    pujaName: 'New Town Sarbojanin Durgotsav',
-    clubName: 'New Town Cultural Association',
-    theme: 'Illuminated Terracotta Craft & Grand Cultural Pavilion',
-    description: 'Premier community puja in New Town near The New Town School and Rabindra Tirtha Shishu Udyan. Radiant festive lighting and vibrant evening cultural ceremonies.',
-    location: { lat: 22.5845, lng: 88.4688 },
-    address: 'Near The New Town School, Action Area 1, New Town, Kolkata',
-    zone: 'North 24 Parganas',
-    images: [
-      DEFAULT_DURGA_IDOL_IMG
-    ],
-    thumbnail: DEFAULT_DURGA_IDOL_IMG,
-    rating: 4.9,
-    reviewCount: 420,
-    visitCount: 16500,
-    photosPostedCount: 680,
-    trafficLevel: 'moderate',
-    estimatedQueueMins: 15,
-    isBeautyPick: true,
-    isHeritage: false
-  },
-  {
     id: 'pandal-newtown-2',
     name: 'Jal Vayu Towers Durga Puja',
     pujaName: 'Jal Vayu Towers Sarbojanin Durgotsav',
@@ -442,12 +419,38 @@ const DEFAULT_FIREBASE_CONFIG = {
 };
 
 const STORAGE_KEYS = {
-  PANDALS: 'puja_parikrama_pandals_v1',
+  PANDALS: 'puja_parikrama_pandals_v2',
   PLANS: 'puja_parikrama_plans_v1',
   FIREBASE_CONFIG: 'puja_firebase_config_v1',
-  COMMUNITY_SYNC: 'puja_community_sync_v1',
+  COMMUNITY_SYNC: 'puja_community_sync_v2',
+  DELETED_IDS: 'puja_parikrama_deleted_ids_v2',
   AUTH: 'puja_parikrama_auth_v1'
 };
+
+function getDeletedPandalIds() {
+  const deletedSet = new Set();
+  try {
+    const raw = localStorage.getItem(STORAGE_KEYS.DELETED_IDS);
+    if (raw) {
+      const arr = JSON.parse(raw);
+      if (Array.isArray(arr)) {
+        arr.forEach(id => {
+          if (id) deletedSet.add(id);
+        });
+      }
+    }
+  } catch (e) {}
+  return deletedSet;
+}
+
+function addDeletedPandalId(id) {
+  if (!id) return;
+  const set = getDeletedPandalIds();
+  set.add(id);
+  try {
+    localStorage.setItem(STORAGE_KEYS.DELETED_IDS, JSON.stringify(Array.from(set)));
+  } catch (e) {}
+}
 
 // Admin credentials are stored securely in Firebase Firestore ('admins' collection)
 
@@ -613,29 +616,43 @@ function getPandalMainImage(pandal) {
 }
 
 function loadStoredPandals() {
-  let list = [...DEFAULT_PANDALS];
+  // Purge deprecated v1 stale storage keys from phones
+  try {
+    localStorage.removeItem('puja_parikrama_pandals_v1');
+    localStorage.removeItem('puja_community_sync_v1');
+  } catch (e) {}
+
+  const deletedIds = getDeletedPandalIds();
+  let list = DEFAULT_PANDALS.filter(p => !deletedIds.has(p.id));
   try {
     const raw = localStorage.getItem(STORAGE_KEYS.PANDALS);
     if (raw) {
       const parsed = JSON.parse(raw);
       if (Array.isArray(parsed) && parsed.length > 0) {
         const mapById = new Map();
-        DEFAULT_PANDALS.forEach(p => mapById.set(p.id, p));
-        parsed.forEach(p => mapById.set(p.id, p));
+        list.forEach(p => mapById.set(p.id, p));
+        parsed.forEach(p => {
+          if (p && p.id && !deletedIds.has(p.id)) {
+            mapById.set(p.id, p);
+          }
+        });
         list = Array.from(mapById.values());
       }
     }
   } catch (e) {
     console.error('Failed reading localStorage pandals:', e);
   }
-  list = list.map(sanitizePandalImages);
+  list = list.filter(p => !deletedIds.has(p.id)).map(sanitizePandalImages);
   localStorage.setItem(STORAGE_KEYS.PANDALS, JSON.stringify(list));
   return list;
 }
 
 function savePandals(updatedList) {
-  pandals = updatedList;
-  localStorage.setItem(STORAGE_KEYS.PANDALS, JSON.stringify(updatedList));
+  const deletedIds = getDeletedPandalIds();
+  pandals = (updatedList || []).filter(p => p && p.id && !deletedIds.has(p.id));
+  try {
+    localStorage.setItem(STORAGE_KEYS.PANDALS, JSON.stringify(pandals));
+  } catch (e) {}
 }
 
 function loadStoredPlans() {
@@ -1845,10 +1862,17 @@ function openPandalDetail(pandal) {
   // Render Google Maps Style Community Gallery
   renderCommunityGallery(pandal);
 
-  // Admin delete button toggle
+  // Admin or Custom Pinned Location delete button toggle
   const deleteBtn = document.getElementById('btn-admin-delete-pandal');
   if (deleteBtn) {
-    deleteBtn.style.display = (currentAuth && currentAuth.role === 'admin') ? 'inline-flex' : 'none';
+    const isCustom = Boolean(pandal.id && pandal.id.startsWith('pandal-custom'));
+    const isAdmin = Boolean(currentAuth && currentAuth.role === 'admin');
+    if (isAdmin || isCustom) {
+      deleteBtn.style.display = 'inline-flex';
+      deleteBtn.textContent = isCustom ? '🗑️ Delete This Pinned Location' : '🗑️ Delete This Pandal (Admin)';
+    } else {
+      deleteBtn.style.display = 'none';
+    }
   }
 
   document.getElementById('modal-pandal-detail').classList.add('active');
@@ -2508,47 +2532,52 @@ function deleteCurrentPandal() {
 }
 
 function deletePandal(pandalId) {
-  if (!currentAuth || currentAuth.role !== 'admin') {
-    alert('Access restricted: Only administrators can delete pandals.');
+  const target = pandals.find(p => p.id === pandalId);
+  const isCustom = Boolean(pandalId && pandalId.startsWith('pandal-custom'));
+  const isAdmin = Boolean(currentAuth && currentAuth.role === 'admin');
+
+  if (!isAdmin && !isCustom) {
+    alert('Access restricted: Only administrators can delete official heritage pandals.');
     return;
   }
 
-  const target = pandals.find(p => p.id === pandalId);
-  if (!target) return;
-  const name = target.name || 'this pandal';
-  const photoCount = (target.userPhotos || []).length + (target.images || []).length;
+  const name = target ? (target.name || 'this pandal') : 'Selected location';
+  const photoCount = target ? ((target.userPhotos || []).length + (target.images || []).length) : 0;
 
-  // Explicit single admin warning for complete purge of pandal, images, and location data
   const confirmed = confirm(
-    `⚠️ ADMIN WARNING: PERMANENTLY PURGE PANDAL & ALL DATA?\n\n` +
-    `You are about to delete:\n` +
-    `"${name}" (${target.zone || 'Bengal'})\n\n` +
-    `This will immediately purge:\n` +
-    `• Pandal profile & club details\n` +
-    `• All ${photoCount} uploaded idol & darshan images\n` +
-    `• GPS coordinate pin & map markers across Bengal\n` +
-    `• Live crowd reports, reviews & ratings\n\n` +
-    `Are you sure you want to permanently delete this pandal?`
+    isCustom
+      ? `🗑️ Delete Pinned Location?\n\nAre you sure you want to permanently delete "${name}" from your map?`
+      : `⚠️ ADMIN WARNING: PERMANENTLY PURGE PANDAL & ALL DATA?\n\n` +
+        `You are about to delete:\n` +
+        `"${name}" (${target ? (target.zone || 'Bengal') : ''})\n\n` +
+        `This will immediately purge:\n` +
+        `• Pandal profile & club details\n` +
+        `• All ${photoCount} uploaded idol & darshan images\n` +
+        `• GPS coordinate pin & map markers across Bengal\n\n` +
+        `Are you sure you want to permanently delete this pandal?`
   );
 
   if (!confirmed) return;
 
-  // 1. Remove from local pandals array
+  // 1. Record ID in deleted tombstones list so it can never resurrect
+  addDeletedPandalId(pandalId);
+
+  // 2. Remove from local pandals array
   pandals = pandals.filter(p => p.id !== pandalId);
   savePandals(pandals);
 
-  // 2. Clear active selected pandal if deleted
+  // 3. Clear active selected pandal if deleted
   if (selectedPandal && selectedPandal.id === pandalId) {
     selectedPandal = null;
   }
 
-  // 3. Remove route line from map if active
+  // 4. Remove route line from map if active
   if (typeof routePolyline !== 'undefined' && routePolyline && typeof map !== 'undefined' && map) {
     try { map.removeLayer(routePolyline); } catch (e) {}
     routePolyline = null;
   }
 
-  // 4. Remove from Firebase Firestore (propagates live deletion to all users!)
+  // 5. Remove from Firebase Firestore & record in deleted_pandals collection
   if (firestoreDb) {
     firestoreDb.collection('pandals').doc(pandalId).delete()
       .then(() => {
@@ -2557,12 +2586,18 @@ function deletePandal(pandalId) {
       .catch((err) => {
         console.warn('Firestore delete error:', err);
       });
+
+    firestoreDb.collection('deleted_pandals').doc(pandalId).set({
+      id: pandalId,
+      name: name,
+      deletedAt: Date.now()
+    }).catch(e => {});
   }
 
-  // 5. Remove from community backup storage
+  // 6. Remove from community backup storage
   try {
     const raw = localStorage.getItem(STORAGE_KEYS.COMMUNITY_SYNC) || '[]';
-    const list = JSON.parse(raw).filter(p => p.id !== pandalId);
+    const list = JSON.parse(raw).filter(p => p && p.id !== pandalId);
     localStorage.setItem(STORAGE_KEYS.COMMUNITY_SYNC, JSON.stringify(list));
   } catch (e) {}
 
@@ -2570,7 +2605,7 @@ function deletePandal(pandalId) {
   renderPandalMarkers();
   renderPandalList();
   renderShortestFinder();
-  showToast(`🗑️ "${name}" and all associated image & location data permanently deleted!`);
+  showToast(`🗑️ "${name}" permanently deleted!`);
 }
 
 // ----------------------------------------------------------------------------
@@ -3178,14 +3213,24 @@ function startFirestoreListener() {
   if (!firestoreDb) return;
   if (firestoreUnsubscribe) firestoreUnsubscribe();
 
+  // 1. Listen for active pandals
   firestoreUnsubscribe = firestoreDb.collection('pandals')
     .onSnapshot((snapshot) => {
       let hasNewPandals = false;
       const isInitial = !isCloudSyncActive;
       isCloudSyncActive = true;
+      const deletedIds = getDeletedPandalIds();
 
       snapshot.docChanges().forEach((change) => {
         const cloudPandal = change.doc.data();
+        const pId = cloudPandal?.id || change.doc.id;
+
+        // Skip if this pandal was deleted
+        if (deletedIds.has(pId)) {
+          pandals = pandals.filter(p => p.id !== pId);
+          return;
+        }
+
         if (change.type === 'added' || change.type === 'modified') {
           const idx = pandals.findIndex(p => p.id === cloudPandal.id);
           if (idx === -1) {
@@ -3204,6 +3249,7 @@ function startFirestoreListener() {
           }
         } else if (change.type === 'removed') {
           const removedId = cloudPandal?.id || change.doc.id;
+          addDeletedPandalId(removedId);
           pandals = pandals.filter(p => p.id !== removedId);
           hasNewPandals = true;
         }
@@ -3225,6 +3271,28 @@ function startFirestoreListener() {
         updateCloudStatus('Cloud: Standby 🟡', false);
       }
     });
+
+  // 2. Real-time listener for deletions made from laptop/other devices
+  try {
+    firestoreDb.collection('deleted_pandals').onSnapshot((delSnap) => {
+      let hasDeleted = false;
+      delSnap.docChanges().forEach((ch) => {
+        const delId = ch.doc.id;
+        addDeletedPandalId(delId);
+        if (pandals.some(p => p.id === delId)) {
+          pandals = pandals.filter(p => p.id !== delId);
+          hasDeleted = true;
+        }
+      });
+      if (hasDeleted) {
+        savePandals(pandals);
+        renderPandalMarkers();
+        renderPandalList();
+        renderShortestFinder();
+        updateCloudPandalsCount();
+      }
+    }, () => {});
+  } catch (e) {}
 }
 
 function startCommunityRelaySync() {
@@ -3233,12 +3301,14 @@ function startCommunityRelaySync() {
   // Poll cloud relay periodically for community contributions across devices
   const syncPoll = async () => {
     try {
+      const deletedIds = getDeletedPandalIds();
       const storedCommunity = localStorage.getItem(STORAGE_KEYS.COMMUNITY_SYNC);
       if (storedCommunity) {
         const parsed = JSON.parse(storedCommunity);
         if (Array.isArray(parsed)) {
           let updated = false;
           parsed.forEach(cp => {
+            if (!cp || !cp.id || deletedIds.has(cp.id)) return; // Strictly ignore deleted points!
             const cleanCp = sanitizePandalImages(cp);
             const idx = pandals.findIndex(p => p.id === cleanCp.id);
             if (idx === -1) {
@@ -3263,6 +3333,37 @@ function startCommunityRelaySync() {
   syncPoll();
   if (cloudSyncPollTimer) clearInterval(cloudSyncPollTimer);
   cloudSyncPollTimer = setInterval(syncPoll, 6000);
+}
+
+function cleanDuplicatePins() {
+  const deletedIds = getDeletedPandalIds();
+  let currentList = (pandals || []).filter(p => p && p.id && !deletedIds.has(p.id));
+
+  // Dynamically deduplicate any pandals located at the exact same coordinates (within 35 meters)
+  const deduped = [];
+  currentList.forEach(p => {
+    if (!p || !p.location || typeof p.location.lat !== 'number' || typeof p.location.lng !== 'number') {
+      return;
+    }
+    const isNearbyDuplicate = deduped.some(existing => {
+      const distKm = calculateDistanceKm(existing.location, p.location);
+      return distKm < 0.035; // less than 35 meters apart
+    });
+
+    if (isNearbyDuplicate) {
+      addDeletedPandalId(p.id);
+    } else {
+      deduped.push(p);
+    }
+  });
+
+  pandals = deduped;
+  savePandals(pandals);
+  renderPandalMarkers();
+  renderPandalList();
+  renderShortestFinder();
+  updateCloudPandalsCount();
+  showToast('🧹 Cleaned duplicate & deleted points! Map updated.');
 }
 
 function broadcastPandalToCloud(newPandal) {
