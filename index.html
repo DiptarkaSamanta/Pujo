@@ -25,7 +25,7 @@
     <link href="https://api.mapbox.com/mapbox-gl-js/v3.4.0/mapbox-gl.css" rel="stylesheet" />
 
     <!-- Custom Festive Stylesheet -->
-    <link rel="stylesheet" href="./styles.css?v=6.0" />
+    <link rel="stylesheet" href="./styles.css?v=7.0" />
   </head>
   <body data-active-tab="map">
     <div id="app-container">
@@ -233,14 +233,14 @@
         <!-- Floating Action Pills Overlay (Pin Pandal, My Pinpoint, Styles & 3D) -->
         <div id="map-top-overlay">
           <div class="overlay-row-1">
-            <!-- Pin the Pandal Orange Pill -->
-            <button class="overlay-pill-orange" onclick="startPinningMode()" title="Pin the Pandal">
-              <span>🪔</span> Pin the Pandal
+            <!-- Pin Spot Orange Pill -->
+            <button class="overlay-pill-orange" onclick="startPinningMode()" title="Pin a Location on Map">
+              <span>📍</span> Pin on Map
             </button>
 
             <!-- My Pinpoint Blue Pill -->
             <button class="overlay-pill-blue" onclick="recenterMap()" title="Center on My Location">
-              <span>📍</span> My Pinpoint
+              <span>📍</span> My Location
             </button>
 
             <!-- Map View Pill (Unified with 3D & Cartography Styles) -->
@@ -248,6 +248,7 @@
               <span>🗺️</span> <span id="overlay-style-label">Map View</span>
             </button>
           </div>
+
         </div>
 
         <!-- Bottom-Left Floating Live Crowd Legend -->
@@ -1304,11 +1305,11 @@
         </div>
       </div>
 
-      <!-- Modal 2: Add / Pin New Pandal -->
+      <!-- Modal 2: Add / Pin Spot on Map (Multi-Category: Pandal, Food, Temp Stall, Mela, Medical, Grocery, Activities) -->
       <div id="modal-add-pandal" class="modal-overlay">
         <div class="modal-card">
           <div class="modal-header">
-            <h3>🪔 Contribute a Pandal</h3>
+            <h3 id="add-modal-heading">📍 Pin a Spot on Bengal Map</h3>
             <button class="close-btn" onclick="closeAddModal()">✕</button>
           </div>
           <form onsubmit="submitNewPandal(event)" class="modal-body">
@@ -1316,14 +1317,50 @@
               📍 Pinned GPS Coordinates: <span id="add-coord-display"></span>
             </div>
 
-            <div class="form-group">
-              <label>Pandal / Puja Name *</label>
-              <input type="text" id="add-name" class="form-input" placeholder="e.g. Mudiali Club, Tridhara Sammilani" required />
+            <!-- Category Selector Buttons -->
+            <div style="margin-top:10px;">
+              <label style="display:block; font-size:12px; font-weight:800; color:#0f172a; margin-bottom:6px;">Select Category *</label>
+              <div class="pin-category-grid" id="pin-category-grid">
+                <button type="button" class="pin-cat-option active" data-cat="pandal" onclick="selectPinCategory('pandal', this)">
+                  <span class="cat-icon">🪔</span>
+                  <span class="cat-name">Pujo Pandal</span>
+                </button>
+                <button type="button" class="pin-cat-option" data-cat="food" onclick="selectPinCategory('food', this)">
+                  <span class="cat-icon">🍛</span>
+                  <span class="cat-name">Food Hub</span>
+                </button>
+                <button type="button" class="pin-cat-option" data-cat="streetfood" onclick="selectPinCategory('streetfood', this)">
+                  <span class="cat-icon">🥟</span>
+                  <span class="cat-name">Temp Food Stall</span>
+                </button>
+                <button type="button" class="pin-cat-option" data-cat="mela" onclick="selectPinCategory('mela', this)">
+                  <span class="cat-icon">🎡</span>
+                  <span class="cat-name">Mela & Fair</span>
+                </button>
+                <button type="button" class="pin-cat-option" data-cat="medical" onclick="selectPinCategory('medical', this)">
+                  <span class="cat-icon">💊</span>
+                  <span class="cat-name">Medical 24x7</span>
+                </button>
+                <button type="button" class="pin-cat-option" data-cat="grocery" onclick="selectPinCategory('grocery', this)">
+                  <span class="cat-icon">🛒</span>
+                  <span class="cat-name">Grocery / Water</span>
+                </button>
+                <button type="button" class="pin-cat-option" data-cat="activity" onclick="selectPinCategory('activity', this)">
+                  <span class="cat-icon">🎭</span>
+                  <span class="cat-name">Activities</span>
+                </button>
+              </div>
+              <input type="hidden" id="add-category" value="pandal" />
             </div>
 
             <div class="form-group">
-              <label>Club / Committee Name</label>
-              <input type="text" id="add-club" class="form-input" placeholder="e.g. Mudiali Club" />
+              <label id="lbl-add-name">Place / Spot Name *</label>
+              <input type="text" id="add-name" class="form-input" placeholder="e.g. Sreebhumi, Dada Boudi Biryani, Fairground" required />
+            </div>
+
+            <div class="form-group" id="group-add-club">
+              <label id="lbl-add-club">Organizer / Club / Shop Name</label>
+              <input type="text" id="add-club" class="form-input" placeholder="e.g. Committee, Vendor name" />
             </div>
 
             <div class="form-group">
@@ -1343,23 +1380,29 @@
             </div>
 
             <div class="form-group">
-              <label>Theme or Concept</label>
-              <input type="text" id="add-theme" class="form-input" placeholder="e.g. Ancient Temple Architecture, Eco-Clay Pratima" />
+              <label id="lbl-add-theme">Specialty / Theme / Attractions</label>
+              <input type="text" id="add-theme" class="form-input" placeholder="e.g. Traditional Mandir, Hot Phuchka, Giant Wheel, 24x7 Pharmacy" />
             </div>
 
             <div class="form-group">
-              <label>Short Description</label>
-              <textarea id="add-desc" class="form-textarea" placeholder="Tell hoppers about the lighting, idol art, or queue details..."></textarea>
+              <label id="lbl-add-desc">Short Description / Offerings</label>
+              <textarea id="add-desc" class="form-textarea" placeholder="Tell hoppers about timings, menu, rides, or special highlights..."></textarea>
             </div>
 
             <div class="form-group">
-              <label>Photo Image URL (Optional)</label>
-              <input type="url" id="add-img" class="form-input" placeholder="https://..." />
+              <label>Photo (Optional: Image URL or Device Photo)</label>
+              <div style="display:flex; gap:8px;">
+                <input type="text" id="add-img" class="form-input" placeholder="https://... or choose from device" style="flex:1;" />
+                <label for="add-img-file-input" class="btn-secondary" style="margin:0; font-size:11px; padding:8px 12px; cursor:pointer; display:flex; align-items:center; gap:4px; white-space:nowrap;">
+                  📁 Device
+                </label>
+                <input type="file" id="add-img-file-input" accept="image/*" style="display:none;" onchange="handleAddPinPhotoFile(event)" />
+              </div>
             </div>
 
             <div style="display:flex; gap:8px; margin-top:8px;">
-              <button type="submit" class="btn-festive" style="flex:1; justify-content:center; padding:12px;">
-                Save to Bengal Map 🪔
+              <button type="submit" id="btn-save-pin-spot" class="btn-festive" style="flex:1; justify-content:center; padding:12px; font-weight:800;">
+                📍 Save & Pin on Map
               </button>
               <button type="button" onclick="closeAddModal()" class="btn-secondary" style="padding:12px;">
                 Cancel
@@ -1871,6 +1914,6 @@
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-storage-compat.js"></script>
 
     <!-- Pure Vanilla Application Logic -->
-    <script src="./app.js?v=6.0"></script>
+    <script src="./app.js?v=7.0"></script>
   </body>
 </html>

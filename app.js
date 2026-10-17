@@ -406,6 +406,494 @@ const DEFAULT_PANDALS = [
 ];
 
 // ----------------------------------------------------------------------------
+// 1B. Multi-Category Festive Spots Configuration & Master Dataset
+// ----------------------------------------------------------------------------
+const MARKER_CATEGORY_CONFIG = {
+  pandal: {
+    id: 'pandal',
+    label: 'Puja Pandal',
+    icon: '🪔',
+    badge: 'PUJA',
+    bgGradient: 'linear-gradient(135deg, #b91c1c 0%, #ea580c 50%, #d97706 100%)',
+    pinClass: 'marker-pin-pandal',
+    shadowColor: 'rgba(185, 28, 28, 0.45)',
+    accentColor: '#d97706'
+  },
+  food: {
+    id: 'food',
+    label: 'Food Hub & Restaurant',
+    icon: '🍛',
+    badge: 'FOOD',
+    bgGradient: 'linear-gradient(135deg, #c2410c 0%, #ea580c 50%, #f59e0b 100%)',
+    pinClass: 'marker-pin-food',
+    shadowColor: 'rgba(234, 88, 12, 0.45)',
+    accentColor: '#f97316'
+  },
+  streetfood: {
+    id: 'streetfood',
+    label: 'Temporary Food Stall',
+    icon: '🥟',
+    badge: 'STALL',
+    bgGradient: 'linear-gradient(135deg, #d97706 0%, #f59e0b 50%, #fbbf24 100%)',
+    pinClass: 'marker-pin-streetfood',
+    shadowColor: 'rgba(245, 158, 11, 0.45)',
+    accentColor: '#fbbf24'
+  },
+  mela: {
+    id: 'mela',
+    label: 'Mela & Carnival',
+    icon: '🎡',
+    badge: 'MELA',
+    bgGradient: 'linear-gradient(135deg, #7c3aed 0%, #a855f7 50%, #ec4899 100%)',
+    pinClass: 'marker-pin-mela',
+    shadowColor: 'rgba(168, 85, 247, 0.5)',
+    accentColor: '#ec4899'
+  },
+  medical: {
+    id: 'medical',
+    label: 'Medical & Pharmacy 24x7',
+    icon: '💊',
+    badge: '24x7 MED',
+    bgGradient: 'linear-gradient(135deg, #991b1b 0%, #dc2626 50%, #ef4444 100%)',
+    pinClass: 'marker-pin-medical',
+    shadowColor: 'rgba(220, 38, 38, 0.5)',
+    accentColor: '#f87171'
+  },
+  grocery: {
+    id: 'grocery',
+    label: 'Grocery & Water Point',
+    icon: '🛒',
+    badge: 'WATER/GROCERY',
+    bgGradient: 'linear-gradient(135deg, #047857 0%, #059669 50%, #10b981 100%)',
+    pinClass: 'marker-pin-grocery',
+    shadowColor: 'rgba(5, 150, 105, 0.45)',
+    accentColor: '#34d399'
+  },
+  activity: {
+    id: 'activity',
+    label: 'Activities & Cultural Stage',
+    icon: '🎭',
+    badge: 'ACTIVITY',
+    bgGradient: 'linear-gradient(135deg, #1d4ed8 0%, #3b82f6 50%, #06b6d4 100%)',
+    pinClass: 'marker-pin-activity',
+    shadowColor: 'rgba(59, 130, 246, 0.45)',
+    accentColor: '#38bdf8'
+  }
+};
+
+function getSpotCategoryFallbackImg(category) {
+  switch (category) {
+    case 'food':
+      return 'https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?auto=format&fit=crop&w=600&q=80';
+    case 'streetfood':
+      return 'https://images.unsplash.com/photo-1601050690597-df0568f70950?auto=format&fit=crop&w=600&q=80';
+    case 'mela':
+      return 'https://images.unsplash.com/photo-1513151233558-d860c5398176?auto=format&fit=crop&w=600&q=80';
+    case 'medical':
+      return 'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?auto=format&fit=crop&w=600&q=80';
+    case 'grocery':
+      return 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=600&q=80';
+    case 'activity':
+      return 'https://images.unsplash.com/photo-1465847899084-d164df4dedc6?auto=format&fit=crop&w=600&q=80';
+    default:
+      return DEFAULT_DURGA_IDOL_IMG;
+  }
+}
+
+const ADDITIONAL_FESTIVE_SPOTS = [
+  // 1. Mela & Carnivals
+  {
+    id: 'spot-mela-1',
+    name: 'Bagbazar Sarbojanin Grand Festive Mela',
+    pujaName: 'Bagbazar Riverfront Amusement Mela & Carnival',
+    clubName: 'Bagbazar Sarbojanin Committee & Fairground',
+    category: 'mela',
+    theme: 'Giant Ferris Wheel, Puppet Theatres & Kolkata Carnival',
+    description: 'Centuries-old riverside festive fair adjoining Bagbazar Ghat. Filled with towering giant wheels, merry-go-rounds, traditional toy bazaars, and puppet artists.',
+    location: { lat: 22.6025, lng: 88.3685 },
+    address: 'Bagbazar Ghat Road, North Kolkata',
+    zone: 'Kolkata',
+    images: ['https://images.unsplash.com/photo-1513151233558-d860c5398176?auto=format&fit=crop&w=800&q=80'],
+    thumbnail: 'https://images.unsplash.com/photo-1513151233558-d860c5398176?auto=format&fit=crop&w=400&q=80',
+    rating: 4.8,
+    reviewCount: 640,
+    visitCount: 42000,
+    photosPostedCount: 85,
+    trafficLevel: 'heavy',
+    estimatedQueueMins: 20,
+    isBeautyPick: true,
+    isHeritage: true
+  },
+  {
+    id: 'spot-mela-2',
+    name: 'Maddox Square Autumn Carnival & Fair',
+    pujaName: 'Maddox Square Open Fairground & Youth Carnival',
+    clubName: 'Maddox Square Committee',
+    category: 'mela',
+    theme: 'Bengal Art & Craft Fair, Joyrides & Adda Grounds',
+    description: 'Kolkata’s premier open-air youth carnival and fair. Sprawling park with artisan handicrafts, fun games, live cotton-candy, and joyous cultural crowds.',
+    location: { lat: 22.5292, lng: 88.3601 },
+    address: 'Maddox Square, Ritchie Road, Ballygunge, Kolkata',
+    zone: 'Kolkata',
+    images: ['https://images.unsplash.com/photo-1513151233558-d860c5398176?auto=format&fit=crop&w=800&q=80'],
+    thumbnail: 'https://images.unsplash.com/photo-1513151233558-d860c5398176?auto=format&fit=crop&w=400&q=80',
+    rating: 4.9,
+    reviewCount: 1120,
+    visitCount: 51000,
+    photosPostedCount: 160,
+    trafficLevel: 'heavy',
+    estimatedQueueMins: 15,
+    isBeautyPick: true,
+    isHeritage: true
+  },
+  {
+    id: 'spot-mela-3',
+    name: 'Kalyani ITI Mega Amusement Carnival',
+    pujaName: 'Kalyani Grand Festive Fair & Joyride Park',
+    clubName: 'Luminous Club & ITI Fair Samiti',
+    category: 'mela',
+    theme: 'Roller Coasters, Dragon Train & 150+ Exhibition Stalls',
+    description: 'Massive festive exhibition fair spanning over 10 acres. Features high-thrill rides, Columbus ships, dragon coasters, and Bengal household handicraft pavilions.',
+    location: { lat: 22.9738, lng: 88.4352 },
+    address: 'ITI More Fairgrounds, Kalyani Expressway, Nadia',
+    zone: 'Nadia',
+    images: ['https://images.unsplash.com/photo-1513151233558-d860c5398176?auto=format&fit=crop&w=800&q=80'],
+    thumbnail: 'https://images.unsplash.com/photo-1513151233558-d860c5398176?auto=format&fit=crop&w=400&q=80',
+    rating: 4.9,
+    reviewCount: 1540,
+    visitCount: 78000,
+    photosPostedCount: 210,
+    trafficLevel: 'jam',
+    estimatedQueueMins: 35,
+    isBeautyPick: true,
+    isHeritage: false
+  },
+
+  // 2. Food Hubs & Famous Restaurants
+  {
+    id: 'spot-food-1',
+    name: 'Arsalan (Park Circus 7-Point)',
+    pujaName: 'Arsalan Grand Mughlai & Biryani Hub',
+    clubName: 'Arsalan Caterer & Restaurants',
+    category: 'food',
+    theme: 'Authentic Royal Kolkata Mutton Biryani & Chicken Chaap',
+    description: 'The epicenter of Kolkata Durga Puja night-time dining. Famous for melt-in-mouth aroma-rich biryani, saffron-infused firni, and succulent mutton seekh kebabs.',
+    location: { lat: 22.5441, lng: 88.3668 },
+    address: '191 Park Street, Park Circus 7-Point Crossing, Kolkata',
+    zone: 'Kolkata',
+    images: ['https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?auto=format&fit=crop&w=800&q=80'],
+    thumbnail: 'https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?auto=format&fit=crop&w=400&q=80',
+    rating: 4.9,
+    reviewCount: 2800,
+    visitCount: 65000,
+    photosPostedCount: 340,
+    trafficLevel: 'heavy',
+    estimatedQueueMins: 40,
+    isBeautyPick: true,
+    isHeritage: true
+  },
+  {
+    id: 'spot-food-2',
+    name: 'Dada Boudi Biryani (Barrackpore)',
+    pujaName: 'Dada Boudi Hotel & Biryani Hub',
+    clubName: 'Dada Boudi Restaurant Group',
+    category: 'food',
+    theme: 'Legendary Bengal Jumbo Mutton Biryani & Special Rezala',
+    description: 'World-renowned destination along BT Road. Extra-large mutton portions, fragrant ghee rice, and sweet juicy gulab jamuns serving nonstop through the night.',
+    location: { lat: 22.7634, lng: 88.3732 },
+    address: 'SN Banerjee Road, Barrackpore / BT Road, North 24 Parganas',
+    zone: 'North 24 Parganas',
+    images: ['https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?auto=format&fit=crop&w=800&q=80'],
+    thumbnail: 'https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?auto=format&fit=crop&w=400&q=80',
+    rating: 4.8,
+    reviewCount: 3100,
+    visitCount: 70000,
+    photosPostedCount: 420,
+    trafficLevel: 'jam',
+    estimatedQueueMins: 50,
+    isBeautyPick: true,
+    isHeritage: false
+  },
+  {
+    id: 'spot-food-3',
+    name: '6 Ballygunge Place (Heritage Dining)',
+    pujaName: '6 Ballygunge Place Authentic Feast',
+    clubName: '6 Ballygunge Place Heritage Dining',
+    category: 'food',
+    theme: 'Daab Chingri, Kosha Mangsho & Bhetki Paturi',
+    description: 'Housed in a 100-year-old heritage bungalow. Authentic Bengali festive delicacies prepared with heirloom recipes, Gobindobhog rice, and mishti doi.',
+    location: { lat: 22.5255, lng: 88.3650 },
+    address: '6 Ballygunge Place, Ballygunge, Kolkata',
+    zone: 'Kolkata',
+    images: ['https://images.unsplash.com/photo-1589302168068-964664d93dc0?auto=format&fit=crop&w=800&q=80'],
+    thumbnail: 'https://images.unsplash.com/photo-1589302168068-964664d93dc0?auto=format&fit=crop&w=400&q=80',
+    rating: 4.8,
+    reviewCount: 1650,
+    visitCount: 35000,
+    photosPostedCount: 190,
+    trafficLevel: 'moderate',
+    estimatedQueueMins: 25,
+    isBeautyPick: true,
+    isHeritage: true
+  },
+
+  // 3. Temporary Food Stalls
+  {
+    id: 'spot-streetfood-1',
+    name: 'Vivekananda Park Puchka & Kathi Roll Hub',
+    pujaName: 'Southern Avenue Festive Street Food Plaza',
+    clubName: 'Vivekananda Park Street Food Vendors Union',
+    category: 'streetfood',
+    theme: 'Gondhoraj Lebu Puchka, Churmur & Double Egg Rolls',
+    description: 'Kolkata’s most famous evening street food stretch. Crisp puris filled with spiced potato masala and fragrant Gondhoraj lime tamarind water, plus crispy paratha rolls.',
+    location: { lat: 22.5168, lng: 88.3552 },
+    address: 'Southern Avenue, near Vivekananda Park, South Kolkata',
+    zone: 'Kolkata',
+    images: ['https://images.unsplash.com/photo-1601050690597-df0568f70950?auto=format&fit=crop&w=800&q=80'],
+    thumbnail: 'https://images.unsplash.com/photo-1601050690597-df0568f70950?auto=format&fit=crop&w=400&q=80',
+    rating: 4.9,
+    reviewCount: 1890,
+    visitCount: 58000,
+    photosPostedCount: 260,
+    trafficLevel: 'heavy',
+    estimatedQueueMins: 15,
+    isBeautyPick: true,
+    isHeritage: false
+  },
+  {
+    id: 'spot-streetfood-2',
+    name: 'Dacre Lane Pujo Street Food Stalls',
+    pujaName: 'Dacre Lane Heritage Food Street',
+    clubName: 'Central Kolkata Street Food Guild',
+    category: 'streetfood',
+    theme: 'Steaming Chicken Stew, Fish Batter Fry & Luchi Alur Dom',
+    description: 'Kolkata’s culinary heritage alley. Hot Chittoda butter chicken stew with toast, crunchy Kolkata fish fry with mustard kasundi, and golden kochuri.',
+    location: { lat: 22.5691, lng: 88.3524 },
+    address: 'James Hickey Sarani (Dacre Lane), Esplanade, Kolkata',
+    zone: 'Kolkata',
+    images: ['https://images.unsplash.com/photo-1601050690597-df0568f70950?auto=format&fit=crop&w=800&q=80'],
+    thumbnail: 'https://images.unsplash.com/photo-1601050690597-df0568f70950?auto=format&fit=crop&w=400&q=80',
+    rating: 4.8,
+    reviewCount: 1420,
+    visitCount: 46000,
+    photosPostedCount: 175,
+    trafficLevel: 'moderate',
+    estimatedQueueMins: 12,
+    isBeautyPick: true,
+    isHeritage: true
+  },
+  {
+    id: 'spot-streetfood-3',
+    name: 'Bagbazar Ghat Telebhaja & Ghugni Corner',
+    pujaName: 'Riverside Crispy Telebhaja & Hot Snacks Stall',
+    clubName: 'Bagbazar Ghat Vendors Association',
+    category: 'streetfood',
+    theme: 'Mochar Chop, Beguni, Piyaji & Hot Coconut Ghugni',
+    description: 'Iconic North Kolkata evening stall serving piping hot oil-fried fritters, shredded coconut ghugni with fresh coriander, and steaming bhand clay-cup milk chai.',
+    location: { lat: 22.6038, lng: 88.3659 },
+    address: 'Bagbazar Circular Canal / Ghat Entrance, North Kolkata',
+    zone: 'Kolkata',
+    images: ['https://images.unsplash.com/photo-1601050690597-df0568f70950?auto=format&fit=crop&w=800&q=80'],
+    thumbnail: 'https://images.unsplash.com/photo-1601050690597-df0568f70950?auto=format&fit=crop&w=400&q=80',
+    rating: 4.7,
+    reviewCount: 780,
+    visitCount: 29000,
+    photosPostedCount: 95,
+    trafficLevel: 'moderate',
+    estimatedQueueMins: 10,
+    isBeautyPick: false,
+    isHeritage: false
+  },
+  {
+    id: 'spot-streetfood-4',
+    name: 'Triangular Park Kesariya Jalebi & Mishti Stall',
+    pujaName: 'Rashbehari Festive Sweet & Snack Pop-up',
+    clubName: 'South Kolkata Confectioners Pop-up',
+    category: 'streetfood',
+    theme: 'Live Saffron Jalebi, Rabri, Baked Rosogolla & Samosas',
+    description: 'Temporary festive sweet stall drawing huge midnight crowds. Fresh sizzling thin crispy jalebis dipped in saffron syrup, served with creamy thickened rabri.',
+    location: { lat: 22.5195, lng: 88.3582 },
+    address: 'Triangular Park, Rashbehari Avenue, South Kolkata',
+    zone: 'Kolkata',
+    images: ['https://images.unsplash.com/photo-1601050690597-df0568f70950?auto=format&fit=crop&w=800&q=80'],
+    thumbnail: 'https://images.unsplash.com/photo-1601050690597-df0568f70950?auto=format&fit=crop&w=400&q=80',
+    rating: 4.8,
+    reviewCount: 950,
+    visitCount: 33000,
+    photosPostedCount: 110,
+    trafficLevel: 'heavy',
+    estimatedQueueMins: 15,
+    isBeautyPick: true,
+    isHeritage: false
+  },
+
+  // 4. Medical Stores & 24x7 Emergency
+  {
+    id: 'spot-med-1',
+    name: 'Dhanwantary 24x7 Pharmacy & First Aid Camp',
+    pujaName: 'Gariahat 24-Hour Emergency Medical Assistance',
+    clubName: 'Dhanwantary Medical & Lions Club First Aid',
+    category: 'medical',
+    theme: '24x7 Medicines, ORS, Glucose, Doctor on Duty & Ambulance Desk',
+    description: 'Fully equipped 24x7 emergency medical post at the heart of Gariahat. Stocked with all essential medicines, instant glucose hydration packs, first-aid trauma dressing, and standby emergency ambulance.',
+    location: { lat: 22.5192, lng: 88.3658 },
+    address: 'Gariahat Crossing, Ballygunge, Kolkata (Ph: 033-2464-0000)',
+    zone: 'Kolkata',
+    images: ['https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?auto=format&fit=crop&w=800&q=80'],
+    thumbnail: 'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?auto=format&fit=crop&w=400&q=80',
+    rating: 4.9,
+    reviewCount: 420,
+    visitCount: 15000,
+    photosPostedCount: 30,
+    trafficLevel: 'low',
+    estimatedQueueMins: 2,
+    isBeautyPick: false,
+    isHeritage: false
+  },
+  {
+    id: 'spot-med-2',
+    name: 'Apollo Pharmacy 24x7 Emergency Hub (VIP Road)',
+    pujaName: 'VIP Road Round-the-Clock Medicine Station',
+    clubName: 'Apollo Healthcare Bengal Emergency Wing',
+    category: 'medical',
+    theme: '24x7 Prescriptions, First Aid Kits, BP/Sugar Testing & Wheelchairs',
+    description: 'Strategic 24x7 pharmacy located along VIP Road to assist Sreebhumi and Lake Town pandal visitors. Provides free wheelchair loans for elderly citizens, burn-care kits, and instant hydration.',
+    location: { lat: 22.5991, lng: 88.4018 },
+    address: 'VIP Road, Lake Town Footbridge Junction, North 24 Parganas',
+    zone: 'North 24 Parganas',
+    images: ['https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?auto=format&fit=crop&w=800&q=80'],
+    thumbnail: 'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?auto=format&fit=crop&w=400&q=80',
+    rating: 4.9,
+    reviewCount: 380,
+    visitCount: 14000,
+    photosPostedCount: 25,
+    trafficLevel: 'low',
+    estimatedQueueMins: 3,
+    isBeautyPick: false,
+    isHeritage: false
+  },
+  {
+    id: 'spot-med-3',
+    name: 'Frank Ross Medical & Oxygen Support (College Street)',
+    pujaName: 'Central Kolkata 24x7 Health & First Aid Station',
+    clubName: 'Frank Ross Pharmacy Group',
+    category: 'medical',
+    theme: '24x7 Inhalers, Oxygen Concentrators, Eye Drops & Pain Relief',
+    description: 'Historic pharmacy serving Central Kolkata round-the-clock during festival days. Instant availability of asthmatic inhalers, pain relievers, baby medicines, and portable oxygen cylinders.',
+    location: { lat: 22.5782, lng: 88.3644 },
+    address: 'College Street / MG Road Crossing, Kolkata',
+    zone: 'Kolkata',
+    images: ['https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?auto=format&fit=crop&w=800&q=80'],
+    thumbnail: 'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?auto=format&fit=crop&w=400&q=80',
+    rating: 4.8,
+    reviewCount: 310,
+    visitCount: 11000,
+    photosPostedCount: 20,
+    trafficLevel: 'low',
+    estimatedQueueMins: 2,
+    isBeautyPick: false,
+    isHeritage: true
+  },
+
+  // 5. Grocery & Water Points
+  {
+    id: 'spot-grocery-1',
+    name: 'Biswa Bangla Refreshment & Mineral Water Kiosk',
+    pujaName: 'New Town Safe Drinking Water & Provisions Station',
+    clubName: 'NKDA & West Bengal Tourism',
+    category: 'grocery',
+    theme: 'Free Chilled Drinking Water, Wet Wipes & Emergency Snacks',
+    description: 'Convenient kiosk on Major Arterial Road offering free RO purified chilled drinking water, sealed mineral water bottles, electrolytes, hygiene wet wipes, and packaged snacks.',
+    location: { lat: 22.5852, lng: 88.4632 },
+    address: 'Major Arterial Road, Action Area 1, New Town, Kolkata',
+    zone: 'North 24 Parganas',
+    images: ['https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=800&q=80'],
+    thumbnail: 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=400&q=80',
+    rating: 4.9,
+    reviewCount: 290,
+    visitCount: 22000,
+    photosPostedCount: 18,
+    trafficLevel: 'low',
+    estimatedQueueMins: 2,
+    isBeautyPick: false,
+    isHeritage: false
+  },
+  {
+    id: 'spot-grocery-2',
+    name: 'Gariahat Community Water & Emergency Provisions Point',
+    pujaName: 'South Kolkata Citizen Refreshment Stand',
+    clubName: 'Ward Welfare Samiti & Local Volunteers',
+    category: 'grocery',
+    theme: 'Filtered Drinking Water Dispensers, Glucose Jars & Umbrellas',
+    description: 'Community-run public water replenishment station. Continuous chilled water dispensers, glucose punch, umbrella rental station, and emergency phone recharge counter.',
+    location: { lat: 22.5175, lng: 88.3621 },
+    address: 'Ballygunge Gardens near Gariahat, Kolkata',
+    zone: 'Kolkata',
+    images: ['https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=800&q=80'],
+    thumbnail: 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=400&q=80',
+    rating: 4.9,
+    reviewCount: 340,
+    visitCount: 28000,
+    photosPostedCount: 22,
+    trafficLevel: 'low',
+    estimatedQueueMins: 1,
+    isBeautyPick: false,
+    isHeritage: false
+  },
+
+  // 6. Cultural Activities & Stages
+  {
+    id: 'spot-act-1',
+    name: 'Rabindra Sadan Open Air Dhunuchi & Baul Utsav',
+    pujaName: 'Nandan Cultural Stage & Folk Heritage Gathering',
+    clubName: 'Information & Cultural Affairs Department',
+    category: 'activity',
+    theme: 'Live Baul Music, Classical Shehnai Recitals & Folk Dance',
+    description: 'Vibrant cultural enclave around Nandan and Rabindra Sadan. Soul-stirring live Baul songs, Ektara melodies, and traditional evening Dhunuchi Naach demonstrations under autumn sky.',
+    location: { lat: 22.5432, lng: 88.3448 },
+    address: 'Rabindra Sadan Complex, AJC Bose Road, Kolkata',
+    zone: 'Kolkata',
+    images: ['https://images.unsplash.com/photo-1465847899084-d164df4dedc6?auto=format&fit=crop&w=800&q=80'],
+    thumbnail: 'https://images.unsplash.com/photo-1465847899084-d164df4dedc6?auto=format&fit=crop&w=400&q=80',
+    rating: 4.9,
+    reviewCount: 890,
+    visitCount: 38000,
+    photosPostedCount: 140,
+    trafficLevel: 'moderate',
+    estimatedQueueMins: 5,
+    isBeautyPick: true,
+    isHeritage: true
+  },
+  {
+    id: 'spot-act-2',
+    name: 'Deshapriya Park Cultural Stage & Musical Night',
+    pujaName: 'Deshapriya Park Grand Evening Stage',
+    clubName: 'Deshapriya Cultural Samiti',
+    category: 'activity',
+    theme: 'Bengali Rock Bands, Sitar Performances & Theater Drama',
+    description: 'Major open-air cultural performance stage. Daily evening programs featuring celebrated artists, classical instrumental recitals, and youth folk bands from 6 PM to 11 PM.',
+    location: { lat: 22.5218, lng: 88.3546 },
+    address: 'Deshapriya Park, Kalighat / Rashbehari, South Kolkata',
+    zone: 'Kolkata',
+    images: ['https://images.unsplash.com/photo-1465847899084-d164df4dedc6?auto=format&fit=crop&w=800&q=80'],
+    thumbnail: 'https://images.unsplash.com/photo-1465847899084-d164df4dedc6?auto=format&fit=crop&w=400&q=80',
+    rating: 4.8,
+    reviewCount: 760,
+    visitCount: 34000,
+    photosPostedCount: 95,
+    trafficLevel: 'heavy',
+    estimatedQueueMins: 10,
+    isBeautyPick: true,
+    isHeritage: false
+  }
+];
+
+const MASTER_DEFAULT_SPOTS = [
+  ...DEFAULT_PANDALS.map(p => ({ ...p, category: p.category || 'pandal' })),
+  ...ADDITIONAL_FESTIVE_SPOTS
+];
+
+// ----------------------------------------------------------------------------
 // 2. Global State & App Variables
 // ----------------------------------------------------------------------------
 const DEFAULT_FIREBASE_CONFIG = {
@@ -612,7 +1100,7 @@ function getPandalMainImage(pandal) {
   if (Array.isArray(pandal.images) && pandal.images.length > 0 && pandal.images[0] && !pandal.images[0].includes('1601055283742')) {
     return pandal.images[0];
   }
-  return DEFAULT_DURGA_IDOL_IMG;
+  return getSpotCategoryFallbackImg(pandal.category);
 }
 
 function loadStoredPandals() {
@@ -623,7 +1111,7 @@ function loadStoredPandals() {
   } catch (e) {}
 
   const deletedIds = getDeletedPandalIds();
-  let list = DEFAULT_PANDALS.filter(p => !deletedIds.has(p.id));
+  let list = MASTER_DEFAULT_SPOTS.filter(p => !deletedIds.has(p.id));
   try {
     const raw = localStorage.getItem(STORAGE_KEYS.PANDALS);
     if (raw) {
@@ -633,6 +1121,7 @@ function loadStoredPandals() {
         list.forEach(p => mapById.set(p.id, p));
         parsed.forEach(p => {
           if (p && p.id && !deletedIds.has(p.id)) {
+            if (!p.category) p.category = 'pandal';
             mapById.set(p.id, p);
           }
         });
@@ -1479,6 +1968,8 @@ let isTrafficFilterActive = false;
 const TILE_KEYS = ['osm', 'hot', 'esri_streets', 'satellite'];
 let currentTileIndex = 0;
 
+let currentMapCategoryFilter = 'all';
+
 function renderPandalMarkers() {
   if (!map) return;
 
@@ -1498,22 +1989,31 @@ function renderPandalMarkers() {
     displayList = displayList.filter(p => p.trafficLevel === 'low' || p.trafficLevel === 'moderate');
   }
 
+  // Multi-Category Map Filter
+  if (currentMapCategoryFilter && currentMapCategoryFilter !== 'all') {
+    displayList = displayList.filter(p => (p.category || 'pandal') === currentMapCategoryFilter);
+  }
+
   displayList.forEach(p => {
+    const cat = p.category || 'pandal';
+    const cfg = MARKER_CATEGORY_CONFIG[cat] || MARKER_CATEGORY_CONFIG.pandal;
+
     const trafficColor = 
       p.trafficLevel === 'low' ? '#10b981' :
       p.trafficLevel === 'moderate' ? '#f59e0b' :
       '#ef4444';
 
     const el = document.createElement('div');
-    el.className = 'pandal-custom-marker';
+    el.className = `pandal-custom-marker marker-cat-${cat}`;
     el.innerHTML = `
-      <div class="pandal-pin-container">
-        <div class="pandal-pin-inner">
-          <span>🪔</span>
+      <div class="pandal-pin-container ${cfg.pinClass || ''}" title="${p.name} (${cfg.label})">
+        <div class="marker-halo-ring" style="border-color: ${cfg.accentColor}88;"></div>
+        <div class="pandal-pin-inner" style="background: ${cfg.bgGradient}; box-shadow: 0 4px 14px ${cfg.shadowColor};">
+          <span class="marker-cat-icon">${cfg.icon}</span>
           ${p.isBeautyPick ? '<span class="pandal-star-badge">★</span>' : ''}
           <span class="traffic-dot" style="background-color: ${trafficColor};"></span>
         </div>
-        <div class="pandal-pin-point"></div>
+        <div class="pandal-pin-point" style="border-top-color: ${cfg.accentColor};"></div>
       </div>
     `;
 
@@ -1528,6 +2028,20 @@ function renderPandalMarkers() {
 
     pandalMarkers.push(marker);
   });
+}
+
+function filterMapCategory(cat, btn) {
+  currentMapCategoryFilter = cat || 'all';
+
+  document.querySelectorAll('.cat-filter-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.cat === currentMapCategoryFilter);
+  });
+
+  renderPandalMarkers();
+
+  const cfg = MARKER_CATEGORY_CONFIG[cat];
+  const label = cfg ? `${cfg.icon} Showing ${cfg.label} spots` : '🌟 Showing all spots on map';
+  showToast(label);
 }
 
 function fitNearestPandals(count = 5) {
@@ -1843,9 +2357,19 @@ function triggerDeviceGallery() {
 function openPandalDetail(pandal) {
   selectedPandal = sanitizePandalImages(pandal);
   const dist = calculateDistanceKm(userLocation, selectedPandal.location);
+  const cat = pandal.category || 'pandal';
+  const cfg = MARKER_CATEGORY_CONFIG[cat] || MARKER_CATEGORY_CONFIG.pandal;
 
   document.getElementById('modal-detail-title').textContent = pandal.name;
-  document.getElementById('modal-detail-puja').textContent = pandal.pujaName || pandal.name;
+  const pujaEl = document.getElementById('modal-detail-puja');
+  if (pujaEl) {
+    pujaEl.innerHTML = `
+      <span style="display:inline-flex; align-items:center; gap:4px; background:${cfg.bgGradient}; color:#fff; font-size:10.5px; font-weight:800; padding:2px 8px; border-radius:999px; margin-right:6px; box-shadow:0 2px 6px ${cfg.shadowColor};">
+        ${cfg.icon} ${cfg.badge}
+      </span>
+      <span>${pandal.pujaName || pandal.name}</span>
+    `;
+  }
   document.getElementById('modal-detail-theme').textContent = pandal.theme;
   document.getElementById('modal-detail-desc').textContent = pandal.description;
   document.getElementById('modal-detail-address').textContent = pandal.address;
@@ -1854,7 +2378,7 @@ function openPandalDetail(pandal) {
   
   const imgEl = document.getElementById('modal-detail-img');
   imgEl.src = getPandalMainImage(pandal);
-  imgEl.onerror = function() { this.onerror = null; this.src = DEFAULT_DURGA_IDOL_IMG; };
+  imgEl.onerror = function() { this.onerror = null; this.src = getSpotCategoryFallbackImg(cat); };
 
   // Render Interactive Rating Card & collective score
   renderPandalRatingSection(pandal);
@@ -1865,7 +2389,7 @@ function openPandalDetail(pandal) {
   // Admin or Custom Pinned Location delete button toggle
   const deleteBtn = document.getElementById('btn-admin-delete-pandal');
   if (deleteBtn) {
-    const isCustom = Boolean(pandal.id && pandal.id.startsWith('pandal-custom'));
+    const isCustom = Boolean(pandal.id && (pandal.id.startsWith('pandal-custom') || pandal.id.startsWith('spot-')));
     const isAdmin = Boolean(currentAuth && currentAuth.role === 'admin');
     if (isAdmin || isCustom) {
       deleteBtn.style.display = 'inline-flex';
@@ -2533,7 +3057,7 @@ function deleteCurrentPandal() {
 
 function deletePandal(pandalId) {
   const target = pandals.find(p => p.id === pandalId);
-  const isCustom = Boolean(pandalId && pandalId.startsWith('pandal-custom'));
+  const isCustom = Boolean(pandalId && (pandalId.startsWith('pandal-custom') || pandalId.startsWith('spot-')));
   const isAdmin = Boolean(currentAuth && currentAuth.role === 'admin');
 
   if (!isAdmin && !isCustom) {
@@ -2676,12 +3200,14 @@ function setManualPin(latlng) {
 
   if (tempPinMarker) tempPinMarker.remove();
 
+  const activeCat = (currentMapCategoryFilter && currentMapCategoryFilter !== 'all') ? currentMapCategoryFilter : 'pandal';
+  const cfg = MARKER_CATEGORY_CONFIG[activeCat] || MARKER_CATEGORY_CONFIG.pandal;
+
   const el = document.createElement('div');
   el.className = 'custom-temp-pin';
   el.innerHTML = `
     <div style="display: flex; flex-direction: column; align-items: center;">
-      <div style="width: 44px; height: 44px; border-radius: 14px; background: linear-gradient(135deg, #b91c1c, #d97706); border: 2px solid #fff; display: flex; align-items: center; justify-content: center; font-size: 22px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); animation: bounce 1s infinite;">🪔</div>
-      <div style="background: rgba(0,0,0,0.85); color: #fff; font-size: 10px; font-weight: 800; padding: 2px 8px; border-radius: 999px; margin-top: 4px; white-space: nowrap;">Pinned Spot</div>
+      <div style="width: 44px; height: 44px; border-radius: 14px; background: ${cfg.bgGradient}; border: 2.5px solid #fff; display: flex; align-items: center; justify-content: center; font-size: 22px; box-shadow: 0 4px 15px ${cfg.shadowColor}; animation: bounce 1s infinite;">${cfg.icon}</div>
     </div>
   `;
 
@@ -2689,10 +3215,142 @@ function setManualPin(latlng) {
     .setLngLat([latlng.lng, latlng.lat])
     .addTo(map);
 
+  // Clear inputs
+  const addName = document.getElementById('add-name');
+  if (addName) addName.value = '';
+  const addClub = document.getElementById('add-club');
+  if (addClub) addClub.value = '';
+  const addTheme = document.getElementById('add-theme');
+  if (addTheme) addTheme.value = '';
+  const addDesc = document.getElementById('add-desc');
+  if (addDesc) addDesc.value = '';
+  const addImg = document.getElementById('add-img');
+  if (addImg) addImg.value = '';
+
+  // Select initial category
+  selectPinCategory(activeCat);
+
   // Open add modal with coordinates
   document.getElementById('add-coord-display').textContent = `${latlng.lat.toFixed(5)}, ${latlng.lng.toFixed(5)}`;
   document.getElementById('modal-add-pandal').classList.add('active');
   cancelPinningMode();
+}
+
+function selectPinCategory(cat, btn) {
+  const targetCat = cat || 'pandal';
+  const hiddenInput = document.getElementById('add-category');
+  if (hiddenInput) hiddenInput.value = targetCat;
+
+  // Toggle active styling on category buttons
+  document.querySelectorAll('.pin-cat-option').forEach(b => {
+    b.classList.toggle('active', b.dataset.cat === targetCat);
+  });
+
+  // Dynamically update form labels and placeholders according to selected category
+  const lblName = document.getElementById('lbl-add-name');
+  const inpName = document.getElementById('add-name');
+  const lblTheme = document.getElementById('lbl-add-theme');
+  const inpTheme = document.getElementById('add-theme');
+  const lblDesc = document.getElementById('lbl-add-desc');
+  const inpDesc = document.getElementById('add-desc');
+  const lblClub = document.getElementById('lbl-add-club');
+  const inpClub = document.getElementById('add-club');
+
+  switch (targetCat) {
+    case 'food':
+      if (lblName) lblName.textContent = 'Restaurant / Food Stall Name *';
+      if (inpName) inpName.placeholder = 'e.g. Arsalan Biryani, Dada Boudi, Peter Cat';
+      if (lblTheme) lblTheme.textContent = 'Specialty Dishes & Cuisine';
+      if (inpTheme) inpTheme.placeholder = 'e.g. Mutton Biryani, Chicken Chaap, Chelo Kebab';
+      if (lblDesc) lblDesc.textContent = 'Menu Highlights & Late Night Timings';
+      if (inpDesc) inpDesc.placeholder = 'e.g. Open till 3 AM, AC family dining available';
+      if (lblClub) lblClub.textContent = 'Brand / Outlet Owner';
+      if (inpClub) inpClub.placeholder = 'e.g. Restaurant Owner / Head Chef';
+      break;
+
+    case 'streetfood':
+      if (lblName) lblName.textContent = 'Temporary Food Stall Name *';
+      if (inpName) inpName.placeholder = 'e.g. Hot Phuchka & Churmur Stall, Kolkata Egg Roll';
+      if (lblTheme) lblTheme.textContent = 'Street Food Items Served';
+      if (inpTheme) inpTheme.placeholder = 'e.g. Spicy Pani Puri, Double Chicken Kathi Roll, Jalebi';
+      if (lblDesc) lblDesc.textContent = 'Location Landmark & Stall Timing';
+      if (inpDesc) inpDesc.placeholder = 'e.g. Next to gate 2, mineral water used, open till 2 AM';
+      if (lblClub) lblClub.textContent = 'Vendor / Stall Owner';
+      if (inpClub) inpClub.placeholder = 'e.g. Stall Operator / Vendor Name';
+      break;
+
+    case 'mela':
+      if (lblName) lblName.textContent = 'Mela / Carnival Fairground Name *';
+      if (inpName) inpName.placeholder = 'e.g. Bagbazar Pujo Mela, ITI Mega Carnival Fair';
+      if (lblTheme) lblTheme.textContent = 'Key Rides & Attractions';
+      if (inpTheme) inpTheme.placeholder = 'e.g. Giant Ferris Wheel, Dragon Coaster, Game Booths';
+      if (lblDesc) lblDesc.textContent = 'Fair Details & Timings';
+      if (inpDesc) inpDesc.placeholder = 'e.g. Entry free, joyrides ticketed, open 4 PM till midnight';
+      if (lblClub) lblClub.textContent = 'Fair Organizer / Committee';
+      if (inpClub) inpClub.placeholder = 'e.g. Mela Samiti / Fairgrounds Manager';
+      break;
+
+    case 'medical':
+      if (lblName) lblName.textContent = 'Medical Store / First Aid Camp Name *';
+      if (inpName) inpName.placeholder = 'e.g. Dhanwantary 24x7 Pharmacy, Red Cross First Aid Camp';
+      if (lblTheme) lblTheme.textContent = 'Medical Services & Emergency Facilities';
+      if (inpTheme) inpTheme.placeholder = 'e.g. 24x7 Open, Emergency Bandages, ORS, Oxygen, Wheelchair';
+      if (lblDesc) lblDesc.textContent = 'Contact Number & Emergency Support';
+      if (inpDesc) inpDesc.placeholder = 'e.g. 24x7 Doctor on Call, Helpline: 033-XXXX';
+      if (lblClub) lblClub.textContent = 'Hospital / Trust / Pharmacy';
+      if (inpClub) inpClub.placeholder = 'e.g. Apollo / MedPlus / NGO';
+      break;
+
+    case 'grocery':
+      if (lblName) lblName.textContent = 'Grocery Store / Water Point Name *';
+      if (inpName) inpName.placeholder = 'e.g. Biswa Bangla Packaged Water Booth, 24x7 Supermart';
+      if (lblTheme) lblTheme.textContent = 'Available Essentials & Items';
+      if (inpTheme) inpTheme.placeholder = 'e.g. Chilled Drinking Water, Electrolytes, Baby Food, Wet Wipes';
+      if (lblDesc) lblDesc.textContent = 'Timings & Stock Info';
+      if (inpDesc) inpDesc.placeholder = 'e.g. Cold water bottles available throughout the night';
+      if (lblClub) lblClub.textContent = 'Shopkeeper / Vendor';
+      if (inpClub) inpClub.placeholder = 'e.g. Local Trader';
+      break;
+
+    case 'activity':
+      if (lblName) lblName.textContent = 'Cultural Activity / Stage Event *';
+      if (inpName) inpName.placeholder = 'e.g. Dhunuchi Naach Utsav, Live Baul Gaan Stage';
+      if (lblTheme) lblTheme.textContent = 'Performance Highlights & Schedule';
+      if (inpTheme) inpTheme.placeholder = 'e.g. Maha Ashtami Sandhi Aarti dance, Celebrity Musical Night';
+      if (lblDesc) lblDesc.textContent = 'Event Timings & Participant Info';
+      if (inpDesc) inpDesc.placeholder = 'e.g. 7 PM to 10 PM daily, open participation';
+      if (lblClub) lblClub.textContent = 'Cultural Committee / Performing Group';
+      if (inpClub) inpClub.placeholder = 'e.g. Bengal Folk Troupe';
+      break;
+
+    default: // pandal
+      if (lblName) lblName.textContent = 'Puja Pandal Name *';
+      if (inpName) inpName.placeholder = 'e.g. Sreebhumi Sporting Club, Maddox Square';
+      if (lblTheme) lblTheme.textContent = 'Specialty / Theme / Attractions';
+      if (inpTheme) inpTheme.placeholder = 'e.g. Grand Palace Replica, Traditional Sanatan Idol';
+      if (lblDesc) lblDesc.textContent = 'Short Description / Highlights';
+      if (inpDesc) inpDesc.placeholder = 'Tell hoppers about the idol, architecture, and lighting...';
+      if (lblClub) lblClub.textContent = 'Organizer / Club Name';
+      if (inpClub) inpClub.placeholder = 'e.g. Sreebhumi Sporting Club';
+      break;
+  }
+}
+
+async function handleAddPinPhotoFile(e) {
+  const file = e.target.files && e.target.files[0];
+  if (!file) return;
+  try {
+    showToast('Compressing photo...');
+    const compressedDataUrl = await compressImageFile(file, 800, 0.7);
+    const imgInput = document.getElementById('add-img');
+    if (imgInput) {
+      imgInput.value = compressedDataUrl;
+      showToast('📸 Photo loaded from device!');
+    }
+  } catch (err) {
+    console.error('Error compressing pin photo:', err);
+    showToast('Could not load photo from device.');
+  }
 }
 
 function cancelPinningMode() {
@@ -2729,19 +3387,24 @@ function closeAddModal() {
 
 async function submitNewPandal(e) {
   e.preventDefault();
+  const category = (document.getElementById('add-category') ? document.getElementById('add-category').value : 'pandal') || 'pandal';
   const name = document.getElementById('add-name').value.trim();
   const club = document.getElementById('add-club').value.trim();
   const zone = document.getElementById('add-zone').value;
-  const theme = document.getElementById('add-theme').value.trim() || 'Festive Pratima & Illumination';
-  const desc = document.getElementById('add-desc').value.trim() || 'Community contributed pandal.';
+  const cfg = MARKER_CATEGORY_CONFIG[category] || MARKER_CATEGORY_CONFIG.pandal;
+
+  const defaultTheme = category === 'pandal' ? 'Festive Pratima & Illumination' : `${cfg.label} Spot`;
+  const defaultDesc = `Community pinned ${cfg.label} for Bengal festival hoppers.`;
+  const theme = document.getElementById('add-theme').value.trim() || defaultTheme;
+  const desc = document.getElementById('add-desc').value.trim() || defaultDesc;
   const rawImgInput = document.getElementById('add-img').value.trim();
   const hasCustomImg = Boolean(rawImgInput);
-  let imgUrl = rawImgInput || DEFAULT_DURGA_IDOL_IMG;
+  let imgUrl = rawImgInput || getSpotCategoryFallbackImg(category);
 
-  if (!name) return alert('Please enter a pandal name');
+  if (!name) return alert('Please enter a spot name');
 
   if (hasCustomImg && imgUrl.startsWith('data:')) {
-    const up = await uploadImageToCloudStorage(imgUrl, 'pandal_covers');
+    const up = await uploadImageToCloudStorage(imgUrl, 'spot_covers');
     if (up && up.url) imgUrl = up.url;
   }
 
@@ -2750,15 +3413,16 @@ async function submitNewPandal(e) {
   const newPandal = {
     id: 'pandal-custom-' + Date.now(),
     name: name,
-    pujaName: `${name} Sarbojanin Durgotsav`,
+    pujaName: category === 'pandal' ? `${name} Sarbojanin Durgotsav` : `${name} (${cfg.label})`,
     clubName: club || name,
+    category: category,
     theme: theme,
     description: desc,
     location: loc,
     address: `${zone}, West Bengal`,
     zone: zone,
     images: hasCustomImg ? [imgUrl] : [],
-    thumbnail: hasCustomImg ? imgUrl : DEFAULT_DURGA_IDOL_IMG,
+    thumbnail: hasCustomImg ? imgUrl : getSpotCategoryFallbackImg(category),
     userPhotos: [],
     rating: 0,
     reviewCount: 0,
@@ -2768,7 +3432,7 @@ async function submitNewPandal(e) {
     visitCount: 1,
     photosPostedCount: hasCustomImg ? 1 : 0,
     trafficLevel: 'moderate',
-    estimatedQueueMins: 15,
+    estimatedQueueMins: category === 'pandal' ? 15 : 5,
     isBeautyPick: true,
     isHeritage: false
   };
@@ -2783,7 +3447,7 @@ async function submitNewPandal(e) {
   broadcastPandalToCloud(newPandal);
 
   closeAddModal();
-  showToast(`🎉 "${name}" added to map & synced across Bengal!`);
+  showToast(`🎉 "${name}" (${cfg.icon} ${cfg.label}) added to map & synced!`);
   openPandalDetail(newPandal);
 }
 
