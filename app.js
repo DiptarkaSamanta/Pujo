@@ -1008,6 +1008,8 @@ let isSimulating = false;
 let simInterval = null;
 let isPinningMode = false;
 let manualPinLocation = null;
+let showAccuracyCircle = true;
+let isCalibratingLocation = false;
 
 // Pandal & Plan Storage
 let pandals = [];
@@ -1718,6 +1720,7 @@ function initMap() {
       apply3DEnvironment();
     }
     renderUserMarker();
+    renderAccuracyCircleLayer();
     renderPandalMarkers();
     if (activeMultiRoutes && activeMultiRoutes.length > 0) {
       drawAllRoutesOnMap(activeMultiRoutes, selectedRouteIndex);
@@ -1732,6 +1735,7 @@ function initMap() {
       apply3DEnvironment();
     }
     renderUserMarker();
+    renderAccuracyCircleLayer();
     renderPandalMarkers();
     if (isFoodLayerActive) toggleMapFoodLayer(true);
     if (isMedicalLayerActive) toggleMapMedicalLayer(true);
@@ -1746,9 +1750,13 @@ function initMap() {
   setTimeout(() => { if (map) map.resize(); }, 150);
   setTimeout(() => { if (map) map.resize(); }, 500);
 
-  // Map click handler (Drops manual pin or sets route location via map picker)
+  // Map click handler (Calibration, Drops manual pin or sets route location via map picker)
   map.on('click', (e) => {
     const latlng = { lat: e.lngLat.lat, lng: e.lngLat.lng };
+    if (isCalibratingLocation) {
+      calibrateUserLocation(latlng);
+      return;
+    }
     if (typeof handleMapPickerClick === 'function' && handleMapPickerClick(latlng)) {
       return;
     }
@@ -1921,6 +1929,126 @@ window.mapZoomIn = mapZoomIn;
 window.mapZoomOut = mapZoomOut;
 window.updateRadarScaleRatioHUD = updateRadarScaleRatioHUD;
 
+// ----------------------------------------------------------------------------
+// 6C. GPS Accuracy Circle Layer & Laptop Calibration System
+// ----------------------------------------------------------------------------
+function generateGeoJsonCircle(center, radiusInMeters, points = 64) {
+  const coords = [];
+  const distanceX = radiusInMeters / (111320 * Math.cos((center.lat * Math.PI) / 180));
+  const distanceY = radiusInMeters / 110540;
+
+  for (let i = 0; i < points; i++) {
+    const theta = (i / points) * (2 * Math.PI);
+    const x = distanceX * Math.cos(theta);
+    const y = distanceY * Math.sin(theta);
+    coords.push([center.lng + x, center.lat + y]);
+  }
+  coords.push(coords[0]);
+
+  return {
+    type: 'Feature',
+    geometry: {
+      type: 'Polygon',
+      coordinates: [coords]
+    },
+    properties: {
+      radius: radiusInMeters
+    }
+  };
+}
+
+function renderAccuracyCircleLayer() {
+  if (!map) return;
+  const sourceId = 'gps-accuracy-circle-source';
+  const fillLayerId = 'gps-accuracy-circle-fill';
+  const lineLayerId = 'gps-accuracy-circle-line';
+
+  if (!showAccuracyCircle) {
+    if (map.getLayer(fillLayerId)) map.removeLayer(fillLayerId);
+    if (map.getLayer(lineLayerId)) map.removeLayer(lineLayerId);
+    if (map.getSource(sourceId)) map.removeSource(sourceId);
+    return;
+  }
+
+  const radiusMeters = Math.max(userAccuracy || 25, 8);
+  const circleData = generateGeoJsonCircle(userLocation, radiusMeters);
+
+  if (map.getSource(sourceId)) {
+    map.getSource(sourceId).setData(circleData);
+  } else {
+    map.addSource(sourceId, {
+      type: 'geojson',
+      data: circleData
+    });
+
+    map.addLayer({
+      id: fillLayerId,
+      type: 'fill',
+      source: sourceId,
+      paint: {
+        'fill-color': '#0284c7',
+        'fill-opacity': 0.12
+      }
+    });
+
+    map.addLayer({
+      id: lineLayerId,
+      type: 'line',
+      source: sourceId,
+      paint: {
+        'line-color': '#38bdf8',
+        'line-width': 1.5,
+        'line-dasharray': [2, 2],
+        'line-opacity': 0.65
+      }
+    });
+  }
+}
+
+function toggleAccuracyCircleLayer() {
+  showAccuracyCircle = !showAccuracyCircle;
+  const btn = document.getElementById('btn-toggle-accuracy-circle');
+  const lbl = document.getElementById('label-accuracy-circle');
+  if (btn) btn.classList.toggle('active', showAccuracyCircle);
+  if (lbl) lbl.textContent = showAccuracyCircle ? 'Circle: ON' : 'Circle: OFF';
+
+  renderAccuracyCircleLayer();
+  showToast(showAccuracyCircle ? `⭕ Accuracy zone visible (±${Math.round(userAccuracy)}m)` : '⭕ Accuracy zone hidden');
+}
+
+function startLocationCalibration() {
+  isCalibratingLocation = true;
+  const btn = document.getElementById('btn-calibrate-location');
+  if (btn) {
+    btn.classList.add('calibrating');
+    btn.innerHTML = '<span class="radar-tool-icon">📍</span><span>Tap Spot</span>';
+  }
+  showToast('🎯 Tap your exact spot on the map (e.g. next to your stall/road)');
+}
+
+function calibrateUserLocation(latlng) {
+  isCalibratingLocation = false;
+  userLocation = { lat: latlng.lat, lng: latlng.lng };
+  userAccuracy = 8; // Millimeter fine-tuned by user
+  hasRealGps = true;
+
+  const btn = document.getElementById('btn-calibrate-location');
+  if (btn) {
+    btn.classList.remove('calibrating');
+    btn.innerHTML = '<span class="radar-tool-icon">🎯</span><span>Calibrate</span>';
+  }
+
+  renderUserMarker();
+  renderAccuracyCircleLayer();
+  updateRadarScaleRatioHUD();
+  refreshDistanceBadges();
+
+  showToast(`🎯 Location calibrated & locked! (±8m accuracy)`);
+}
+
+window.toggleAccuracyCircleLayer = toggleAccuracyCircleLayer;
+window.startLocationCalibration = startLocationCalibration;
+
 function startGeolocationTracking() {
   if (!navigator.geolocation) {
     showGpsAlert('Geolocation is not supported by this browser.');
@@ -1938,6 +2066,8 @@ function startGeolocationTracking() {
 
     hideGpsAlert();
     renderUserMarker();
+    renderAccuracyCircleLayer();
+    updateRadarScaleRatioHUD();
 
     // Auto follow camera if mode active
     if (isFollowUserMode && map) {

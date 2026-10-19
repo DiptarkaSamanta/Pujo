@@ -263,6 +263,18 @@
           <div class="ratio-scale-bar-wrap">
             <div class="ratio-scale-bar" id="radar-ratio-bar"></div>
           </div>
+
+          <!-- Mini Accuracy & Calibration Toolbar -->
+          <div class="radar-mini-toolbar">
+            <button type="button" id="btn-toggle-accuracy-circle" class="btn-radar-tool active" onclick="toggleAccuracyCircleLayer()" title="Show/Hide Device GPS Uncertainty Circle">
+              <span class="radar-tool-icon">⭕</span>
+              <span id="label-accuracy-circle">Circle: ON</span>
+            </button>
+            <button type="button" id="btn-calibrate-location" class="btn-radar-tool" onclick="startLocationCalibration()" title="Tap on Map to Pin Your Exact Spot (Perfect for Laptop)">
+              <span class="radar-tool-icon">🎯</span>
+              <span>Calibrate</span>
+            </button>
+          </div>
         </div>
 
         <!-- Bottom-Left Floating Live Crowd Legend -->
@@ -2070,6 +2082,6 @@
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-storage-compat.js"></script>
 
     <!-- Pure Vanilla Application Logic -->
-    <script src="./app.js?v=13.0"></script>
+    <script src="./app.js?v=14.0"></script>
   </body>
 </html>
