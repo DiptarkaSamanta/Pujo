@@ -1766,8 +1766,18 @@ function initMap() {
     }
   });
 
+  // Real-time zoom & move tracking for device marker radar ratio and ground distance
+  map.on('zoom', () => {
+    updateRadarScaleRatioHUD();
+  });
+
+  map.on('move', () => {
+    updateRadarScaleRatioHUD();
+  });
+
   renderUserMarker();
   renderPandalMarkers();
+  updateRadarScaleRatioHUD();
 }
 
 // ----------------------------------------------------------------------------
@@ -1829,7 +1839,87 @@ function renderUserMarker() {
       ? `Live GPS (${userLocation.lat.toFixed(3)}, ${userLocation.lng.toFixed(3)})` 
       : 'Location: Kolkata 📍';
   }
+
+  // Refresh live radar coverage and scale ratio HUD
+  updateRadarScaleRatioHUD();
 }
+
+// ----------------------------------------------------------------------------
+// 6B. Real-Time Radar Ratio & Real-World Distance Scale Engine
+// ----------------------------------------------------------------------------
+function updateRadarScaleRatioHUD() {
+  if (!map) return;
+  const zoom = map.getZoom();
+  const lat = (userLocation && typeof userLocation.lat === 'number') ? userLocation.lat : 22.5726;
+
+  // Real-world ground resolution: meters per screen CSS pixel at current latitude and zoom
+  // Formula: metersPerPixel = (156543.03392 * cos(lat * pi / 180)) / (2 ^ zoom)
+  const metersPerPixel = (156543.03392 * Math.cos((lat * Math.PI) / 180)) / Math.pow(2, zoom);
+
+  // Device marker radar circle diameter on screen is 52px (radius = 26px)
+  const radarScreenDiameterPx = 52;
+  const radarScreenRadiusPx = 26;
+
+  // Real-world distance covered by the radar circle
+  const coveredMetersDiameter = metersPerPixel * radarScreenDiameterPx;
+  const coveredMetersRadius = metersPerPixel * radarScreenRadiusPx;
+
+  // Representative Fraction (RF) scale ratio: 1 screen cm (approx 37.795 px at standard 96 DPI) vs real-world cm
+  // Scale denominator = metersPerPixel * (96 / 0.0254)
+  const scaleDenominator = Math.round(metersPerPixel * 3779.527559);
+
+  // Formatted scale ratio string: e.g. "1 : 24,000"
+  const ratioString = `1 : ${scaleDenominator.toLocaleString()}`;
+
+  // Formatted real-world ground diameter & radius
+  let radiusLabel = '';
+  let diameterLabel = '';
+  if (coveredMetersDiameter >= 1000) {
+    diameterLabel = `${(coveredMetersDiameter / 1000).toFixed(2)} km`;
+    radiusLabel = `r = ${(coveredMetersRadius / 1000).toFixed(2)} km`;
+  } else {
+    diameterLabel = `${Math.round(coveredMetersDiameter)} m`;
+    radiusLabel = `r = ${Math.round(coveredMetersRadius)} m`;
+  }
+
+  // Update UI Elements
+  const zoomEl = document.getElementById('radar-ratio-zoom');
+  const valEl = document.getElementById('radar-ratio-val');
+  const radEl = document.getElementById('radar-ratio-radius');
+  const barEl = document.getElementById('radar-ratio-bar');
+
+  if (zoomEl) zoomEl.textContent = `Z${zoom.toFixed(1)}`;
+  if (valEl) valEl.textContent = ratioString;
+  if (radEl) radEl.textContent = `ø ${diameterLabel} (${radiusLabel})`;
+
+  if (barEl) {
+    // Relative visual width indicator based on zoom level (zoom range ~8 to 19)
+    const normalizedZoom = Math.min(Math.max((zoom - 8) / (19 - 8), 0.1), 1.0);
+    barEl.style.width = `${Math.round(normalizedZoom * 100)}%`;
+  }
+
+  // Update marker badge with live radar coverage tag if available
+  const badgeEl = document.getElementById('user-marker-badge-text');
+  if (badgeEl) {
+    const baseText = hasRealGps ? `YOU (±${Math.round(userAccuracy)}m)` : `YOU (Est.)`;
+    badgeEl.textContent = `${baseText} • ø${diameterLabel}`;
+  }
+}
+
+function mapZoomIn() {
+  if (!map) return;
+  map.zoomIn({ duration: 300 });
+}
+
+function mapZoomOut() {
+  if (!map) return;
+  map.zoomOut({ duration: 300 });
+}
+
+// Global exposure for onclick handlers
+window.mapZoomIn = mapZoomIn;
+window.mapZoomOut = mapZoomOut;
+window.updateRadarScaleRatioHUD = updateRadarScaleRatioHUD;
 
 function startGeolocationTracking() {
   if (!navigator.geolocation) {

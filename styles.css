@@ -1098,6 +1098,139 @@ body[data-active-tab="itinerary"] .map-zoom-controls,
   }
 }
 
+/* --------------------------------------------------------------------------
+   Real-Time Radar Ratio Badge & Clean Map Zoom Controls
+   -------------------------------------------------------------------------- */
+.map-radar-ratio-badge {
+  position: absolute;
+  top: 72px;
+  right: 14px;
+  z-index: 520;
+  background: rgba(15, 23, 42, 0.92);
+  backdrop-filter: blur(10px);
+  border: 1.5px solid #38bdf8;
+  border-radius: 14px;
+  padding: 6px 12px;
+  color: #ffffff;
+  font-family: inherit;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4), 0 0 10px rgba(56, 189, 248, 0.3);
+  pointer-events: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 130px;
+  transition: all 0.2s ease;
+}
+
+.map-radar-ratio-badge:hover {
+  background: rgba(15, 23, 42, 0.98);
+  border-color: #67e8f9;
+  transform: translateY(-1px);
+}
+
+.ratio-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  font-size: 10.5px;
+  font-weight: 800;
+  color: #38bdf8;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.ratio-val-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.ratio-val {
+  font-size: 12.5px;
+  font-weight: 800;
+  color: #f8fafc;
+}
+
+.ratio-radius {
+  font-size: 10px;
+  font-weight: 600;
+  color: #94a3b8;
+}
+
+.ratio-scale-bar-wrap {
+  width: 100%;
+  height: 3px;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 999px;
+  overflow: hidden;
+  margin-top: 2px;
+}
+
+.ratio-scale-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #38bdf8, #22c55e);
+  border-radius: 999px;
+  width: 100%;
+  transition: width 0.3s ease;
+}
+
+.map-zoom-controls {
+  position: absolute;
+  right: 14px;
+  bottom: 84px;
+  z-index: 520;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.zoom-btn {
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(8px);
+  border: 1.5px solid #cbd5e1;
+  color: #0f172a;
+  font-size: 20px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  transition: all 0.18s ease;
+  padding: 0;
+  line-height: 1;
+}
+
+.zoom-btn:hover {
+  background: #ffffff;
+  border-color: #0284c7;
+  color: #0284c7;
+  transform: scale(1.06);
+  box-shadow: 0 6px 16px rgba(2, 132, 199, 0.25);
+}
+
+.zoom-btn:active {
+  transform: scale(0.94);
+}
+
+@media (max-width: 640px) {
+  .map-radar-ratio-badge {
+    top: 60px;
+    right: 10px;
+    padding: 5px 10px;
+    min-width: 110px;
+  }
+  .map-zoom-controls {
+    right: 10px;
+    bottom: 74px;
+  }
+}
+
 .legend-title {
   color: #b91c1c;
   font-weight: 800;

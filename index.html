@@ -248,7 +248,21 @@
               <span>🗺️</span> <span id="overlay-style-label">Map View</span>
             </button>
           </div>
+        </div>
 
+        <!-- Real-Time Radar Coverage & Scale Ratio HUD Badge -->
+        <div id="map-radar-ratio-badge" class="map-radar-ratio-badge" title="Live Scale Ratio & Physical Coverage of the Device Marker Circle">
+          <div class="ratio-header">
+            <span>📡 Radar Ratio</span>
+            <span id="radar-ratio-zoom">Z13</span>
+          </div>
+          <div class="ratio-val-row">
+            <span class="ratio-val" id="radar-ratio-val">1 : 24,000</span>
+            <span class="ratio-radius" id="radar-ratio-radius">ø 620m</span>
+          </div>
+          <div class="ratio-scale-bar-wrap">
+            <div class="ratio-scale-bar" id="radar-ratio-bar"></div>
+          </div>
         </div>
 
         <!-- Bottom-Left Floating Live Crowd Legend -->
@@ -2056,6 +2070,6 @@
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-storage-compat.js"></script>
 
     <!-- Pure Vanilla Application Logic -->
-    <script src="./app.js?v=12.0"></script>
+    <script src="./app.js?v=13.0"></script>
   </body>
 </html>
