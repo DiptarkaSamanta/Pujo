@@ -25,7 +25,7 @@
     <link href="https://api.mapbox.com/mapbox-gl-js/v3.4.0/mapbox-gl.css" rel="stylesheet" />
 
     <!-- Custom Festive Stylesheet -->
-    <link rel="stylesheet" href="./styles.css?v=7.0" />
+    <link rel="stylesheet" href="./styles.css?v=11.0" />
   </head>
   <body data-active-tab="map">
     <div id="app-container">
@@ -277,17 +277,17 @@
           </button>
         </div>
 
-        <!-- Pinning Mode Floating Action Bar (With Exit Option for PC and Mobile) -->
+        <!-- Pinning Mode Floating Action Bar (Sleek Compact Bar for Mobile & Desktop) -->
         <div id="pinning-active-banner">
-          <div style="display:flex; align-items:center; gap:8px;">
-            <span style="font-size:18px; animation:bounce 1s infinite;">📍</span>
-            <div>
-              <strong style="display:block; font-size:12px; font-weight:800; line-height:1.2;">Pinning Mode Active</strong>
-              <span style="font-size:10.5px; opacity:0.9;">Tap anywhere on map or exit</span>
+          <div style="display:flex; align-items:center; gap:8px; min-width:0; flex:1;">
+            <span style="font-size:16px; animation:bounce 1s infinite; flex-shrink:0;">📍</span>
+            <div style="min-width:0; overflow:hidden;">
+              <strong style="display:block; font-size:12px; font-weight:800; line-height:1.2; white-space:nowrap; text-overflow:ellipsis; overflow:hidden;">Pinning Mode Active</strong>
+              <span style="display:block; font-size:10px; opacity:0.92; white-space:nowrap; text-overflow:ellipsis; overflow:hidden;">Tap anywhere on map to drop pin</span>
             </div>
           </div>
-          <button type="button" onclick="cancelPinningMode()" class="btn-exit-pinning" title="Exit pin mode without placing a marker">
-            ✕ Exit Pin Mode
+          <button type="button" onclick="cancelPinningMode()" class="btn-exit-pinning" title="Exit pin mode">
+            ✕ Exit
           </button>
         </div>
 
@@ -960,16 +960,20 @@
       <!-- Modal 1: Pandal Details Sheet -->
       <div id="modal-pandal-detail" class="modal-overlay">
         <div class="modal-card">
+          <div class="modal-drag-handle"></div>
           <div class="modal-header">
-            <h3 id="modal-detail-title">Pandal Details</h3>
+            <h3 id="modal-detail-title" style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:80%;">Pandal Details</h3>
             <button class="close-btn" onclick="closePandalDetail()">✕</button>
           </div>
           <div class="modal-body">
             <!-- Cover Photo with Google Maps style Photo Count & Quick Add button -->
             <div class="modal-cover-wrap" style="position:relative; border-radius:16px; overflow:hidden; background:#0f172a;">
-              <img id="modal-detail-img" src="" alt="Pandal Photo" style="width:100%; height:200px; object-fit:cover; display:block;" />
+              <img id="modal-detail-img" src="" alt="Pandal Photo" onclick="openCoverPhotoInLightbox()" style="width:100%; height:200px; object-fit:cover; display:block; cursor:zoom-in;" title="Click to view & zoom photo" />
               <span id="modal-detail-photo-badge" class="badge-photo-count" onclick="scrollToGallery()" title="View all community photos">
                 📷 0 Photos
+              </span>
+              <span class="badge-tap-zoom" onclick="openCoverPhotoInLightbox()" title="Click to view & zoom high-resolution photo">
+                🔍 Tap to Zoom
               </span>
               <button type="button" class="btn-cover-add-photo" onclick="openAddPhotoModal()" title="Upload a photo to this pandal">
                 📸 + Add Photo
@@ -978,16 +982,19 @@
             
             <div>
               <p id="modal-detail-puja" style="font-size:12px; font-weight:800; color:#b91c1c;"></p>
-              <h2 id="modal-detail-theme" style="font-size:15px; font-weight:800; color:#0f172a; margin:4px 0;"></h2>
-              <p id="modal-detail-desc" style="font-size:12px; color:#475569; line-height:1.4;"></p>
+              <h2 id="modal-detail-theme" style="font-size:16px; font-weight:800; color:#0f172a; margin:4px 0;"></h2>
+              <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:10px 12px; margin-top:6px;">
+                <span style="font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:0.5px; color:#64748b; display:block; margin-bottom:4px;">Full Location & Pandal Description</span>
+                <p id="modal-detail-desc" style="font-size:12.5px; color:#334155; line-height:1.5; white-space:pre-wrap; word-break:break-word;"></p>
+              </div>
             </div>
 
             <div style="display:flex; flex-wrap:wrap; gap:8px; background:#f8fafc; padding:10px; border-radius:14px; border:1px solid var(--border-light); font-size:11px; font-weight:700;">
               <span id="modal-detail-distance" style="color:#0284c7;">📍 Calculating distance...</span>
               <span>•</span>
-              <span id="modal-detail-wait" style="color:#d97706;">⏱️ Queue: ~20m</span>
+              <span id="modal-detail-wait" style="color:#d97706; cursor:pointer;" onclick="openQuickQueuePrompt()" title="Click to quickly update live queue wait time">⏱️ ~15m queue</span>
               <span>•</span>
-              <span id="modal-detail-rating" style="color:#f59e0b; cursor:pointer;" onclick="scrollToRatingSection()" title="Click to view ratings and rate this pandal">★ 4.9</span>
+              <span id="modal-detail-rating" style="color:#f59e0b; cursor:pointer;" onclick="scrollToRatingSection()" title="Click to view ratings and rate this pandal">★ 4.9 (1,420 reviews)</span>
             </div>
 
             <!-- Interactive Hopper Rating Section -->
@@ -997,8 +1004,8 @@
                   <span style="font-size:10.5px; font-weight:800; text-transform:uppercase; letter-spacing:0.5px; color:#b45309;">Collective Hopper Rating</span>
                   <div class="rating-score-display">
                     <span id="detail-rating-score" class="rating-big-num">4.9</span>
-                    <div id="detail-stars-display" class="rating-stars-static">★★★★★</div>
-                    <span id="detail-rating-count" class="rating-count-pill">(1,420 ratings)</span>
+                    <span style="font-size:18px; color:#f59e0b; font-weight:900;">★</span>
+                    <span id="detail-rating-count" class="rating-count-pill">(1,420 reviews)</span>
                   </div>
                 </div>
                 <div id="user-rating-status-pill" class="user-rating-pill">
@@ -1183,9 +1190,10 @@
       <!-- Modal: Edit Pandal Details -->
       <div id="modal-edit-pandal" class="modal-overlay">
         <div class="modal-card">
+          <div class="modal-drag-handle"></div>
           <div class="modal-header">
             <h3 style="display:flex; align-items:center; gap:8px;">
-              <span>✏️</span> Edit Pandal Details
+              <span>✏️</span> Edit Details
             </h3>
             <button class="close-btn" onclick="closeEditPandalModal()">✕</button>
           </div>
@@ -1197,7 +1205,7 @@
               ✏️ Editing Details for: <span id="edit-pandal-target-name" style="font-weight:800;"></span>
             </div>
 
-            <div class="form-group" style="margin-top:10px;">
+            <div class="form-group" style="margin-top:6px;">
               <label style="display:block; font-size:12px; font-weight:700; margin-bottom:6px; color:#334155;">Pandal / Club Name *</label>
               <input type="text" id="edit-pandal-name" class="form-input" required />
             </div>
@@ -1207,49 +1215,95 @@
               <input type="text" id="edit-pandal-theme" class="form-input" required />
             </div>
 
-            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
-              <div class="form-group">
-                <label style="display:block; font-size:12px; font-weight:700; margin-bottom:6px; color:#334155;">District / Zone *</label>
-                <select id="edit-pandal-zone" class="form-select">
-                  <option value="Kolkata">Kolkata</option>
-                  <option value="North 24 Parganas">North 24 Parganas</option>
-                  <option value="South 24 Parganas">South 24 Parganas</option>
-                  <option value="Howrah">Howrah</option>
-                  <option value="Hooghly">Hooghly (Chandannagar)</option>
-                  <option value="Nadia">Nadia (Kalyani)</option>
-                  <option value="Siliguri">Siliguri & North Bengal</option>
-                  <option value="Burdwan">Burdwan (Durgapur)</option>
-                  <option value="Midnapore">Midnapore</option>
-                  <option value="Other Bengal">Other Bengal</option>
-                </select>
+            <div class="form-group">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                <label style="font-size:12px; font-weight:700; color:#334155; margin:0;">District / Zone *</label>
+                <button type="button" id="btn-edit-loc-finder" class="btn-location-finder-merge" onclick="autoDetectLocationAndLandmark('edit')" title="Auto-detect location and nearest pujo pandals">
+                  <span>🧭 Location Finder</span>
+                </button>
               </div>
-
-              <div class="form-group">
-                <label style="display:block; font-size:12px; font-weight:700; margin-bottom:6px; color:#334155;">Live Crowd Density</label>
-                <select id="edit-pandal-traffic" class="form-select">
-                  <option value="low">🟢 Smooth / Low Wait</option>
-                  <option value="moderate">🟡 Moderate Queue</option>
-                  <option value="heavy">🔴 Heavy / Packed</option>
-                  <option value="jam">🔥 Super Jam / Mega Rush</option>
-                </select>
-              </div>
-            </div>
-
-            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
-              <div class="form-group">
-                <label style="display:block; font-size:12px; font-weight:700; margin-bottom:6px; color:#334155;">Queue Wait Time (mins)</label>
-                <input type="number" id="edit-pandal-wait" class="form-input" min="0" max="300" placeholder="20" />
-              </div>
-
-              <div class="form-group">
-                <label style="display:block; font-size:12px; font-weight:700; margin-bottom:6px; color:#334155;">Puja Official Title</label>
-                <input type="text" id="edit-pandal-puja" class="form-input" placeholder="e.g. Sarbojanin Durgotsav" />
-              </div>
+              <select id="edit-pandal-zone" class="form-select" onchange="onEditDistrictChange()">
+                <option value="Kolkata">Kolkata</option>
+                <option value="North 24 Parganas">North 24 Parganas</option>
+                <option value="South 24 Parganas">South 24 Parganas</option>
+                <option value="Howrah">Howrah</option>
+                <option value="Hooghly">Hooghly (Chandannagar)</option>
+                <option value="Nadia">Nadia (Kalyani / Ranaghat)</option>
+                <option value="Murshidabad">Murshidabad</option>
+                <option value="Birbhum">Birbhum (Bolpur / Santiniketan)</option>
+                <option value="Purba Bardhaman">Purba Bardhaman (Burdwan)</option>
+                <option value="Paschim Bardhaman">Paschim Bardhaman (Durgapur / Asansol)</option>
+                <option value="Purba Medinipur">Purba Medinipur (Digha / Tamluk)</option>
+                <option value="Paschim Medinipur">Paschim Medinipur (Kharagpur)</option>
+                <option value="Jhargram">Jhargram</option>
+                <option value="Bankura">Bankura</option>
+                <option value="Purulia">Purulia</option>
+                <option value="Malda">Malda</option>
+                <option value="Uttar Dinajpur">Uttar Dinajpur</option>
+                <option value="Dakshin Dinajpur">Dakshin Dinajpur</option>
+                <option value="Jalpaiguri">Jalpaiguri</option>
+                <option value="Alipurduar">Alipurduar</option>
+                <option value="Cooch Behar">Cooch Behar</option>
+                <option value="Siliguri">Siliguri & North Bengal</option>
+                <option value="Darjeeling">Darjeeling & Kalimpong</option>
+                <option value="Other Bengal">Other Bengal</option>
+              </select>
             </div>
 
             <div class="form-group">
-              <label style="display:block; font-size:12px; font-weight:700; margin-bottom:6px; color:#334155;">Landmark & Road Address *</label>
-              <input type="text" id="edit-pandal-address" class="form-input" required />
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                <label style="font-size:12px; font-weight:700; color:#334155; margin:0;">City / Area in District *</label>
+                <span style="font-size:10.5px; color:#64748b; font-weight:500;">(Type or select below)</span>
+              </div>
+              <div class="city-input-wrap">
+                <input 
+                  type="text" 
+                  id="edit-pandal-city" 
+                  class="form-input" 
+                  list="edit-city-datalist" 
+                  placeholder="Type or select City / Town / Area..." 
+                  autocomplete="off" 
+                  oninput="onCityInputChange('edit')"
+                />
+                <datalist id="edit-city-datalist"></datalist>
+              </div>
+              <div id="edit-city-quick-picks" class="city-quick-picks-container"></div>
+            </div>
+
+            <div class="form-group">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                <label style="font-size:12px; font-weight:700; color:#334155; margin:0;">Landmark & Road Address *</label>
+                <div style="display:flex; gap:6px;">
+                  <button type="button" id="btn-edit-sync-address" class="btn-landmark-tool" onclick="syncAddressWithDistrictCity('edit')" title="Set address same as City and District">
+                    🔄 Same as City/Dist
+                  </button>
+                  <button type="button" id="btn-edit-nearest-landmark" class="btn-landmark-tool active" onclick="autoDetectLandmarkFromNearest('edit')" title="Auto-fill based on nearest pujo pandal description">
+                    ✨ Nearest Landmark
+                  </button>
+                </div>
+              </div>
+              <input type="text" id="edit-pandal-address" class="form-input" required placeholder="e.g. Near Sreebhumi, VIP Road, Lake Town" />
+              <div id="edit-landmark-suggestions" class="city-quick-picks-container" style="margin-top:6px;"></div>
+            </div>
+
+            <div class="form-group">
+              <label style="display:block; font-size:12px; font-weight:700; margin-bottom:6px; color:#334155;">Live Crowd Density</label>
+              <select id="edit-pandal-traffic" class="form-select">
+                <option value="low" selected>🟢 Smooth / Low Wait</option>
+                <option value="moderate">🟡 Moderate Crowd</option>
+                <option value="heavy">🔴 Heavy / Packed</option>
+                <option value="jam">🔥 Super Jam / Mega Rush</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label style="display:block; font-size:12px; font-weight:700; margin-bottom:6px; color:#334155;">Queue Wait Time (mins)</label>
+              <input type="number" id="edit-pandal-wait" class="form-input" min="0" max="300" placeholder="0" value="0" />
+            </div>
+
+            <div class="form-group">
+              <label style="display:block; font-size:12px; font-weight:700; margin-bottom:6px; color:#334155;">Puja Official Title</label>
+              <input type="text" id="edit-pandal-puja" class="form-input" placeholder="e.g. Sarbojanin Durgotsav" />
             </div>
 
             <div class="form-group">
@@ -1285,8 +1339,25 @@
         <div class="lightbox-content" onclick="event.stopPropagation()">
           <button class="lightbox-close-btn" onclick="closePhotoLightbox()" title="Close Lightbox">✕</button>
           
-          <div class="lightbox-img-wrap">
-            <img id="lightbox-img" src="" alt="Enlarged Pandal Photo" />
+          <!-- Zoom Controls Floating Bar -->
+          <div class="lightbox-zoom-bar" onclick="event.stopPropagation()" onmousedown="event.stopPropagation()">
+            <button type="button" class="zoom-ctrl-btn" id="btn-zoom-in" onclick="event.stopPropagation(); zoomLightboxPhoto(1.3, event);" title="Zoom In (+)">
+              ➕ <span class="zoom-btn-label">Zoom In</span>
+            </button>
+            <span id="lightbox-zoom-level" class="zoom-level-pill" onclick="event.stopPropagation(); resetLightboxZoom(event);" title="Click to reset zoom">100%</span>
+            <button type="button" class="zoom-ctrl-btn" id="btn-zoom-out" onclick="event.stopPropagation(); zoomLightboxPhoto(0.77, event);" title="Zoom Out (−)">
+              ➖ <span class="zoom-btn-label">Zoom Out</span>
+            </button>
+            <button type="button" class="zoom-ctrl-btn" id="btn-zoom-reset" onclick="event.stopPropagation(); resetLightboxZoom(event);" title="Reset to Fit">
+              ↺ <span class="zoom-btn-label">Fit</span>
+            </button>
+          </div>
+
+          <div class="lightbox-img-wrap" id="lightbox-img-wrap">
+            <img id="lightbox-img" src="" alt="Enlarged Pandal Photo" draggable="false" />
+            <div class="zoom-hint-banner" id="zoom-hint-banner">
+              <span>💡 Double-tap, scroll, or pinch to zoom & drag</span>
+            </div>
           </div>
 
           <div class="lightbox-footer">
@@ -1308,6 +1379,7 @@
       <!-- Modal 2: Add / Pin Spot on Map (Multi-Category: Pandal, Food, Temp Stall, Mela, Medical, Grocery, Activities) -->
       <div id="modal-add-pandal" class="modal-overlay">
         <div class="modal-card">
+          <div class="modal-drag-handle"></div>
           <div class="modal-header">
             <h3 id="add-modal-heading">📍 Pin a Spot on Bengal Map</h3>
             <button class="close-btn" onclick="closeAddModal()">✕</button>
@@ -1364,19 +1436,89 @@
             </div>
 
             <div class="form-group">
-              <label>District / Zone</label>
-              <select id="add-zone" class="form-select">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                <label style="font-size:12px; font-weight:700; color:#334155; margin:0;">District / Zone *</label>
+                <button type="button" id="btn-add-loc-finder" class="btn-location-finder-merge" onclick="autoDetectLocationAndLandmark('add')" title="Auto-detect location and nearest pujo pandals">
+                  <span>🧭 Location Finder</span>
+                </button>
+              </div>
+              <select id="add-zone" class="form-select" onchange="onAddDistrictChange()">
                 <option value="Kolkata">Kolkata</option>
                 <option value="North 24 Parganas">North 24 Parganas</option>
                 <option value="South 24 Parganas">South 24 Parganas</option>
                 <option value="Howrah">Howrah</option>
                 <option value="Hooghly">Hooghly (Chandannagar)</option>
-                <option value="Nadia">Nadia (Kalyani)</option>
+                <option value="Nadia">Nadia (Kalyani / Ranaghat)</option>
+                <option value="Murshidabad">Murshidabad</option>
+                <option value="Birbhum">Birbhum (Bolpur / Santiniketan)</option>
+                <option value="Purba Bardhaman">Purba Bardhaman (Burdwan)</option>
+                <option value="Paschim Bardhaman">Paschim Bardhaman (Durgapur / Asansol)</option>
+                <option value="Purba Medinipur">Purba Medinipur (Digha / Tamluk)</option>
+                <option value="Paschim Medinipur">Paschim Medinipur (Kharagpur)</option>
+                <option value="Jhargram">Jhargram</option>
+                <option value="Bankura">Bankura</option>
+                <option value="Purulia">Purulia</option>
+                <option value="Malda">Malda</option>
+                <option value="Uttar Dinajpur">Uttar Dinajpur</option>
+                <option value="Dakshin Dinajpur">Dakshin Dinajpur</option>
+                <option value="Jalpaiguri">Jalpaiguri</option>
+                <option value="Alipurduar">Alipurduar</option>
+                <option value="Cooch Behar">Cooch Behar</option>
                 <option value="Siliguri">Siliguri & North Bengal</option>
-                <option value="Burdwan">Burdwan (Durgapur)</option>
-                <option value="Midnapore">Midnapore</option>
+                <option value="Darjeeling">Darjeeling & Kalimpong</option>
                 <option value="Other Bengal">Other Bengal</option>
               </select>
+            </div>
+
+            <div class="form-group">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                <label style="font-size:12px; font-weight:700; color:#334155; margin:0;">City / Area in District *</label>
+                <span style="font-size:10.5px; color:#64748b; font-weight:500;">(Type or select below)</span>
+              </div>
+              <div class="city-input-wrap">
+                <input 
+                  type="text" 
+                  id="add-city" 
+                  class="form-input" 
+                  list="add-city-datalist" 
+                  placeholder="Type or select City / Town / Area..." 
+                  autocomplete="off" 
+                  oninput="onCityInputChange('add')"
+                />
+                <datalist id="add-city-datalist"></datalist>
+              </div>
+              <div id="add-city-quick-picks" class="city-quick-picks-container"></div>
+            </div>
+
+            <div class="form-group">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                <label style="font-size:12px; font-weight:700; color:#334155; margin:0;">Landmark & Road Address *</label>
+                <div style="display:flex; gap:6px;">
+                  <button type="button" id="btn-add-sync-address" class="btn-landmark-tool" onclick="syncAddressWithDistrictCity('add')" title="Set address same as City and District">
+                    🔄 Same as City/Dist
+                  </button>
+                  <button type="button" id="btn-add-nearest-landmark" class="btn-landmark-tool active" onclick="autoDetectLandmarkFromNearest('add')" title="Auto-fill based on nearest pujo pandal description">
+                    ✨ Nearest Landmark
+                  </button>
+                </div>
+              </div>
+              <input type="text" id="add-address" class="form-input" placeholder="e.g. Near Sreebhumi, VIP Road, Lake Town" />
+              <div id="add-landmark-suggestions" class="city-quick-picks-container" style="margin-top:6px;"></div>
+            </div>
+
+            <div class="form-group">
+              <label style="display:block; font-size:12px; font-weight:700; margin-bottom:6px; color:#334155;">Live Crowd Density</label>
+              <select id="add-traffic" class="form-select">
+                <option value="low" selected>🟢 Smooth / Low Wait</option>
+                <option value="moderate">🟡 Moderate Crowd</option>
+                <option value="heavy">🔴 Heavy / Packed</option>
+                <option value="jam">🔥 Super Jam / Mega Rush</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label style="display:block; font-size:12px; font-weight:700; margin-bottom:6px; color:#334155;">Queue Wait Time (mins)</label>
+              <input type="number" id="add-wait" class="form-input" min="0" max="300" placeholder="0" value="0" />
             </div>
 
             <div class="form-group">
@@ -1914,6 +2056,6 @@
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-storage-compat.js"></script>
 
     <!-- Pure Vanilla Application Logic -->
-    <script src="./app.js?v=7.0"></script>
+    <script src="./app.js?v=12.0"></script>
   </body>
 </html>

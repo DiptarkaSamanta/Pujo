@@ -1045,8 +1045,8 @@ function sanitizePandalImages(p) {
   // Default photos posted count reflects genuine uploaded photos
   p.photosPostedCount = p.userPhotos.length + p.images.length;
 
-  // For custom contributed pandals: default rating MUST strictly be zero!
-  if (p.id && p.id.startsWith('pandal-custom')) {
+  // For custom contributed pandals: calculate genuine collective rating or 0.0 default
+  if (p.id && (p.id.startsWith('pandal-custom') || p.id.startsWith('spot-'))) {
     // Purge any fake initial contributor ratings
     if (Array.isArray(p.userRatings)) {
       p.userRatings = p.userRatings.filter(r => r && r.userName !== 'Pandal Contributor' && r.userName !== 'Pandal Creator');
@@ -1059,17 +1059,20 @@ function sanitizePandalImages(p) {
       // Current user has rated this pandal
       const hopperId = getHopperId();
       const hopperName = (currentAuth && currentAuth.name) || localStorage.getItem('puja_last_author') || 'Bengal Hopper';
-      p.userRatings = [{
-        userId: hopperId,
-        userName: hopperName,
-        rating: Number(userVote),
-        timestamp: Date.now()
-      }];
-      p.rating = Number(Number(userVote).toFixed(1));
-      p.reviewCount = 1;
-      p.ratingSum = Number(userVote);
-      p.ratingCount = 1;
-    } else if (p.userRatings.length > 0) {
+      const existingIdx = p.userRatings.findIndex(r => r.userId === hopperId);
+      if (existingIdx !== -1) {
+        p.userRatings[existingIdx].rating = Number(userVote);
+      } else {
+        p.userRatings.unshift({
+          userId: hopperId,
+          userName: hopperName,
+          rating: Number(userVote),
+          timestamp: Date.now()
+        });
+      }
+    }
+
+    if (p.userRatings.length > 0) {
       const sum = p.userRatings.reduce((acc, r) => acc + (Number(r.rating) || 0), 0);
       p.ratingCount = p.userRatings.length;
       p.reviewCount = p.userRatings.length;
@@ -1078,7 +1081,7 @@ function sanitizePandalImages(p) {
     } else {
       // No genuine user ratings cast: DEFAULT MUST BE ZERO!
       p.userRatings = [];
-      p.rating = 0;
+      p.rating = 0.0;
       p.reviewCount = 0;
       p.ratingSum = 0;
       p.ratingCount = 0;
@@ -2153,24 +2156,15 @@ function renderPandalRatingSection(pandal) {
 
   const count = (typeof target.reviewCount === 'number') ? target.reviewCount : (target.ratingCount || 0);
   const hasRatings = count > 0 && typeof target.rating === 'number' && target.rating > 0;
-  const rating = hasRatings ? Number(target.rating).toFixed(1) : 'New';
+  const rating = hasRatings ? Number(target.rating).toFixed(1) : '0.0';
 
-  if (scoreEl) scoreEl.textContent = hasRatings ? rating : '0.0';
-  if (countEl) countEl.textContent = hasRatings ? `(${Number(count).toLocaleString()} ratings)` : '(0 ratings • Be first to rate!)';
-  if (modalDetailRating) modalDetailRating.textContent = hasRatings ? `★ ${rating} (${Number(count).toLocaleString()} reviews)` : `⭐ Not rated yet (0 reviews)`;
+  if (scoreEl) scoreEl.textContent = rating;
+  if (countEl) countEl.textContent = hasRatings ? `(${Number(count).toLocaleString()} reviews)` : '(0 reviews)';
+  if (modalDetailRating) modalDetailRating.textContent = hasRatings ? `★ ${rating} (${Number(count).toLocaleString()} reviews)` : `★ 0.0 (0 reviews)`;
 
-  // Generate gold / empty stars display
+  // Hide the old static 5-star display so it doesn't show 5 stars everywhere
   if (starsDisplayEl) {
-    if (hasRatings) {
-      const num = Math.round(Number(target.rating));
-      let starStr = '';
-      for (let i = 1; i <= 5; i++) {
-        starStr += i <= num ? '★' : '☆';
-      }
-      starsDisplayEl.textContent = starStr;
-    } else {
-      starsDisplayEl.textContent = '☆☆☆☆☆';
-    }
+    starsDisplayEl.style.display = 'none';
   }
 
   // Check user's own rating
@@ -2257,43 +2251,21 @@ function submitPandalRating(starValue, pandalId) {
   }
 
   // Purge any residual fake ratings on custom pandals
-  if (target.id && target.id.startsWith('pandal-custom')) {
+  if (target.id && (target.id.startsWith('pandal-custom') || target.id.startsWith('spot-'))) {
     target.userRatings = target.userRatings.filter(r => r && r.userName !== 'Pandal Contributor' && r.userName !== 'Pandal Creator');
-    if (target.userRatings.length === 0) {
-      target.ratingSum = 0;
-      target.ratingCount = 0;
-      target.reviewCount = 0;
-      target.rating = 0;
-    }
   }
 
   const existingVoteIndex = target.userRatings.findIndex(r => r.userId === hopperId);
   const prevRating = getUserRatingForPandal(target.id);
 
-  // Initialize ratingSum and ratingCount strictly based on existing valid ratings (no hardcoded 5 star default!)
-  if (typeof target.ratingSum !== 'number' || typeof target.ratingCount !== 'number' || isNaN(target.ratingSum)) {
-    const baseCount = (typeof target.reviewCount === 'number' && target.reviewCount > 0) ? target.reviewCount : 0;
-    const baseScore = (typeof target.rating === 'number' && !isNaN(target.rating) && target.rating > 0) ? target.rating : 0;
-    target.ratingSum = Math.round(baseScore * baseCount * 10) / 10;
-    target.ratingCount = baseCount;
-  }
-
-  if (prevRating) {
-    // Modify existing user rating
-    target.ratingSum = Math.max(0, target.ratingSum - prevRating + star);
-    if (existingVoteIndex !== -1) {
-      target.userRatings[existingVoteIndex] = {
-        userId: hopperId,
-        userName: hopperName,
-        rating: star,
-        timestamp: Date.now()
-      };
-    }
+  if (prevRating && existingVoteIndex !== -1) {
+    target.userRatings[existingVoteIndex] = {
+      userId: hopperId,
+      userName: hopperName,
+      rating: star,
+      timestamp: Date.now()
+    };
   } else {
-    // New voter rating starting from first rating
-    target.ratingSum += star;
-    target.ratingCount += 1;
-    target.reviewCount = target.ratingCount;
     target.userRatings.unshift({
       userId: hopperId,
       userName: hopperName,
@@ -2302,8 +2274,29 @@ function submitPandalRating(starValue, pandalId) {
     });
   }
 
-  // Collective average algorithm: sum / count (rounded to 1 decimal place)
-  target.rating = Number((target.ratingSum / target.ratingCount).toFixed(1));
+  // Calculate dynamic collective rating:
+  const isCustom = target.id && (target.id.startsWith('pandal-custom') || target.id.startsWith('spot-'));
+  if (isCustom) {
+    const sum = target.userRatings.reduce((acc, r) => acc + (Number(r.rating) || 0), 0);
+    const count = target.userRatings.length;
+    target.rating = count > 0 ? Number((sum / count).toFixed(1)) : 0.0;
+    target.ratingCount = count;
+    target.reviewCount = count;
+    target.ratingSum = sum;
+  } else {
+    // For default heritage pandals, anchor with initial baseline but give real-time community votes high sensitivity
+    const initialBaseRating = (typeof target.initialBaseRating === 'number') ? target.initialBaseRating : (target.rating || 4.8);
+    target.initialBaseRating = initialBaseRating;
+    const baseWeight = 3; // Responsive baseline anchor weight of 3 votes
+    const baseSum = initialBaseRating * baseWeight;
+    const userSum = target.userRatings.reduce((acc, r) => acc + (Number(r.rating) || 0), 0);
+    const totalWeight = baseWeight + target.userRatings.length;
+    target.rating = Number(((baseSum + userSum) / totalWeight).toFixed(1));
+    const baseReviewCount = (typeof target.initialReviewCount === 'number') ? target.initialReviewCount : (target.reviewCount || 100);
+    target.initialReviewCount = baseReviewCount;
+    target.reviewCount = baseReviewCount + target.userRatings.length;
+    target.ratingCount = target.reviewCount;
+  }
 
   setUserRatingForPandal(target.id, star);
   savePandals(pandals);
@@ -2315,7 +2308,7 @@ function submitPandalRating(starValue, pandalId) {
   }
 
   renderPandalList();
-  showToast(`⭐ You voted ${star}★! Collective rating is now ★ ${target.rating} (${target.ratingCount.toLocaleString()} hoppers)`);
+  showToast(`⭐ You voted ${star}★! Rating updated to ★ ${target.rating} (${target.reviewCount} reviews)`);
 }
 
 function openRatingPrompt(pandalId) {
@@ -2337,6 +2330,42 @@ function scrollToRatingSection() {
   }
 }
 
+function openQuickQueuePrompt(pandalId) {
+  const targetId = pandalId || (selectedPandal && selectedPandal.id);
+  if (!targetId) return;
+  const p = pandals.find(x => x.id === targetId);
+  if (!p) return;
+
+  const currentQueue = (typeof p.estimatedQueueMins === 'number') ? p.estimatedQueueMins : 15;
+  const input = prompt(`⏱️ Report live queue wait time for "${p.name}" (in minutes):\n(e.g., 0 for no wait, 10, 20, 35, 60)`, currentQueue);
+  if (input === null) return;
+
+  const parsed = parseInt(input.trim(), 10);
+  if (isNaN(parsed) || parsed < 0) {
+    showToast('⚠️ Please enter a valid number of minutes (0 or more)');
+    return;
+  }
+
+  p.estimatedQueueMins = parsed;
+  if (p.estimatedQueueMins <= 10) p.trafficLevel = 'low';
+  else if (p.estimatedQueueMins <= 30) p.trafficLevel = 'moderate';
+  else if (p.estimatedQueueMins <= 60) p.trafficLevel = 'heavy';
+  else p.trafficLevel = 'jam';
+
+  savePandals(pandals);
+  broadcastPandalUpdate(p);
+
+  const waitEl = document.getElementById('modal-detail-wait');
+  if (waitEl) {
+    waitEl.textContent = p.estimatedQueueMins === 0 ? `~0m (No wait)` : `~${p.estimatedQueueMins}m queue`;
+  }
+  renderPandalMarkers();
+  renderPandalList();
+  renderShortestFinder();
+
+  showToast(`⏱️ Live queue for "${p.name}" updated to ~${p.estimatedQueueMins}m!`);
+}
+
 function triggerDeviceCamera() {
   const cameraInput = document.getElementById('photo-camera-input');
   if (cameraInput) {
@@ -2355,36 +2384,67 @@ function triggerDeviceGallery() {
 }
 
 function openPandalDetail(pandal) {
+  if (!pandal) return;
+  // Always retrieve the freshest pandal object from master array so new photos & updates immediately reflect
+  const fresh = pandals.find(x => x.id === pandal.id);
+  if (fresh) pandal = fresh;
+
   selectedPandal = sanitizePandalImages(pandal);
   const dist = calculateDistanceKm(userLocation, selectedPandal.location);
-  const cat = pandal.category || 'pandal';
+  const cat = selectedPandal.category || 'pandal';
   const cfg = MARKER_CATEGORY_CONFIG[cat] || MARKER_CATEGORY_CONFIG.pandal;
 
-  document.getElementById('modal-detail-title').textContent = pandal.name;
+  const displayName = selectedPandal.pujaName || selectedPandal.name;
+  const titleEl = document.getElementById('modal-detail-title');
+  if (titleEl) {
+    titleEl.textContent = displayName;
+    titleEl.setAttribute('title', displayName);
+  }
   const pujaEl = document.getElementById('modal-detail-puja');
   if (pujaEl) {
     pujaEl.innerHTML = `
       <span style="display:inline-flex; align-items:center; gap:4px; background:${cfg.bgGradient}; color:#fff; font-size:10.5px; font-weight:800; padding:2px 8px; border-radius:999px; margin-right:6px; box-shadow:0 2px 6px ${cfg.shadowColor};">
         ${cfg.icon} ${cfg.badge}
       </span>
-      <span>${pandal.pujaName || pandal.name}</span>
+      <span>${displayName}</span>
     `;
   }
-  document.getElementById('modal-detail-theme').textContent = pandal.theme;
-  document.getElementById('modal-detail-desc').textContent = pandal.description;
-  document.getElementById('modal-detail-address').textContent = pandal.address;
+  document.getElementById('modal-detail-theme').textContent = selectedPandal.theme || 'Durga Puja & Cultural Celebration';
+  document.getElementById('modal-detail-desc').textContent = selectedPandal.description || 'Community pinned location & pandal for festival hoppers across Bengal.';
+  document.getElementById('modal-detail-address').textContent = selectedPandal.address;
   document.getElementById('modal-detail-distance').textContent = `${dist} km away`;
-  document.getElementById('modal-detail-wait').textContent = `~${pandal.estimatedQueueMins}m queue`;
+  const waitMins = (typeof selectedPandal.estimatedQueueMins === 'number') ? selectedPandal.estimatedQueueMins : 15;
+  const waitEl = document.getElementById('modal-detail-wait');
+  if (waitEl) {
+    waitEl.textContent = waitMins === 0 ? `~0m (No wait)` : `~${waitMins}m queue`;
+    waitEl.setAttribute('onclick', `openQuickQueuePrompt('${selectedPandal.id}')`);
+  }
   
+  // Ensure cover photo always displays the newest uploaded photo
   const imgEl = document.getElementById('modal-detail-img');
-  imgEl.src = getPandalMainImage(pandal);
-  imgEl.onerror = function() { this.onerror = null; this.src = getSpotCategoryFallbackImg(cat); };
+  const mainImg = getPandalMainImage(selectedPandal);
+  if (imgEl) {
+    imgEl.src = mainImg;
+    imgEl.style.display = 'block';
+    imgEl.onerror = function() { this.onerror = null; this.src = getSpotCategoryFallbackImg(cat); };
+  }
+  const coverWrap = document.querySelector('#modal-pandal-detail .modal-cover-wrap');
+  if (coverWrap) {
+    coverWrap.style.display = 'block';
+  }
+
+  // Reset modal scroll to the top so cover photo is immediately visible
+  const modalDetail = document.getElementById('modal-pandal-detail');
+  if (modalDetail) {
+    const modalBody = modalDetail.querySelector('.modal-body');
+    if (modalBody) modalBody.scrollTop = 0;
+  }
 
   // Render Interactive Rating Card & collective score
-  renderPandalRatingSection(pandal);
+  renderPandalRatingSection(selectedPandal);
 
   // Render Google Maps Style Community Gallery
-  renderCommunityGallery(pandal);
+  renderCommunityGallery(selectedPandal);
 
   // Admin or Custom Pinned Location delete button toggle
   const deleteBtn = document.getElementById('btn-admin-delete-pandal');
@@ -2675,6 +2735,14 @@ async function submitUserPhoto(e) {
     }
     selectedPandal.photosPostedCount = (selectedPandal.photosPostedCount || 0) + 1;
 
+    // Synchronize into the master pandals array
+    const pIdx = pandals.findIndex(x => x.id === selectedPandal.id);
+    if (pIdx !== -1) {
+      pandals[pIdx] = selectedPandal;
+    } else {
+      pandals.unshift(selectedPandal);
+    }
+
     // Save to local storage
     savePandals(pandals);
 
@@ -2685,6 +2753,11 @@ async function submitUserPhoto(e) {
     const detailImg = document.getElementById('modal-detail-img');
     if (detailImg) {
       detailImg.src = newPhoto.url;
+      detailImg.style.display = 'block';
+    }
+    const coverWrap = document.querySelector('#modal-pandal-detail .modal-cover-wrap');
+    if (coverWrap) {
+      coverWrap.style.display = 'block';
     }
 
     // Refresh UI
@@ -2705,7 +2778,1061 @@ async function submitUserPhoto(e) {
 }
 
 // ----------------------------------------------------------------------------
-// 9D. Edit Pandal Details Handlers (Live Firestore Sync)
+// 9D. Bengal District & City Mapping + Cascading Selectors
+// ----------------------------------------------------------------------------
+const BENGAL_DISTRICT_CITIES = {
+  "Kolkata": [
+    "North Kolkata (Shyambazar, Bagbazar, Sovabazar, Hatibagan)",
+    "Central Kolkata (College St, Esplanade, Girish Park, Bowbazar)",
+    "South Kolkata (Gariahat, Ballygunge, Kalighat, Bhowanipore)",
+    "South-East Kolkata (Jadavpur, Santoshpur, Garia, Kasba)",
+    "South-West Kolkata (Behala, New Alipore, Taratala)",
+    "East Kolkata (Salt Lake City, EM Bypass, Lake Town)",
+    "New Town / Rajarhat",
+    "Dum Dum / Nagerbazar / Airport",
+    "Kolkata Port / Kidderpore / Alipore",
+    "Other Kolkata Area"
+  ],
+  "North 24 Parganas": [
+    "Barasat",
+    "Barrackpore",
+    "Bidhannagar (Salt Lake)",
+    "Madhyamgram",
+    "Dum Dum",
+    "Habra",
+    "Naihati",
+    "Bhatpara",
+    "Basirhat",
+    "Bangaon",
+    "Kanchrapara",
+    "Halisahar",
+    "Kamarhati / Belgharia",
+    "Panihati / Sodepur",
+    "Titagarh / Khardah",
+    "New Barrackpore",
+    "Other Area in North 24 Pgs"
+  ],
+  "South 24 Parganas": [
+    "Rajpur Sonarpur",
+    "Baruipur",
+    "Diamond Harbour",
+    "Maheshtala",
+    "Budge Budge",
+    "Canning",
+    "Joynagar Majilpur",
+    "Kakdwip",
+    "Amtala",
+    "Bhangar",
+    "Bishnupur (24 Pgs)",
+    "Gosaba / Sundarbans",
+    "Other Area in South 24 Pgs"
+  ],
+  "Howrah": [
+    "Howrah City (Shibpur, Kadamtala, Mandirtala)",
+    "Bally",
+    "Belur",
+    "Santragachi",
+    "Uluberia",
+    "Bagnan",
+    "Amta",
+    "Domjur",
+    "Andul",
+    "Liluah",
+    "Other Area in Howrah"
+  ],
+  "Hooghly": [
+    "Chandannagar",
+    "Chinsurah (Hooghly Sadar)",
+    "Serampore",
+    "Uttarpara",
+    "Bhadreswar",
+    "Baidyabati",
+    "Rishra",
+    "Bansberia",
+    "Tarakeswar",
+    "Arambagh",
+    "Dankuni",
+    "Singur",
+    "Tribeni",
+    "Other Area in Hooghly"
+  ],
+  "Nadia": [
+    "Kalyani",
+    "Krishnanagar",
+    "Ranaghat",
+    "Santipur",
+    "Nabadwip",
+    "Chakdaha",
+    "Taherpur",
+    "Gayeshpur",
+    "Tehatta",
+    "Bethuadahari",
+    "Other Area in Nadia"
+  ],
+  "Murshidabad": [
+    "Berhampore",
+    "Murshidabad City / Lalbagh",
+    "Jangipur",
+    "Jiaganj / Azimganj",
+    "Kandi",
+    "Dhulian",
+    "Beldanga",
+    "Raghunathganj",
+    "Domkal",
+    "Other Area in Murshidabad"
+  ],
+  "Birbhum": [
+    "Bolpur / Santiniketan",
+    "Suri",
+    "Rampurhat",
+    "Sainthia",
+    "Dubrajpur",
+    "Tarapith",
+    "Ilambazar",
+    "Nalhati",
+    "Other Area in Birbhum"
+  ],
+  "Purba Bardhaman": [
+    "Bardhaman Sadar",
+    "Katwa",
+    "Kalna",
+    "Memari",
+    "Guskara",
+    "Bhatar",
+    "Dainhat",
+    "Other Area in Purba Bardhaman"
+  ],
+  "Paschim Bardhaman": [
+    "Asansol",
+    "Durgapur",
+    "Raniganj",
+    "Jamuria",
+    "Kulti",
+    "Andal",
+    "Barakar",
+    "Chittaranjan",
+    "Other Area in Paschim Bardhaman"
+  ],
+  "Purba Medinipur": [
+    "Tamluk",
+    "Haldia",
+    "Contai (Kanthi)",
+    "Digha",
+    "Mandarmoni",
+    "Egra",
+    "Mahishadal",
+    "Kolaghat",
+    "Panskura",
+    "Other Area in Purba Medinipur"
+  ],
+  "Paschim Medinipur": [
+    "Midnapore (Medinipur Sadar)",
+    "Kharagpur",
+    "Ghatal",
+    "Chandrakona",
+    "Ramjibanpur",
+    "Kshirpai",
+    "Debra",
+    "Belda",
+    "Other Area in Paschim Medinipur"
+  ],
+  "Jhargram": [
+    "Jhargram Town",
+    "Gopiballavpur",
+    "Belpahari",
+    "Lodhasuli",
+    "Binpur",
+    "Sankrail",
+    "Other Area in Jhargram"
+  ],
+  "Bankura": [
+    "Bankura Town",
+    "Bishnupur",
+    "Sonamukhi",
+    "Khatra",
+    "Mukutmanipur",
+    "Barjora",
+    "Kotulpur",
+    "Patrasayer",
+    "Other Area in Bankura"
+  ],
+  "Purulia": [
+    "Purulia Town",
+    "Raghunathpur",
+    "Jhalda",
+    "Balarampur",
+    "Ayodhya Hills",
+    "Manbazar",
+    "Para",
+    "Other Area in Purulia"
+  ],
+  "Malda": [
+    "English Bazar (Malda Town)",
+    "Old Malda",
+    "Chanchal",
+    "Gazole",
+    "Kaliachak",
+    "Habibpur",
+    "Ratua",
+    "Harishchandrapur",
+    "Other Area in Malda"
+  ],
+  "Uttar Dinajpur": [
+    "Raiganj",
+    "Islampur",
+    "Dalkhola",
+    "Kaliaganj",
+    "Karandighi",
+    "Itahar",
+    "Other Area in Uttar Dinajpur"
+  ],
+  "Dakshin Dinajpur": [
+    "Balurghat",
+    "Gangarampur",
+    "Buniadpur",
+    "Hili",
+    "Kushmandi",
+    "Tapan",
+    "Other Area in Dakshin Dinajpur"
+  ],
+  "Jalpaiguri": [
+    "Jalpaiguri Town",
+    "Malbazar",
+    "Dhupguri",
+    "Maynaguri",
+    "Rajganj",
+    "Banarhat",
+    "Other Area in Jalpaiguri"
+  ],
+  "Alipurduar": [
+    "Alipurduar Town",
+    "Falakata",
+    "Birpara",
+    "Jaigaon",
+    "Madarihat (Jaldapara)",
+    "Hasimara",
+    "Kalchini",
+    "Other Area in Alipurduar"
+  ],
+  "Cooch Behar": [
+    "Cooch Behar Town",
+    "Dinhata",
+    "Mathabhanga",
+    "Tufanganj",
+    "Mekhliganj",
+    "Haldibari",
+    "Other Area in Cooch Behar"
+  ],
+  "Siliguri": [
+    "Siliguri Town",
+    "Matigara",
+    "Sukna",
+    "Bagdogra",
+    "Naxalbari",
+    "Phansidewa",
+    "Salugara",
+    "Other Area in Siliguri"
+  ],
+  "Darjeeling": [
+    "Darjeeling Town",
+    "Kalimpong",
+    "Kurseong",
+    "Mirik",
+    "Ghoom",
+    "Pedong",
+    "Lava / Rishyap",
+    "Other Area in Darjeeling & Kalimpong"
+  ],
+  "Other Bengal": [
+    "Sundarbans Region",
+    "Dooars Region",
+    "Rarh Bengal",
+    "Interstate Border Town",
+    "Other Bengal Locality"
+  ]
+};
+
+// Bengal District & Major Town Coordinates Database
+const BENGAL_DISTRICT_COORDS = {
+  "Kolkata": { lat: 22.5726, lng: 88.3639 },
+  "North 24 Parganas": { lat: 22.7230, lng: 88.4800 },
+  "South 24 Parganas": { lat: 22.3600, lng: 88.4350 },
+  "Howrah": { lat: 22.5958, lng: 88.2636 },
+  "Hooghly": { lat: 22.9038, lng: 88.3968 },
+  "Nadia": { lat: 23.4013, lng: 88.5000 },
+  "Murshidabad": { lat: 24.1800, lng: 88.2700 },
+  "Birbhum": { lat: 23.9054, lng: 87.5246 },
+  "Purba Bardhaman": { lat: 23.2324, lng: 87.8615 },
+  "Paschim Bardhaman": { lat: 23.5204, lng: 87.3119 },
+  "Purba Medinipur": { lat: 22.2980, lng: 87.9250 },
+  "Paschim Medinipur": { lat: 22.4257, lng: 87.3199 },
+  "Jhargram": { lat: 22.4500, lng: 86.9833 },
+  "Bankura": { lat: 23.2320, lng: 87.0715 },
+  "Purulia": { lat: 23.3322, lng: 86.3652 },
+  "Malda": { lat: 25.0108, lng: 88.1411 },
+  "Uttar Dinajpur": { lat: 25.6170, lng: 88.1250 },
+  "Dakshin Dinajpur": { lat: 25.2215, lng: 88.7656 },
+  "Jalpaiguri": { lat: 26.5400, lng: 88.7190 },
+  "Alipurduar": { lat: 26.4919, lng: 89.5271 },
+  "Cooch Behar": { lat: 26.3239, lng: 89.4510 },
+  "Siliguri": { lat: 26.7271, lng: 88.3953 },
+  "Darjeeling": { lat: 27.0410, lng: 88.2663 },
+  "Other Bengal": { lat: 22.9868, lng: 87.8550 }
+};
+
+const BENGAL_CITY_COORDS = {
+  // Nadia
+  "ranaghat": { lat: 23.1804, lng: 88.5830, district: "Nadia" },
+  "kalyani": { lat: 22.9751, lng: 88.4345, district: "Nadia" },
+  "krishnanagar": { lat: 23.4013, lng: 88.5000, district: "Nadia" },
+  "santipur": { lat: 23.2500, lng: 88.4300, district: "Nadia" },
+  "nabadwip": { lat: 23.4075, lng: 88.3683, district: "Nadia" },
+  "chakdaha": { lat: 23.0800, lng: 88.5200, district: "Nadia" },
+  "taherpur": { lat: 23.2800, lng: 88.5400, district: "Nadia" },
+  "gayeshpur": { lat: 22.9600, lng: 88.4800, district: "Nadia" },
+  "tehatta": { lat: 23.7380, lng: 88.5260, district: "Nadia" },
+  "bethuadahari": { lat: 23.6190, lng: 88.3880, district: "Nadia" },
+
+  // Hooghly
+  "chandannagar": { lat: 22.8671, lng: 88.3674, district: "Hooghly" },
+  "chinsurah": { lat: 22.9038, lng: 88.3968, district: "Hooghly" },
+  "serampore": { lat: 22.7500, lng: 88.3400, district: "Hooghly" },
+  "uttarpara": { lat: 22.6700, lng: 88.3500, district: "Hooghly" },
+  "bhadreswar": { lat: 22.8200, lng: 88.3500, district: "Hooghly" },
+  "baidyabati": { lat: 22.7900, lng: 88.3200, district: "Hooghly" },
+  "rishra": { lat: 22.7100, lng: 88.3500, district: "Hooghly" },
+  "bansberia": { lat: 22.9600, lng: 88.4000, district: "Hooghly" },
+  "tarakeswar": { lat: 22.8900, lng: 88.0200, district: "Hooghly" },
+  "arambagh": { lat: 22.8800, lng: 87.7800, district: "Hooghly" },
+  "dankuni": { lat: 22.6860, lng: 88.2980, district: "Hooghly" },
+  "singur": { lat: 22.8100, lng: 88.2300, district: "Hooghly" },
+  "tribeni": { lat: 22.9900, lng: 88.4000, district: "Hooghly" },
+
+  // Howrah
+  "howrah": { lat: 22.5958, lng: 88.2636, district: "Howrah" },
+  "shibpur": { lat: 22.5645, lng: 88.3072, district: "Howrah" },
+  "bally": { lat: 22.6500, lng: 88.3400, district: "Howrah" },
+  "belur": { lat: 22.6300, lng: 88.3500, district: "Howrah" },
+  "santragachi": { lat: 22.5800, lng: 88.2800, district: "Howrah" },
+  "uluberia": { lat: 22.4700, lng: 88.1100, district: "Howrah" },
+  "bagnan": { lat: 22.4700, lng: 87.9700, district: "Howrah" },
+  "amta": { lat: 22.5700, lng: 88.0200, district: "Howrah" },
+  "domjur": { lat: 22.6400, lng: 88.2200, district: "Howrah" },
+  "andul": { lat: 22.5800, lng: 88.2400, district: "Howrah" },
+  "liluah": { lat: 22.6100, lng: 88.3300, district: "Howrah" },
+
+  // North 24 Parganas
+  "barasat": { lat: 22.7230, lng: 88.4800, district: "North 24 Parganas" },
+  "barrackpore": { lat: 22.7600, lng: 88.3700, district: "North 24 Parganas" },
+  "bidhannagar": { lat: 22.5800, lng: 88.4200, district: "North 24 Parganas" },
+  "salt lake": { lat: 22.5800, lng: 88.4200, district: "North 24 Parganas" },
+  "madhyamgram": { lat: 22.7000, lng: 88.4500, district: "North 24 Parganas" },
+  "dum dum": { lat: 22.6200, lng: 88.4200, district: "North 24 Parganas" },
+  "habra": { lat: 22.8300, lng: 88.6600, district: "North 24 Parganas" },
+  "naihati": { lat: 22.8900, lng: 88.4200, district: "North 24 Parganas" },
+  "bhatpara": { lat: 22.8700, lng: 88.4100, district: "North 24 Parganas" },
+  "basirhat": { lat: 22.6600, lng: 88.8900, district: "North 24 Parganas" },
+  "bangaon": { lat: 23.0700, lng: 88.8200, district: "North 24 Parganas" },
+  "kanchrapara": { lat: 22.9400, lng: 88.4300, district: "North 24 Parganas" },
+  "halisahar": { lat: 22.9500, lng: 88.4200, district: "North 24 Parganas" },
+  "kamarhati": { lat: 22.6700, lng: 88.3700, district: "North 24 Parganas" },
+  "belgharia": { lat: 22.6600, lng: 88.3800, district: "North 24 Parganas" },
+  "sodepur": { lat: 22.6900, lng: 88.3900, district: "North 24 Parganas" },
+  "panihati": { lat: 22.6900, lng: 88.3700, district: "North 24 Parganas" },
+  "khardah": { lat: 22.7200, lng: 88.3800, district: "North 24 Parganas" },
+  "titagarh": { lat: 22.7400, lng: 88.3700, district: "North 24 Parganas" },
+  "lake town": { lat: 22.6050, lng: 88.4030, district: "North 24 Parganas" },
+  "new town": { lat: 22.5850, lng: 88.4700, district: "North 24 Parganas" },
+  "rajarhat": { lat: 22.6200, lng: 88.5000, district: "North 24 Parganas" },
+
+  // South 24 Parganas
+  "baruipur": { lat: 22.3600, lng: 88.4350, district: "South 24 Parganas" },
+  "sonarpur": { lat: 22.4400, lng: 88.4200, district: "South 24 Parganas" },
+  "diamond harbour": { lat: 22.1900, lng: 88.2000, district: "South 24 Parganas" },
+  "maheshtala": { lat: 22.5100, lng: 88.2400, district: "South 24 Parganas" },
+  "budge budge": { lat: 22.4800, lng: 88.1800, district: "South 24 Parganas" },
+  "canning": { lat: 22.3100, lng: 88.6600, district: "South 24 Parganas" },
+  "kakdwip": { lat: 21.8700, lng: 88.1900, district: "South 24 Parganas" },
+  "amtala": { lat: 22.3800, lng: 88.2700, district: "South 24 Parganas" },
+  "bhangar": { lat: 22.5300, lng: 88.6000, district: "South 24 Parganas" },
+
+  // Bardhaman
+  "durgapur": { lat: 23.5204, lng: 87.3119, district: "Paschim Bardhaman" },
+  "asansol": { lat: 23.6889, lng: 86.9661, district: "Paschim Bardhaman" },
+  "raniganj": { lat: 23.6200, lng: 87.1300, district: "Paschim Bardhaman" },
+  "bardhaman": { lat: 23.2324, lng: 87.8615, district: "Purba Bardhaman" },
+  "burdwan": { lat: 23.2324, lng: 87.8615, district: "Purba Bardhaman" },
+  "katwa": { lat: 23.6400, lng: 88.1300, district: "Purba Bardhaman" },
+  "kalna": { lat: 23.2200, lng: 88.3600, district: "Purba Bardhaman" },
+  "memari": { lat: 23.1800, lng: 88.1100, district: "Purba Bardhaman" },
+
+  // Medinipur
+  "kharagpur": { lat: 22.3400, lng: 87.3200, district: "Paschim Medinipur" },
+  "midnapore": { lat: 22.4257, lng: 87.3199, district: "Paschim Medinipur" },
+  "medinipur": { lat: 22.4257, lng: 87.3199, district: "Paschim Medinipur" },
+  "ghatal": { lat: 22.6700, lng: 87.7200, district: "Paschim Medinipur" },
+  "digha": { lat: 21.6266, lng: 87.5074, district: "Purba Medinipur" },
+  "haldia": { lat: 22.0667, lng: 88.0698, district: "Purba Medinipur" },
+  "tamluk": { lat: 22.2980, lng: 87.9250, district: "Purba Medinipur" },
+  "contai": { lat: 21.7800, lng: 87.7500, district: "Purba Medinipur" },
+  "mandarmoni": { lat: 21.6660, lng: 87.6850, district: "Purba Medinipur" },
+  "kolaghat": { lat: 22.4300, lng: 87.8700, district: "Purba Medinipur" },
+
+  // North Bengal & Hills
+  "siliguri": { lat: 26.7271, lng: 88.3953, district: "Siliguri" },
+  "darjeeling": { lat: 27.0410, lng: 88.2663, district: "Darjeeling" },
+  "kalimpong": { lat: 27.0667, lng: 88.4667, district: "Darjeeling" },
+  "kurseong": { lat: 26.8800, lng: 88.2800, district: "Darjeeling" },
+  "jalpaiguri": { lat: 26.5400, lng: 88.7190, district: "Jalpaiguri" },
+  "alipurduar": { lat: 26.4919, lng: 89.5271, district: "Alipurduar" },
+  "cooch behar": { lat: 26.3239, lng: 89.4510, district: "Cooch Behar" },
+  "malda": { lat: 25.0108, lng: 88.1411, district: "Malda" },
+  "english bazar": { lat: 25.0000, lng: 88.1400, district: "Malda" },
+  "raiganj": { lat: 25.6170, lng: 88.1250, district: "Uttar Dinajpur" },
+  "balurghat": { lat: 25.2215, lng: 88.7656, district: "Dakshin Dinajpur" },
+
+  // Bankura, Purulia, Birbhum, Murshidabad
+  "bolpur": { lat: 23.6700, lng: 87.7200, district: "Birbhum" },
+  "santiniketan": { lat: 23.6800, lng: 87.6900, district: "Birbhum" },
+  "suri": { lat: 23.9054, lng: 87.5246, district: "Birbhum" },
+  "tarapith": { lat: 24.1100, lng: 87.8000, district: "Birbhum" },
+  "berhampore": { lat: 24.1000, lng: 88.2500, district: "Murshidabad" },
+  "bankura": { lat: 23.2320, lng: 87.0715, district: "Bankura" },
+  "bishnupur": { lat: 23.0750, lng: 87.3180, district: "Bankura" },
+  "purulia": { lat: 23.3322, lng: 86.3652, district: "Purulia" },
+  "jhargram": { lat: 22.4500, lng: 86.9833, district: "Jhargram" },
+
+  // Kolkata Areas
+  "shyambazar": { lat: 22.6025, lng: 88.3708, district: "Kolkata" },
+  "bagbazar": { lat: 22.6040, lng: 88.3660, district: "Kolkata" },
+  "sovabazar": { lat: 22.5970, lng: 88.3650, district: "Kolkata" },
+  "hatibagan": { lat: 22.5940, lng: 88.3740, district: "Kolkata" },
+  "college street": { lat: 22.5744, lng: 88.3629, district: "Kolkata" },
+  "esplanade": { lat: 22.5645, lng: 88.3518, district: "Kolkata" },
+  "girish park": { lat: 22.5855, lng: 88.3595, district: "Kolkata" },
+  "gariahata": { lat: 22.5186, lng: 88.3661, district: "Kolkata" },
+  "gariahat": { lat: 22.5186, lng: 88.3661, district: "Kolkata" },
+  "ballygunge": { lat: 22.5280, lng: 88.3650, district: "Kolkata" },
+  "kalighat": { lat: 22.5175, lng: 88.3426, district: "Kolkata" },
+  "bhowanipore": { lat: 22.5330, lng: 88.3460, district: "Kolkata" },
+  "jadavpur": { lat: 22.4988, lng: 88.3718, district: "Kolkata" },
+  "behala": { lat: 22.4980, lng: 88.3150, district: "Kolkata" },
+  "alipore": { lat: 22.5300, lng: 88.3300, district: "Kolkata" }
+};
+
+function getCoordsForBengalPlace(zone, city) {
+  const normCity = (city || '').toLowerCase().trim();
+  const normZone = normalizeDistrictKey(zone);
+
+  // 1. Direct city match
+  if (normCity) {
+    for (const [key, val] of Object.entries(BENGAL_CITY_COORDS)) {
+      if (normCity === key || normCity.startsWith(key) || key.startsWith(normCity) || normCity.includes(key)) {
+        return { lat: val.lat, lng: val.lng, district: val.district || normZone, matchedName: city };
+      }
+    }
+  }
+
+  // 2. District coords match
+  if (BENGAL_DISTRICT_COORDS[normZone]) {
+    const dCoords = BENGAL_DISTRICT_COORDS[normZone];
+    return { lat: dCoords.lat, lng: dCoords.lng, district: normZone, matchedName: normZone };
+  }
+
+  // 3. Fallback to Central Bengal if unknown
+  return { lat: 22.5726, lng: 88.3639, district: 'Kolkata', matchedName: 'Kolkata' };
+}
+
+function normalizeDistrictKey(district) {
+  if (!district) return 'Kolkata';
+  let clean = district.split('(')[0].split('&')[0].trim();
+  if (BENGAL_DISTRICT_CITIES[clean]) return clean;
+  if (BENGAL_DISTRICT_CITIES[district]) return district;
+
+  const lower = district.toLowerCase().trim();
+  for (const key of Object.keys(BENGAL_DISTRICT_CITIES)) {
+    if (lower.includes(key.toLowerCase()) || key.toLowerCase().includes(lower)) {
+      return key;
+    }
+  }
+  return 'Kolkata';
+}
+
+function setDistrictSelectValue(selectEl, zoneValue) {
+  if (!selectEl) return 'Kolkata';
+  if (!zoneValue) {
+    selectEl.value = 'Kolkata';
+    return 'Kolkata';
+  }
+  // 1. Direct value match
+  selectEl.value = zoneValue;
+  if (selectEl.value === zoneValue) return zoneValue;
+
+  // 2. Scan options by value or displayed text
+  const target = zoneValue.toLowerCase().trim();
+  for (let i = 0; i < selectEl.options.length; i++) {
+    const opt = selectEl.options[i];
+    const val = opt.value.toLowerCase().trim();
+    const txt = opt.textContent.toLowerCase().trim();
+    if (val === target || txt === target || txt.includes(target) || target.includes(val)) {
+      selectEl.selectedIndex = i;
+      return opt.value;
+    }
+  }
+
+  // 3. Fallbacks for common aliases
+  if (target.includes('kolkata')) selectEl.value = 'Kolkata';
+  else if (target.includes('burdwan') || target.includes('bardhaman')) selectEl.value = 'Purba Bardhaman';
+  else if (target.includes('midnapore') || target.includes('medinipur')) selectEl.value = 'Paschim Medinipur';
+  else if (target.includes('siliguri')) selectEl.value = 'Siliguri';
+  else if (target.includes('darjeeling')) selectEl.value = 'Darjeeling';
+  else selectEl.value = 'Kolkata';
+
+  return selectEl.value || 'Kolkata';
+}
+
+function populateCityDropdown(district, selectOrInputId, selectedCity) {
+  const el = typeof selectOrInputId === 'string' ? document.getElementById(selectOrInputId) : selectOrInputId;
+  if (!el) return;
+
+  const targetId = el.id;
+  const normDistrict = normalizeDistrictKey(district);
+  const cities = BENGAL_DISTRICT_CITIES[normDistrict] || BENGAL_DISTRICT_CITIES['Kolkata'] || [];
+
+  // When element is an INPUT (typeable with datalist + quick picks)
+  if (el.tagName === 'INPUT') {
+    const datalistId = el.getAttribute('list') || (targetId === 'edit-pandal-city' ? 'edit-city-datalist' : 'add-city-datalist');
+    const datalist = document.getElementById(datalistId);
+    if (datalist) {
+      datalist.innerHTML = cities.map(c => `<option value="${c}">${c}</option>`).join('');
+    }
+
+    if (selectedCity !== undefined && selectedCity !== null) {
+      el.value = selectedCity;
+    }
+
+    el.placeholder = `Type or select city in ${normDistrict}...`;
+
+    // Render fast 1-tap quick pick pills
+    const quickPickId = targetId === 'edit-pandal-city' ? 'edit-city-quick-picks' : 'add-city-quick-picks';
+    const quickContainer = document.getElementById(quickPickId);
+    if (quickContainer) {
+      quickContainer.innerHTML = '';
+      cities.slice(0, 8).forEach(c => {
+        const pill = document.createElement('button');
+        pill.type = 'button';
+        const isMatch = el.value && (el.value.toLowerCase() === c.toLowerCase() || c.toLowerCase().includes(el.value.toLowerCase()));
+        pill.className = 'city-quick-pill' + (isMatch ? ' active' : '');
+        const label = c.includes('(') ? c.split('(')[0].trim() : c;
+        pill.textContent = label;
+        pill.title = `Click to choose ${c}`;
+        pill.onclick = (ev) => {
+          ev.preventDefault();
+          el.value = c;
+          quickContainer.querySelectorAll('.city-quick-pill').forEach(p => p.classList.remove('active'));
+          pill.classList.add('active');
+          el.focus();
+        };
+        quickContainer.appendChild(pill);
+      });
+    }
+    return;
+  }
+
+  // Fallback if element is a SELECT
+  if (el.tagName === 'SELECT') {
+    el.innerHTML = '<option value="">-- Select City / Town / Area --</option>';
+    cities.forEach(city => {
+      const opt = document.createElement('option');
+      opt.value = city;
+      opt.textContent = city;
+      if (selectedCity && (city.toLowerCase() === selectedCity.toLowerCase() || city.toLowerCase().includes(selectedCity.toLowerCase()))) {
+        opt.selected = true;
+      }
+      el.appendChild(opt);
+    });
+
+    if (selectedCity && !Array.from(el.options).some(o => o.value.toLowerCase() === selectedCity.toLowerCase())) {
+      const customOpt = document.createElement('option');
+      customOpt.value = selectedCity;
+      customOpt.textContent = selectedCity;
+      customOpt.selected = true;
+      el.appendChild(customOpt);
+    }
+  }
+}
+
+function getLocalFamousLandmarks(zone, city) {
+  const normZone = (zone || '').toLowerCase();
+  const normCity = (city || '').toLowerCase();
+
+  // Nadia (Ranaghat, Kalyani, Krishnanagar, etc.)
+  if (normZone.includes('nadia') || normCity.includes('ranaghat') || normCity.includes('kalyani')) {
+    if (normCity.includes('ranaghat')) {
+      return [
+        'Near Ranaghat Station Road',
+        'Near Churni River Ghat, Ranaghat',
+        'Ranaghat College More, Nadia',
+        'Near Sub-Division Hospital, Ranaghat'
+      ];
+    }
+    if (normCity.includes('kalyani')) {
+      return [
+        'Near Kalyani ITI More',
+        'Near Kalyani Central Park',
+        'Near AIIMS Kalyani / Stadium',
+        'Kalyani Ghoshpara More'
+      ];
+    }
+    return [
+      'Near Krishnanagar Rajbari',
+      'Near Kalyani ITI More',
+      'Near Ranaghat Station Road'
+    ];
+  }
+
+  // Hooghly (Chandannagar, Serampore, Uttarpara, etc.)
+  if (normZone.includes('hooghly') || normCity.includes('chandannagar') || normCity.includes('serampore')) {
+    return [
+      'Near Chandannagar Strand Road',
+      'Near Serampore Station More',
+      'Near Sacred Heart Church, Chandannagar',
+      'Beside GT Road / Clock Tower'
+    ];
+  }
+
+  // Howrah
+  if (normZone.includes('howrah')) {
+    return [
+      'Near Howrah Station / Mandirtala',
+      'Near Shibpur Tram Depot',
+      'Near Bally Halt / Belur Math',
+      'Near Kona Expressway Crossing'
+    ];
+  }
+
+  // North 24 Parganas
+  if (normZone.includes('north 24') || normCity.includes('lake town') || normCity.includes('barasat') || normCity.includes('dum dum')) {
+    return [
+      'Near VIP Road Lake Town Clock Tower',
+      'Near Dum Dum Park Crossing',
+      'Near Barasat Colony More',
+      'Near Jessore Road / Airport Gate'
+    ];
+  }
+
+  // South 24 Parganas
+  if (normZone.includes('south 24') || normCity.includes('baruipur') || normCity.includes('sonarpur')) {
+    return [
+      'Near Baruipur Station Road',
+      'Near Sonarpur Crossing, EM Bypass',
+      'Near Diamond Harbour Road'
+    ];
+  }
+
+  // Bardhaman / Durgapur / Asansol
+  if (normZone.includes('bardhaman') || normCity.includes('durgapur') || normCity.includes('asansol')) {
+    return [
+      'Near City Centre, Durgapur',
+      'Near Benachity Market, Durgapur',
+      'Near Asansol Station Road / Court More',
+      'Near Curzon Gate, Bardhaman'
+    ];
+  }
+
+  // Siliguri / North Bengal
+  if (normZone.includes('siliguri') || normZone.includes('darjeeling')) {
+    return [
+      'Near Sevoke Road Crossing, Siliguri',
+      'Near Hong Kong Market, Siliguri',
+      'Near Siliguri Town / Hashmi Chowk'
+    ];
+  }
+
+  // Kolkata
+  if (normZone.includes('kolkata')) {
+    return [
+      'Near Bagbazar Ghat, North Kolkata',
+      'Near Shyambazar 5-Point Crossing',
+      'Near College Street / Girish Park',
+      'Near Gariahat Crossing / Triangular Park',
+      'Near Kalighat Mandir, South Kolkata'
+    ];
+  }
+
+  // Fallback
+  if (city) {
+    return [
+      `Near ${city} Station More, ${zone}`,
+      `Near ${city} Main Market, ${zone}`,
+      `Near ${city} Bus Stand, ${zone}`
+    ];
+  }
+
+  return [`Near ${zone} Town Center`, `Near ${zone} Bus Stand`];
+}
+
+function syncAddressWithDistrictCity(mode) {
+  const isEdit = mode === 'edit';
+  const zoneEl = document.getElementById(isEdit ? 'edit-pandal-zone' : 'add-zone');
+  const cityEl = document.getElementById(isEdit ? 'edit-pandal-city' : 'add-city');
+  const addrEl = document.getElementById(isEdit ? 'edit-pandal-address' : 'add-address');
+  if (!addrEl) return;
+
+  const zone = zoneEl ? zoneEl.value : 'Kolkata';
+  const city = cityEl ? cityEl.value.trim() : '';
+
+  addrEl.value = city ? `${city}, ${zone}` : zone;
+  addrEl.dataset.isAutoPattern = 'true';
+  showToast(`📍 Address set to: "${addrEl.value}"`);
+
+  // Visual feedback on button
+  const btn = document.getElementById(isEdit ? 'btn-edit-sync-address' : 'btn-add-sync-address');
+  if (btn) {
+    const orig = btn.innerHTML;
+    btn.innerHTML = '✅ Copied!';
+    setTimeout(() => { btn.innerHTML = orig; }, 1400);
+  }
+
+  const coords = isEdit && selectedPandal ? selectedPandal.location : (manualPinLocation || userLocation);
+  renderLandmarkSuggestions(mode, coords, isEdit && selectedPandal ? selectedPandal.id : null, zone, city);
+}
+
+function onCityInputChange(mode) {
+  const isEdit = mode === 'edit';
+  const zoneEl = document.getElementById(isEdit ? 'edit-pandal-zone' : 'add-zone');
+  const cityEl = document.getElementById(isEdit ? 'edit-pandal-city' : 'add-city');
+  const addrEl = document.getElementById(isEdit ? 'edit-pandal-address' : 'add-address');
+  if (!addrEl) return;
+
+  const zone = zoneEl ? zoneEl.value : 'Kolkata';
+  const city = cityEl ? cityEl.value.trim() : '';
+
+  // Auto-sync address if empty or following default pattern
+  if (!addrEl.value || addrEl.dataset.isAutoPattern === 'true' || !addrEl.value.trim()) {
+    addrEl.value = city ? `${city}, ${zone}` : zone;
+    addrEl.dataset.isAutoPattern = 'true';
+  }
+
+  const coords = isEdit && selectedPandal ? selectedPandal.location : (manualPinLocation || userLocation);
+  renderLandmarkSuggestions(mode, coords, isEdit && selectedPandal ? selectedPandal.id : null, zone, city);
+}
+
+function getNearestPandalLandmarkSuggestions(coords, excludePandalId, zone, city) {
+  const suggestions = [];
+  const targetCity = (city || '').toLowerCase().trim();
+  const targetZone = (zone || '').toLowerCase().trim();
+
+  // 1. Same city/zone pandals (Highest priority!)
+  if (targetCity || targetZone) {
+    (pandals || [])
+      .filter(p => (!excludePandalId || p.id !== excludePandalId))
+      .filter(p => {
+        const pCity = (p.city || '').toLowerCase().trim();
+        const pZone = (p.zone || '').toLowerCase().trim();
+        const pAddr = (p.address || '').toLowerCase().trim();
+        return (targetCity && (pCity.includes(targetCity) || pAddr.includes(targetCity))) ||
+               (targetZone && (pZone.includes(targetZone) || pAddr.includes(targetZone)));
+      })
+      .slice(0, 3)
+      .forEach(p => {
+        const pName = p.name || p.pujaName;
+        const cleanName = pName.replace(/Durgotsav|Sarbojanin|Club|Committee|Sangha/gi, '').trim() || pName;
+        suggestions.push({
+          label: `🏛️ Near ${cleanName}`,
+          value: `Near ${pName}, ${p.city || p.zone || ''}`.trim().replace(/,\s*$/, ''),
+          pandal: p,
+          distKm: null
+        });
+      });
+  }
+
+  // 2. Local famous landmarks for this city/town
+  const famousLandmarks = getLocalFamousLandmarks(zone, city);
+  famousLandmarks.forEach(fl => {
+    if (!suggestions.some(s => s.value.toLowerCase().includes(fl.toLowerCase()))) {
+      suggestions.push({
+        label: `📍 ${fl}`,
+        value: fl,
+        pandal: null,
+        distKm: null
+      });
+    }
+  });
+
+  // 3. Proximity-based pandals (ONLY if within 12km)
+  let refLoc = coords;
+  if (refLoc && refLoc.lat && refLoc.lng) {
+    const scored = (pandals || [])
+      .filter(p => (!excludePandalId || p.id !== excludePandalId) && p.location && typeof p.location.lat === 'number')
+      .map(p => ({ pandal: p, distKm: calculateDistanceKm(refLoc, p.location) }))
+      .filter(item => item.distKm <= 12)
+      .sort((a, b) => a.distKm - b.distKm);
+
+    scored.slice(0, 3).forEach(({ pandal, distKm }) => {
+      const distLabel = distKm < 1 ? `${Math.round(distKm * 1000)}m` : `${distKm.toFixed(1)}km`;
+      const pName = pandal.name || pandal.pujaName || 'Pandal';
+      const cleanName = pName.replace(/Durgotsav|Sarbojanin|Club|Committee|Sangha/gi, '').trim() || pName;
+      const val = `Near ${pName}, ${pandal.city || pandal.zone || ''}`.trim().replace(/,\s*$/, '');
+      if (!suggestions.some(s => s.value === val)) {
+        suggestions.push({
+          label: `📍 Near ${cleanName} (${distLabel})`,
+          value: val,
+          pandal: pandal,
+          distKm: distKm
+        });
+      }
+    });
+  }
+
+  return suggestions.slice(0, 5);
+}
+
+function renderLandmarkSuggestions(mode, coords, excludeId, zone, city) {
+  const containerId = mode === 'edit' ? 'edit-landmark-suggestions' : 'add-landmark-suggestions';
+  const container = document.getElementById(containerId);
+  const addrEl = document.getElementById(mode === 'edit' ? 'edit-pandal-address' : 'add-address');
+  if (!container || !addrEl) return;
+
+  container.innerHTML = '';
+  const suggestions = getNearestPandalLandmarkSuggestions(coords, excludeId, zone, city);
+
+  // Add "Same as City/Dist" quick tag
+  const resetPill = document.createElement('button');
+  resetPill.type = 'button';
+  resetPill.className = 'city-quick-pill';
+  resetPill.textContent = `🏛️ ${city ? city + ', ' + zone : zone}`;
+  resetPill.title = 'Click to use District & City name as address';
+  resetPill.onclick = (e) => {
+    e.preventDefault();
+    addrEl.value = city ? `${city}, ${zone}` : zone;
+    addrEl.dataset.isAutoPattern = 'true';
+    container.querySelectorAll('.city-quick-pill').forEach(p => p.classList.remove('active'));
+    resetPill.classList.add('active');
+  };
+  container.appendChild(resetPill);
+
+  suggestions.forEach(item => {
+    const pill = document.createElement('button');
+    pill.type = 'button';
+    pill.className = 'city-quick-pill';
+    pill.textContent = item.label;
+    pill.title = `Click to set address: ${item.value}`;
+    pill.onclick = (e) => {
+      e.preventDefault();
+      addrEl.value = item.value;
+      addrEl.dataset.isAutoPattern = 'false';
+      container.querySelectorAll('.city-quick-pill').forEach(p => p.classList.remove('active'));
+      pill.classList.add('active');
+    };
+    container.appendChild(pill);
+  });
+}
+
+function autoDetectLandmarkFromNearest(mode) {
+  const isEdit = mode === 'edit';
+  const zoneEl = document.getElementById(isEdit ? 'edit-pandal-zone' : 'add-zone');
+  const cityEl = document.getElementById(isEdit ? 'edit-pandal-city' : 'add-city');
+  const addrEl = document.getElementById(isEdit ? 'edit-pandal-address' : 'add-address');
+  if (!addrEl) return;
+
+  const zone = zoneEl ? zoneEl.value : 'Kolkata';
+  const city = cityEl ? cityEl.value.trim() : '';
+  const coords = isEdit && selectedPandal ? selectedPandal.location : (manualPinLocation || userLocation);
+
+  const suggestions = getNearestPandalLandmarkSuggestions(coords, isEdit && selectedPandal ? selectedPandal.id : null, zone, city);
+
+  if (suggestions && suggestions.length > 0) {
+    const best = suggestions[0];
+    addrEl.value = best.value;
+    addrEl.dataset.isAutoPattern = 'false';
+    showToast(`✨ Auto-detected landmark: "${best.value}"`);
+  } else {
+    addrEl.value = city ? `Near ${city} Station Road, ${zone}` : `Near ${zone} Town Center`;
+    showToast(`📍 Set address to: "${addrEl.value}"`);
+  }
+
+  // Visual feedback
+  const btn = document.getElementById(isEdit ? 'btn-edit-nearest-landmark' : 'btn-add-nearest-landmark');
+  if (btn) {
+    const orig = btn.innerHTML;
+    btn.innerHTML = '✨ Applied!';
+    setTimeout(() => { btn.innerHTML = orig; }, 1400);
+  }
+
+  renderLandmarkSuggestions(mode, coords, isEdit && selectedPandal ? selectedPandal.id : null, zone, city);
+}
+
+async function autoDetectLocationAndLandmark(mode) {
+  const isEdit = mode === 'edit';
+  const btn = document.getElementById(isEdit ? 'btn-edit-loc-finder' : 'btn-add-loc-finder');
+  if (btn) btn.innerHTML = '⏳ Finding...';
+
+  const zoneEl = document.getElementById(isEdit ? 'edit-pandal-zone' : 'add-zone');
+  const cityEl = document.getElementById(isEdit ? 'edit-pandal-city' : 'add-city');
+  const addrEl = document.getElementById(isEdit ? 'edit-pandal-address' : 'add-address');
+  const trafficEl = document.getElementById(isEdit ? 'edit-pandal-traffic' : 'add-traffic');
+  const waitEl = document.getElementById(isEdit ? 'edit-pandal-wait' : 'add-wait');
+
+  const curZone = zoneEl ? zoneEl.value : 'Kolkata';
+  const curCity = cityEl ? cityEl.value.trim() : '';
+
+  try {
+    // 1. If user already chose/typed a district or city in Bengal other than default empty,
+    // prioritize resolving coordinates for their chosen location!
+    let resolvedCoords = null;
+    let locationDisplayName = '';
+
+    if (curCity || (curZone && curZone !== 'Kolkata')) {
+      const placeMatch = getCoordsForBengalPlace(curZone, curCity);
+      if (placeMatch && placeMatch.lat) {
+        resolvedCoords = { lat: placeMatch.lat, lng: placeMatch.lng };
+        locationDisplayName = curCity ? `${curCity}, ${curZone}` : curZone;
+      }
+    }
+
+    // 2. If no location chosen yet, try browser GPS
+    if (!resolvedCoords && navigator.geolocation) {
+      const gpsCoords = await new Promise((resolve) => {
+        navigator.geolocation.getCurrentPosition(
+          pos => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+          err => resolve(null),
+          { timeout: 3500, enableHighAccuracy: true }
+        );
+      });
+      if (gpsCoords) {
+        resolvedCoords = gpsCoords;
+      }
+    }
+
+    // 3. Fallback to existing pandal location (if not Kolkata default) or district coords
+    if (!resolvedCoords) {
+      if (isEdit && selectedPandal && selectedPandal.location && (selectedPandal.location.lat !== 22.5726 || selectedPandal.zone === 'Kolkata')) {
+        resolvedCoords = selectedPandal.location;
+      } else {
+        const placeMatch = getCoordsForBengalPlace(curZone, curCity);
+        resolvedCoords = { lat: placeMatch.lat, lng: placeMatch.lng };
+        locationDisplayName = curCity ? `${curCity}, ${curZone}` : curZone;
+      }
+    }
+
+    // Update location state for current edit/add spot
+    if (isEdit && selectedPandal) {
+      selectedPandal.location = resolvedCoords;
+    } else {
+      manualPinLocation = resolvedCoords;
+      const coordDisplay = document.getElementById('add-coord-display');
+      if (coordDisplay) {
+        coordDisplay.textContent = `${resolvedCoords.lat.toFixed(5)}, ${resolvedCoords.lng.toFixed(5)}`;
+      }
+    }
+
+    // 4. Find nearest pandal to these accurate coordinates
+    let closest = null;
+    let minDist = Infinity;
+    (pandals || []).forEach(p => {
+      if (isEdit && selectedPandal && p.id === selectedPandal.id) return;
+      if (p.location && typeof p.location.lat === 'number') {
+        const d = calculateDistanceKm(resolvedCoords, p.location);
+        if (d < minDist) {
+          minDist = d;
+          closest = p;
+        }
+      }
+    });
+
+    // 5. Update form values ensuring user's selected location name is NEVER erased by Kolkata
+    let finalZone = curZone;
+    let finalCity = curCity;
+
+    // Only auto-switch district/city if current was default/empty and we found a very close spot (< 8km)
+    if (!curCity && curZone === 'Kolkata' && closest && minDist <= 8) {
+      finalZone = closest.zone || 'Kolkata';
+      finalCity = closest.city || '';
+      setDistrictSelectValue(zoneEl, finalZone);
+      populateCityDropdown(finalZone, isEdit ? 'edit-pandal-city' : 'add-city', finalCity);
+    }
+
+    // Set road address / landmark based on actual location name
+    if (addrEl) {
+      if (!addrEl.dataset) addrEl.dataset = {};
+      if (closest && minDist <= 3) {
+        addrEl.value = `Near ${closest.name}${finalCity ? ', ' + finalCity : ', ' + finalZone}`;
+        addrEl.dataset.isAutoPattern = 'false';
+      } else if (finalCity) {
+        addrEl.value = `Near ${finalCity} Station Road, ${finalZone}`;
+        addrEl.dataset.isAutoPattern = 'true';
+      } else {
+        addrEl.value = `${finalZone}`;
+        addrEl.dataset.isAutoPattern = 'true';
+      }
+    }
+
+    if (trafficEl) trafficEl.value = 'low';
+    if (waitEl) waitEl.value = 0;
+
+    renderLandmarkSuggestions(mode, resolvedCoords, isEdit && selectedPandal ? selectedPandal.id : null, finalZone, finalCity);
+
+    const placeLabel = finalCity ? `${finalCity}, ${finalZone}` : (locationDisplayName || finalZone);
+    if (closest && minDist <= 5) {
+      showToast(`📍 Found: "${placeLabel}" • Nearest: ${closest.name} (${minDist < 1 ? Math.round(minDist * 1000) + 'm' : minDist.toFixed(1) + 'km'})`);
+    } else {
+      showToast(`📍 Location Finder resolved: "${placeLabel}" (${resolvedCoords.lat.toFixed(4)}, ${resolvedCoords.lng.toFixed(4)})`);
+    }
+
+  } catch (err) {
+    console.error('Error in location finder:', err);
+    if (addrEl && !addrEl.value) {
+      addrEl.value = curCity ? `${curCity}, ${curZone}` : curZone;
+    }
+    showToast(`📍 Location set to: ${curCity ? curCity + ', ' + curZone : curZone}`);
+  } finally {
+    if (btn) btn.innerHTML = '🧭 Location Finder';
+  }
+}
+
+function onEditDistrictChange() {
+  const distEl = document.getElementById('edit-pandal-zone');
+  const district = distEl ? distEl.value : 'Kolkata';
+  populateCityDropdown(district, 'edit-pandal-city', '');
+  const cityInput = document.getElementById('edit-pandal-city');
+  if (cityInput) cityInput.focus();
+
+  const addrEl = document.getElementById('edit-pandal-address');
+  if (addrEl) {
+    addrEl.value = district;
+    addrEl.dataset.isAutoPattern = 'true';
+  }
+  const coords = selectedPandal ? selectedPandal.location : userLocation;
+  renderLandmarkSuggestions('edit', coords, selectedPandal ? selectedPandal.id : null, district, '');
+}
+
+function onAddDistrictChange() {
+  const distEl = document.getElementById('add-zone');
+  const district = distEl ? distEl.value : 'Kolkata';
+  populateCityDropdown(district, 'add-city', '');
+  const cityInput = document.getElementById('add-city');
+  if (cityInput) cityInput.focus();
+
+  const addrEl = document.getElementById('add-address');
+  if (addrEl) {
+    addrEl.value = district;
+    addrEl.dataset.isAutoPattern = 'true';
+  }
+  const coords = manualPinLocation || userLocation;
+  renderLandmarkSuggestions('add', coords, null, district, '');
+}
+
+// Global window exposure for HTML onclick handlers
+window.syncAddressWithDistrictCity = syncAddressWithDistrictCity;
+window.autoDetectLandmarkFromNearest = autoDetectLandmarkFromNearest;
+window.autoDetectLocationAndLandmark = autoDetectLocationAndLandmark;
+window.onCityInputChange = onCityInputChange;
+window.onEditDistrictChange = onEditDistrictChange;
+window.onAddDistrictChange = onAddDistrictChange;
+
+// ----------------------------------------------------------------------------
+// 9E. Edit Pandal Details Handlers (Live Firestore Sync)
 // ----------------------------------------------------------------------------
 function openEditPandalModal(pandalId) {
   if (pandalId) {
@@ -2718,19 +3845,57 @@ function openEditPandalModal(pandalId) {
   }
 
   const p = selectedPandal;
-  document.getElementById('edit-pandal-id').value = p.id;
-  document.getElementById('edit-pandal-target-name').textContent = p.name;
-  document.getElementById('edit-pandal-name').value = p.name || '';
-  document.getElementById('edit-pandal-theme').value = p.theme || '';
-  document.getElementById('edit-pandal-zone').value = p.zone || 'Kolkata';
-  document.getElementById('edit-pandal-traffic').value = p.trafficLevel || 'moderate';
-  document.getElementById('edit-pandal-wait').value = p.estimatedQueueMins || 20;
-  document.getElementById('edit-pandal-puja').value = p.pujaName || '';
-  document.getElementById('edit-pandal-address').value = p.address || '';
-  document.getElementById('edit-pandal-desc').value = p.description || '';
-  document.getElementById('edit-pandal-cover').value = p.thumbnail || (p.images && p.images[0]) || '';
+  const editIdEl = document.getElementById('edit-pandal-id');
+  if (editIdEl) editIdEl.value = p.id;
+  const targetNameEl = document.getElementById('edit-pandal-target-name');
+  if (targetNameEl) targetNameEl.textContent = p.name;
+  const nameEl = document.getElementById('edit-pandal-name');
+  if (nameEl) nameEl.value = p.name || '';
+  const themeEl = document.getElementById('edit-pandal-theme');
+  if (themeEl) themeEl.value = p.theme || '';
 
-  document.getElementById('modal-edit-pandal').classList.add('active');
+  const zoneSelect = document.getElementById('edit-pandal-zone');
+  const currentZone = p.zone || 'Kolkata';
+  const matchedZone = setDistrictSelectValue(zoneSelect, currentZone);
+  populateCityDropdown(matchedZone, 'edit-pandal-city', p.city || '');
+
+  // Default crowd green (lowest) and wait 0
+  const trafficEl = document.getElementById('edit-pandal-traffic');
+  if (trafficEl) trafficEl.value = p.trafficLevel || 'low';
+  const waitEl = document.getElementById('edit-pandal-wait');
+  if (waitEl) waitEl.value = (typeof p.estimatedQueueMins === 'number') ? p.estimatedQueueMins : 0;
+
+  const pujaEl = document.getElementById('edit-pandal-puja');
+  if (pujaEl) pujaEl.value = p.pujaName || '';
+
+  // Landmark & Road Address defaults to City, District if empty
+  const addressEl = document.getElementById('edit-pandal-address');
+  if (addressEl) {
+    addressEl.value = p.address || (p.city ? `${p.city}, ${matchedZone}` : matchedZone);
+  }
+
+  const descEl = document.getElementById('edit-pandal-desc');
+  if (descEl) descEl.value = p.description || '';
+  const coverEl = document.getElementById('edit-pandal-cover');
+  if (coverEl) coverEl.value = p.thumbnail || (p.images && p.images[0]) || '';
+
+  // If pandal's location was defaulted to Kolkata (22.5726, 88.3639) but pandal belongs to Nadia, Hooghly, etc.,
+  // automatically update coordinates to match its actual Bengal district/city!
+  if (matchedZone !== 'Kolkata' && p.location && (Math.abs(p.location.lat - 22.5726) < 0.001 && Math.abs(p.location.lng - 88.3639) < 0.001)) {
+    const realCoords = getCoordsForBengalPlace(matchedZone, p.city || '');
+    if (realCoords && realCoords.lat) {
+      p.location = { lat: realCoords.lat, lng: realCoords.lng };
+    }
+  }
+
+  renderLandmarkSuggestions('edit', p.location, p.id, matchedZone, p.city || '');
+
+  const modal = document.getElementById('modal-edit-pandal');
+  if (modal) modal.classList.add('active');
+}
+
+function useCurrentLocationForEdit() {
+  autoDetectLocationAndLandmark('edit');
 }
 
 function closeEditPandalModal() {
@@ -2755,8 +3920,15 @@ async function submitEditPandal(e) {
     p.name = document.getElementById('edit-pandal-name').value.trim() || p.name;
     p.theme = document.getElementById('edit-pandal-theme').value.trim() || p.theme;
     p.zone = document.getElementById('edit-pandal-zone').value || p.zone;
+    const cityEl = document.getElementById('edit-pandal-city');
+    if (cityEl) {
+      p.city = cityEl.value.trim();
+    }
     p.trafficLevel = document.getElementById('edit-pandal-traffic').value || p.trafficLevel;
-    p.estimatedQueueMins = parseInt(document.getElementById('edit-pandal-wait').value, 10) || p.estimatedQueueMins;
+    const waitVal = parseInt(document.getElementById('edit-pandal-wait').value, 10);
+    if (!isNaN(waitVal) && waitVal >= 0) {
+      p.estimatedQueueMins = waitVal;
+    }
     p.pujaName = document.getElementById('edit-pandal-puja').value.trim() || p.pujaName || p.name;
     p.address = document.getElementById('edit-pandal-address').value.trim() || p.address;
     p.description = document.getElementById('edit-pandal-desc').value.trim() || p.description;
@@ -2779,6 +3951,7 @@ async function submitEditPandal(e) {
     broadcastPandalUpdate(p);
 
     // Refresh detail sheet & lists
+    selectedPandal = p;
     openPandalDetail(p);
     renderPandalMarkers();
     renderPandalList();
@@ -2812,9 +3985,226 @@ async function handleEditCoverFile(e) {
 }
 
 // ----------------------------------------------------------------------------
-// 9E. Fullscreen Photo Lightbox Handlers & Admin Image Moderation
+// 9E. Fullscreen Photo Lightbox Handlers, Dynamic Zoom & Pan System
 // ----------------------------------------------------------------------------
 let currentLightboxPhoto = null;
+
+let lightboxZoom = {
+  scale: 1.0,
+  minScale: 1.0,
+  maxScale: 5.0,
+  panX: 0,
+  panY: 0,
+  isDragging: false,
+  startX: 0,
+  startY: 0,
+  initialPinchDist: 0,
+  initialPinchScale: 1.0
+};
+
+function openCoverPhotoInLightbox() {
+  if (!selectedPandal) return;
+  const p = selectedPandal;
+  const imgUrl = getPandalMainImage(p);
+  if (!imgUrl) return;
+  openPhotoLightbox(
+    imgUrl,
+    p.theme || 'Official Pandal Theme & Pratima Darshan',
+    p.clubName || p.name || 'Puja Committee',
+    'Official Photo',
+    p.name,
+    'cover_' + p.id,
+    p.id
+  );
+}
+
+function applyLightboxTransform(animate = true) {
+  const img = document.getElementById('lightbox-img');
+  const levelEl = document.getElementById('lightbox-zoom-level');
+  const hintEl = document.getElementById('zoom-hint-banner');
+  if (!img) return;
+
+  // Clamp scale
+  lightboxZoom.scale = Math.min(Math.max(lightboxZoom.scale, lightboxZoom.minScale), lightboxZoom.maxScale);
+
+  // If at 1.0x, reset pan coordinates
+  if (lightboxZoom.scale <= 1.01) {
+    lightboxZoom.scale = 1.0;
+    lightboxZoom.panX = 0;
+    lightboxZoom.panY = 0;
+    img.style.cursor = 'zoom-in';
+    if (hintEl) hintEl.style.opacity = '1';
+  } else {
+    img.style.cursor = lightboxZoom.isDragging ? 'grabbing' : 'grab';
+    if (hintEl) hintEl.style.opacity = '0';
+
+    // Constrain pan within reasonable boundaries based on scale
+    const wrap = document.getElementById('lightbox-img-wrap');
+    if (wrap) {
+      const maxPanX = (wrap.clientWidth * (lightboxZoom.scale - 1)) / 1.6;
+      const maxPanY = (wrap.clientHeight * (lightboxZoom.scale - 1)) / 1.6;
+      lightboxZoom.panX = Math.max(-maxPanX, Math.min(maxPanX, lightboxZoom.panX));
+      lightboxZoom.panY = Math.max(-maxPanY, Math.min(maxPanY, lightboxZoom.panY));
+    }
+  }
+
+  img.style.transition = animate ? 'transform 0.18s cubic-bezier(0.2, 0, 0, 1)' : 'none';
+  img.style.transform = `translate(${lightboxZoom.panX}px, ${lightboxZoom.panY}px) scale(${lightboxZoom.scale})`;
+
+  if (levelEl) {
+    levelEl.textContent = `${Math.round(lightboxZoom.scale * 100)}%`;
+  }
+}
+
+function zoomLightboxPhoto(factor, e) {
+  if (e) {
+    if (typeof e.stopPropagation === 'function') e.stopPropagation();
+    if (typeof e.preventDefault === 'function') e.preventDefault();
+  }
+  lightboxZoom.scale *= factor;
+  applyLightboxTransform(true);
+}
+
+function resetLightboxZoom(e) {
+  if (e) {
+    if (typeof e.stopPropagation === 'function') e.stopPropagation();
+    if (typeof e.preventDefault === 'function') e.preventDefault();
+  }
+  lightboxZoom.scale = 1.0;
+  lightboxZoom.panX = 0;
+  lightboxZoom.panY = 0;
+  lightboxZoom.isDragging = false;
+  applyLightboxTransform(true);
+}
+
+let isLightboxZoomEventsAttached = false;
+function initLightboxZoomEvents() {
+  if (isLightboxZoomEventsAttached) return;
+  const wrap = document.getElementById('lightbox-img-wrap');
+  const img = document.getElementById('lightbox-img');
+  if (!wrap || !img) return;
+  isLightboxZoomEventsAttached = true;
+
+  // Direct Button Listeners for Guaranteed Desktop/Laptop Clickability
+  const btnIn = document.getElementById('btn-zoom-in');
+  if (btnIn) {
+    btnIn.onclick = (e) => { e.stopPropagation(); e.preventDefault(); zoomLightboxPhoto(1.3, e); };
+    btnIn.onmousedown = (e) => { e.stopPropagation(); };
+  }
+  const btnOut = document.getElementById('btn-zoom-out');
+  if (btnOut) {
+    btnOut.onclick = (e) => { e.stopPropagation(); e.preventDefault(); zoomLightboxPhoto(0.77, e); };
+    btnOut.onmousedown = (e) => { e.stopPropagation(); };
+  }
+  const btnReset = document.getElementById('btn-zoom-reset');
+  if (btnReset) {
+    btnReset.onclick = (e) => { e.stopPropagation(); e.preventDefault(); resetLightboxZoom(e); };
+    btnReset.onmousedown = (e) => { e.stopPropagation(); };
+  }
+  const pillLevel = document.getElementById('lightbox-zoom-level');
+  if (pillLevel) {
+    pillLevel.onclick = (e) => { e.stopPropagation(); e.preventDefault(); resetLightboxZoom(e); };
+    pillLevel.onmousedown = (e) => { e.stopPropagation(); };
+  }
+
+  // 1. Mouse Wheel Zoom
+  wrap.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    const factor = e.deltaY < 0 ? 1.25 : 0.8;
+    zoomLightboxPhoto(factor);
+  }, { passive: false });
+
+  // 2. Double-Click / Double-Tap Toggle (1x <-> 2.5x)
+  let lastTap = 0;
+  wrap.addEventListener('click', (e) => {
+    if (e.target.closest('.lightbox-zoom-bar') || e.target.closest('.zoom-ctrl-btn') || e.target.closest('.lightbox-close-btn')) {
+      return;
+    }
+    const now = Date.now();
+    if (now - lastTap < 300) {
+      e.preventDefault();
+      if (lightboxZoom.scale > 1.2) {
+        resetLightboxZoom();
+      } else {
+        lightboxZoom.scale = 2.5;
+        applyLightboxTransform(true);
+      }
+    }
+    lastTap = now;
+  });
+
+  // 3. Mouse Drag Panning
+  wrap.addEventListener('mousedown', (e) => {
+    if (e.target.closest('.lightbox-zoom-bar') || e.target.closest('.zoom-ctrl-btn') || e.target.closest('.lightbox-close-btn')) {
+      return;
+    }
+    if (lightboxZoom.scale <= 1.0) return;
+    lightboxZoom.isDragging = true;
+    lightboxZoom.startX = e.clientX - lightboxZoom.panX;
+    lightboxZoom.startY = e.clientY - lightboxZoom.panY;
+    applyLightboxTransform(false);
+  });
+
+  window.addEventListener('mousemove', (e) => {
+    if (!lightboxZoom.isDragging) return;
+    lightboxZoom.panX = e.clientX - lightboxZoom.startX;
+    lightboxZoom.panY = e.clientY - lightboxZoom.startY;
+    applyLightboxTransform(false);
+  });
+
+  window.addEventListener('mouseup', () => {
+    if (lightboxZoom.isDragging) {
+      lightboxZoom.isDragging = false;
+      applyLightboxTransform(true);
+    }
+  });
+
+  // 4. Touch Panning & Pinch-to-Zoom (Mobile & Tablet)
+  wrap.addEventListener('touchstart', (e) => {
+    if (e.touches.length === 1) {
+      if (lightboxZoom.scale > 1.0) {
+        lightboxZoom.isDragging = true;
+        lightboxZoom.startX = e.touches[0].clientX - lightboxZoom.panX;
+        lightboxZoom.startY = e.touches[0].clientY - lightboxZoom.panY;
+      }
+    } else if (e.touches.length === 2) {
+      lightboxZoom.isDragging = false;
+      lightboxZoom.initialPinchDist = Math.hypot(
+        e.touches[0].clientX - e.touches[1].clientX,
+        e.touches[0].clientY - e.touches[1].clientY
+      );
+      lightboxZoom.initialPinchScale = lightboxZoom.scale;
+    }
+  }, { passive: true });
+
+  wrap.addEventListener('touchmove', (e) => {
+    if (e.touches.length === 1 && lightboxZoom.isDragging) {
+      e.preventDefault();
+      lightboxZoom.panX = e.touches[0].clientX - lightboxZoom.startX;
+      lightboxZoom.panY = e.touches[0].clientY - lightboxZoom.startY;
+      applyLightboxTransform(false);
+    } else if (e.touches.length === 2 && lightboxZoom.initialPinchDist > 0) {
+      e.preventDefault();
+      const currentDist = Math.hypot(
+        e.touches[0].clientX - e.touches[1].clientX,
+        e.touches[0].clientY - e.touches[1].clientY
+      );
+      const factor = currentDist / lightboxZoom.initialPinchDist;
+      lightboxZoom.scale = Math.min(Math.max(lightboxZoom.initialPinchScale * factor, 1.0), 5.0);
+      applyLightboxTransform(false);
+    }
+  }, { passive: false });
+
+  wrap.addEventListener('touchend', (e) => {
+    if (e.touches.length < 2) {
+      lightboxZoom.initialPinchDist = 0;
+    }
+    if (e.touches.length === 0) {
+      lightboxZoom.isDragging = false;
+      applyLightboxTransform(true);
+    }
+  });
+}
 
 function openPhotoLightbox(photoUrl, caption, author, date, pandalName, photoId, pandalId) {
   const lightbox = document.getElementById('modal-photo-lightbox');
@@ -2831,7 +4221,11 @@ function openPhotoLightbox(photoUrl, caption, author, date, pandalName, photoId,
     pandalId: targetPandalId
   };
 
-  document.getElementById('lightbox-img').src = photoUrl;
+  const imgEl = document.getElementById('lightbox-img');
+  imgEl.src = photoUrl;
+  resetLightboxZoom();
+  initLightboxZoomEvents();
+
   document.getElementById('lightbox-pandal-name').textContent = pandalName || (selectedPandal ? selectedPandal.name : 'Pandal Photo');
   document.getElementById('lightbox-caption').textContent = caption || 'Durga Puja Parikrama Darshan';
 
@@ -2859,6 +4253,7 @@ function closePhotoLightbox(e) {
   }
   const lightbox = document.getElementById('modal-photo-lightbox');
   if (lightbox) lightbox.classList.remove('active');
+  resetLightboxZoom();
   currentLightboxPhoto = null;
 }
 
@@ -3230,7 +4625,44 @@ function setManualPin(latlng) {
   // Select initial category
   selectPinCategory(activeCat);
 
-  // Open add modal with coordinates
+  // Open add modal with coordinates and populate city list
+  const addZoneEl = document.getElementById('add-zone');
+  
+  // Find nearest pandal to auto-fill district, city, landmark address
+  let nearestP = null;
+  let minDist = Infinity;
+  (pandals || []).forEach(p => {
+    if (p.location && typeof p.location.lat === 'number') {
+      const d = calculateDistanceKm(latlng, p.location);
+      if (d < minDist) {
+        minDist = d;
+        nearestP = p;
+      }
+    }
+  });
+
+  const detectedZone = nearestP ? (nearestP.zone || 'Kolkata') : (addZoneEl ? addZoneEl.value : 'Kolkata');
+  const matchedZone = setDistrictSelectValue(addZoneEl, detectedZone);
+  const detectedCity = nearestP ? (nearestP.city || '') : '';
+  populateCityDropdown(matchedZone, 'add-city', detectedCity);
+
+  const addAddressEl = document.getElementById('add-address');
+  if (addAddressEl) {
+    if (nearestP && minDist < 3) {
+      addAddressEl.value = `Near ${nearestP.name}${detectedCity ? ', ' + detectedCity : ', ' + matchedZone}`;
+    } else {
+      addAddressEl.value = detectedCity ? `${detectedCity}, ${matchedZone}` : matchedZone;
+    }
+  }
+
+  // Default crowd green (lowest) and wait 0
+  const addTraffic = document.getElementById('add-traffic');
+  if (addTraffic) addTraffic.value = 'low';
+  const addWait = document.getElementById('add-wait');
+  if (addWait) addWait.value = 0;
+
+  renderLandmarkSuggestions('add', latlng, null, matchedZone, detectedCity);
+
   document.getElementById('add-coord-display').textContent = `${latlng.lat.toFixed(5)}, ${latlng.lng.toFixed(5)}`;
   document.getElementById('modal-add-pandal').classList.add('active');
   cancelPinningMode();
@@ -3391,6 +4823,7 @@ async function submitNewPandal(e) {
   const name = document.getElementById('add-name').value.trim();
   const club = document.getElementById('add-club').value.trim();
   const zone = document.getElementById('add-zone').value;
+  const city = (document.getElementById('add-city') ? document.getElementById('add-city').value.trim() : '') || '';
   const cfg = MARKER_CATEGORY_CONFIG[category] || MARKER_CATEGORY_CONFIG.pandal;
 
   const defaultTheme = category === 'pandal' ? 'Festive Pratima & Illumination' : `${cfg.label} Spot`;
@@ -3408,7 +4841,12 @@ async function submitNewPandal(e) {
     if (up && up.url) imgUrl = up.url;
   }
 
-  const loc = manualPinLocation || userLocation;
+  let loc = manualPinLocation;
+  if (!loc || (Math.abs(loc.lat - 22.5726) < 0.001 && Math.abs(loc.lng - 88.3639) < 0.001 && zone !== 'Kolkata')) {
+    const placeMatch = getCoordsForBengalPlace(zone, city);
+    loc = { lat: placeMatch.lat, lng: placeMatch.lng };
+  }
+  if (!loc) loc = userLocation;
 
   const newPandal = {
     id: 'pandal-custom-' + Date.now(),
@@ -3419,8 +4857,11 @@ async function submitNewPandal(e) {
     theme: theme,
     description: desc,
     location: loc,
-    address: `${zone}, West Bengal`,
+    address: (document.getElementById('add-address') && document.getElementById('add-address').value.trim()) 
+      ? document.getElementById('add-address').value.trim() 
+      : (city ? `${city}, ${zone}, West Bengal` : `${zone}, West Bengal`),
     zone: zone,
+    city: city,
     images: hasCustomImg ? [imgUrl] : [],
     thumbnail: hasCustomImg ? imgUrl : getSpotCategoryFallbackImg(category),
     userPhotos: [],
@@ -3430,9 +4871,12 @@ async function submitNewPandal(e) {
     ratingCount: 0,
     userRatings: [],
     visitCount: 1,
-    photosPostedCount: hasCustomImg ? 1 : 0,
-    trafficLevel: 'moderate',
-    estimatedQueueMins: category === 'pandal' ? 15 : 5,
+    trafficLevel: (document.getElementById('add-traffic') ? document.getElementById('add-traffic').value : 'low') || 'low',
+    estimatedQueueMins: (() => {
+      const wEl = document.getElementById('add-wait');
+      const val = wEl ? parseInt(wEl.value, 10) : NaN;
+      return (!isNaN(val) && val >= 0) ? val : 0;
+    })(),
     isBeautyPick: true,
     isHeritage: false
   };
@@ -3614,6 +5058,9 @@ function renderPandalList() {
         <span class="card-traffic-badge" style="background: ${p.trafficLevel === 'low' ? '#10b981' : p.trafficLevel === 'moderate' ? '#f59e0b' : '#ef4444'}">
           ${p.trafficLevel.toUpperCase()}
         </span>
+        <span class="card-queue-badge" style="position:absolute; bottom:8px; right:8px; background:rgba(15,23,42,0.8); color:#fef08a; backdrop-filter:blur(4px); border-radius:999px; padding:3px 8px; font-size:10px; font-weight:800; display:inline-flex; align-items:center; gap:3px;">
+          ⏱️ ~${p.estimatedQueueMins !== undefined ? p.estimatedQueueMins : 15}m
+        </span>
       </div>
       <div class="card-body">
         <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 8px;">
@@ -3629,8 +5076,8 @@ function renderPandalList() {
         <div class="card-footer">
           <span class="card-rating card-rating-interactive" onclick="event.stopPropagation(); openRatingPrompt('${p.id}')" title="Click to Rate this Pandal">
             ${(typeof p.reviewCount === 'number' && p.reviewCount > 0 && typeof p.rating === 'number' && p.rating > 0)
-              ? `★ ${p.rating} <span style="font-size:10px; color:#64748b; font-weight:600;">(${p.reviewCount})</span>`
-              : `<span style="font-size:11px; color:#d97706; font-weight:800;">⭐ Not rated yet (0)</span>`
+              ? `★ ${Number(p.rating).toFixed(1)} <span style="font-size:10px; color:#64748b; font-weight:600;">(${p.reviewCount} reviews)</span>`
+              : `<span style="font-size:11px; color:#d97706; font-weight:800;">★ 0.0 (0 reviews)</span>`
             }
           </span>
           <div class="card-action-btns">
@@ -7658,14 +9105,73 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // Modal backdrop click to dismiss
+  // Modal backdrop click to dismiss (requires both mousedown AND mouseup directly on overlay to prevent accidental dismiss when dragging mouse to select text inside modal inputs)
   document.querySelectorAll('.modal-overlay').forEach(overlay => {
-    overlay.addEventListener('click', (e) => {
-      if (e.target === overlay) {
+    let isMouseDownOnBackdrop = false;
+    overlay.addEventListener('mousedown', (e) => {
+      isMouseDownOnBackdrop = (e.target === overlay);
+    });
+    overlay.addEventListener('mouseup', (e) => {
+      if (isMouseDownOnBackdrop && e.target === overlay) {
         overlay.classList.remove('active');
       }
+      isMouseDownOnBackdrop = false;
     });
   });
+
+  // Dynamic crowd density and queue auto-suggestion sync
+  const editTrafficSelect = document.getElementById('edit-pandal-traffic');
+  if (editTrafficSelect) {
+    editTrafficSelect.addEventListener('change', (e) => {
+      const waitInput = document.getElementById('edit-pandal-wait');
+      if (waitInput) {
+        if (e.target.value === 'low') waitInput.value = 0;
+        else if (e.target.value === 'moderate') waitInput.value = 15;
+        else if (e.target.value === 'heavy') waitInput.value = 40;
+        else if (e.target.value === 'jam') waitInput.value = 75;
+      }
+    });
+  }
+
+  const addTrafficSelect = document.getElementById('add-traffic');
+  if (addTrafficSelect) {
+    addTrafficSelect.addEventListener('change', (e) => {
+      const waitInput = document.getElementById('add-wait');
+      if (waitInput) {
+        if (e.target.value === 'low') waitInput.value = 0;
+        else if (e.target.value === 'moderate') waitInput.value = 15;
+        else if (e.target.value === 'heavy') waitInput.value = 40;
+        else if (e.target.value === 'jam') waitInput.value = 75;
+      }
+    });
+  }
+
+  // Initialize District & City Dropdowns
+  const initialEditZone = document.getElementById('edit-pandal-zone');
+  if (initialEditZone) populateCityDropdown(initialEditZone.value || 'Kolkata', 'edit-pandal-city');
+  const initialAddZone = document.getElementById('add-zone');
+  if (initialAddZone) populateCityDropdown(initialAddZone.value || 'Kolkata', 'add-city');
+
+  // Wire Location Finder & Landmark action buttons explicitly
+  const wireBtn = (id, fn) => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.addEventListener('click', (ev) => {
+        ev.preventDefault();
+        ev.stopPropagation();
+        fn();
+      });
+    }
+  };
+  wireBtn('btn-edit-loc-finder', () => autoDetectLocationAndLandmark('edit'));
+  wireBtn('btn-edit-sync-address', () => syncAddressWithDistrictCity('edit'));
+  wireBtn('btn-edit-nearest-landmark', () => autoDetectLandmarkFromNearest('edit'));
+  wireBtn('btn-add-loc-finder', () => autoDetectLocationAndLandmark('add'));
+  wireBtn('btn-add-sync-address', () => syncAddressWithDistrictCity('add'));
+  wireBtn('btn-add-nearest-landmark', () => autoDetectLandmarkFromNearest('add'));
+
+  // Initialize Photo Zoom & Lightbox Events
+  initLightboxZoomEvents();
 
   // Ensure default active tab is map and overlays are properly synced
   switchTab('map');
