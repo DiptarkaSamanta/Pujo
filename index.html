@@ -250,31 +250,11 @@
           </div>
         </div>
 
-        <!-- Real-Time Radar Coverage & Scale Ratio HUD Badge -->
-        <div id="map-radar-ratio-badge" class="map-radar-ratio-badge" title="Live Scale Ratio & Physical Coverage of the Device Marker Circle">
-          <div class="ratio-header">
-            <span>📡 Radar Ratio</span>
-            <span id="radar-ratio-zoom">Z13</span>
-          </div>
-          <div class="ratio-val-row">
-            <span class="ratio-val" id="radar-ratio-val">1 : 24,000</span>
-            <span class="ratio-radius" id="radar-ratio-radius">ø 620m</span>
-          </div>
-          <div class="ratio-scale-bar-wrap">
-            <div class="ratio-scale-bar" id="radar-ratio-bar"></div>
-          </div>
-
-          <!-- Mini Accuracy & Calibration Toolbar -->
-          <div class="radar-mini-toolbar">
-            <button type="button" id="btn-toggle-accuracy-circle" class="btn-radar-tool active" onclick="toggleAccuracyCircleLayer()" title="Show/Hide Device GPS Uncertainty Circle">
-              <span class="radar-tool-icon">⭕</span>
-              <span id="label-accuracy-circle">Circle: ON</span>
-            </button>
-            <button type="button" id="btn-calibrate-location" class="btn-radar-tool" onclick="startLocationCalibration()" title="Tap on Map to Pin Your Exact Spot (Perfect for Laptop)">
-              <span class="radar-tool-icon">🎯</span>
-              <span>Calibrate</span>
-            </button>
-          </div>
+        <!-- Real-Time Radar Coverage & Scale Ratio HUD Badge (Single-line, positioned right of (i) button above crowd legend, auto-fading) -->
+        <div id="map-radar-ratio-badge" class="map-radar-ratio-badge single-line" title="Live Scale Ratio & Real-World Coverage (Fades out when idle)">
+          <span class="ratio-pill-item ratio-pill-scale" id="radar-ratio-val">1:417</span>
+          <span class="ratio-pill-divider">•</span>
+          <span class="ratio-pill-item ratio-pill-measure" id="radar-ratio-radius">ø 13m (r = 6m)</span>
         </div>
 
         <!-- Bottom-Left Floating Live Crowd Legend -->
@@ -2082,6 +2062,6 @@
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-storage-compat.js"></script>
 
     <!-- Pure Vanilla Application Logic -->
-    <script src="./app.js?v=14.0"></script>
+    <script src="./app.js?v=16.0"></script>
   </body>
 </html>

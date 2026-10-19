@@ -1009,7 +1009,6 @@ let simInterval = null;
 let isPinningMode = false;
 let manualPinLocation = null;
 let showAccuracyCircle = true;
-let isCalibratingLocation = false;
 
 // Pandal & Plan Storage
 let pandals = [];
@@ -1750,13 +1749,9 @@ function initMap() {
   setTimeout(() => { if (map) map.resize(); }, 150);
   setTimeout(() => { if (map) map.resize(); }, 500);
 
-  // Map click handler (Calibration, Drops manual pin or sets route location via map picker)
+  // Map click handler (Drops manual pin or sets route location via map picker)
   map.on('click', (e) => {
     const latlng = { lat: e.lngLat.lat, lng: e.lngLat.lng };
-    if (isCalibratingLocation) {
-      calibrateUserLocation(latlng);
-      return;
-    }
     if (typeof handleMapPickerClick === 'function' && handleMapPickerClick(latlng)) {
       return;
     }
@@ -1777,6 +1772,7 @@ function initMap() {
   // Real-time zoom & move tracking for device marker radar ratio and ground distance
   map.on('zoom', () => {
     updateRadarScaleRatioHUD();
+    triggerRadarBadgeVisibility();
   });
 
   map.on('move', () => {
@@ -1852,6 +1848,26 @@ function renderUserMarker() {
   updateRadarScaleRatioHUD();
 }
 
+let radarFadeTimer = null;
+
+function triggerRadarBadgeVisibility() {
+  const badge = document.getElementById('map-radar-ratio-badge');
+  if (!badge) return;
+
+  // Make visible
+  badge.classList.add('visible');
+
+  // Clear existing timer and start fresh 5-second countdown
+  if (radarFadeTimer) {
+    clearTimeout(radarFadeTimer);
+  }
+  radarFadeTimer = setTimeout(() => {
+    if (badge) {
+      badge.classList.remove('visible');
+    }
+  }, 5000);
+}
+
 // ----------------------------------------------------------------------------
 // 6B. Real-Time Radar Ratio & Real-World Distance Scale Engine
 // ----------------------------------------------------------------------------
@@ -1876,61 +1892,50 @@ function updateRadarScaleRatioHUD() {
   // Scale denominator = metersPerPixel * (96 / 0.0254)
   const scaleDenominator = Math.round(metersPerPixel * 3779.527559);
 
-  // Formatted scale ratio string: e.g. "1 : 24,000"
-  const ratioString = `1 : ${scaleDenominator.toLocaleString()}`;
+  // Formatted scale ratio string: e.g. "1:417"
+  const ratioString = `1:${scaleDenominator.toLocaleString()}`;
 
-  // Formatted real-world ground diameter & radius
-  let radiusLabel = '';
-  let diameterLabel = '';
-  if (coveredMetersDiameter >= 1000) {
-    diameterLabel = `${(coveredMetersDiameter / 1000).toFixed(2)} km`;
-    radiusLabel = `r = ${(coveredMetersRadius / 1000).toFixed(2)} km`;
-  } else {
-    diameterLabel = `${Math.round(coveredMetersDiameter)} m`;
-    radiusLabel = `r = ${Math.round(coveredMetersRadius)} m`;
-  }
+  // Formatted real-world ground diameter (ø) and radius (r)
+  const diamText = coveredMetersDiameter >= 1000 ? `${(coveredMetersDiameter / 1000).toFixed(1)}km` : `${Math.round(coveredMetersDiameter)}m`;
+  const radText = coveredMetersRadius >= 1000 ? `${(coveredMetersRadius / 1000).toFixed(1)}km` : `${Math.round(coveredMetersRadius)}m`;
+  const measureText = `ø ${diamText} (r = ${radText})`;
 
   // Update UI Elements
-  const zoomEl = document.getElementById('radar-ratio-zoom');
   const valEl = document.getElementById('radar-ratio-val');
   const radEl = document.getElementById('radar-ratio-radius');
-  const barEl = document.getElementById('radar-ratio-bar');
 
-  if (zoomEl) zoomEl.textContent = `Z${zoom.toFixed(1)}`;
   if (valEl) valEl.textContent = ratioString;
-  if (radEl) radEl.textContent = `ø ${diameterLabel} (${radiusLabel})`;
+  if (radEl) radEl.textContent = measureText;
 
-  if (barEl) {
-    // Relative visual width indicator based on zoom level (zoom range ~8 to 19)
-    const normalizedZoom = Math.min(Math.max((zoom - 8) / (19 - 8), 0.1), 1.0);
-    barEl.style.width = `${Math.round(normalizedZoom * 100)}%`;
-  }
-
-  // Update marker badge with live radar coverage tag if available
+  // Update marker badge with live radar coverage tag using radius
   const badgeEl = document.getElementById('user-marker-badge-text');
   if (badgeEl) {
     const baseText = hasRealGps ? `YOU (±${Math.round(userAccuracy)}m)` : `YOU (Est.)`;
-    badgeEl.textContent = `${baseText} • ø${diameterLabel}`;
+    const shortRad = coveredMetersRadius >= 1000 ? `${(coveredMetersRadius / 1000).toFixed(2)}km` : `${Math.round(coveredMetersRadius)}m`;
+    badgeEl.textContent = `${baseText} • r=${shortRad}`;
   }
 }
 
 function mapZoomIn() {
   if (!map) return;
   map.zoomIn({ duration: 300 });
+  triggerRadarBadgeVisibility();
 }
 
 function mapZoomOut() {
   if (!map) return;
   map.zoomOut({ duration: 300 });
+  triggerRadarBadgeVisibility();
 }
 
 // Global exposure for onclick handlers
 window.mapZoomIn = mapZoomIn;
 window.mapZoomOut = mapZoomOut;
 window.updateRadarScaleRatioHUD = updateRadarScaleRatioHUD;
+window.triggerRadarBadgeVisibility = triggerRadarBadgeVisibility;
 
 // ----------------------------------------------------------------------------
-// 6C. GPS Accuracy Circle Layer & Laptop Calibration System
+// 6C. GPS Accuracy Circle Layer (Uncertainty Circle on Map)
 // ----------------------------------------------------------------------------
 function generateGeoJsonCircle(center, radiusInMeters, points = 64) {
   const coords = [];
@@ -2007,47 +2012,10 @@ function renderAccuracyCircleLayer() {
 
 function toggleAccuracyCircleLayer() {
   showAccuracyCircle = !showAccuracyCircle;
-  const btn = document.getElementById('btn-toggle-accuracy-circle');
-  const lbl = document.getElementById('label-accuracy-circle');
-  if (btn) btn.classList.toggle('active', showAccuracyCircle);
-  if (lbl) lbl.textContent = showAccuracyCircle ? 'Circle: ON' : 'Circle: OFF';
-
   renderAccuracyCircleLayer();
-  showToast(showAccuracyCircle ? `⭕ Accuracy zone visible (±${Math.round(userAccuracy)}m)` : '⭕ Accuracy zone hidden');
-}
-
-function startLocationCalibration() {
-  isCalibratingLocation = true;
-  const btn = document.getElementById('btn-calibrate-location');
-  if (btn) {
-    btn.classList.add('calibrating');
-    btn.innerHTML = '<span class="radar-tool-icon">📍</span><span>Tap Spot</span>';
-  }
-  showToast('🎯 Tap your exact spot on the map (e.g. next to your stall/road)');
-}
-
-function calibrateUserLocation(latlng) {
-  isCalibratingLocation = false;
-  userLocation = { lat: latlng.lat, lng: latlng.lng };
-  userAccuracy = 8; // Millimeter fine-tuned by user
-  hasRealGps = true;
-
-  const btn = document.getElementById('btn-calibrate-location');
-  if (btn) {
-    btn.classList.remove('calibrating');
-    btn.innerHTML = '<span class="radar-tool-icon">🎯</span><span>Calibrate</span>';
-  }
-
-  renderUserMarker();
-  renderAccuracyCircleLayer();
-  updateRadarScaleRatioHUD();
-  refreshDistanceBadges();
-
-  showToast(`🎯 Location calibrated & locked! (±8m accuracy)`);
 }
 
 window.toggleAccuracyCircleLayer = toggleAccuracyCircleLayer;
-window.startLocationCalibration = startLocationCalibration;
 
 function startGeolocationTracking() {
   if (!navigator.geolocation) {

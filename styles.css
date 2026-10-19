@@ -1103,129 +1103,65 @@ body[data-active-tab="itinerary"] .map-zoom-controls,
    -------------------------------------------------------------------------- */
 .map-radar-ratio-badge {
   position: absolute;
-  top: 72px;
-  right: 14px;
+  bottom: 58px;
+  left: 44px;
   z-index: 520;
-  background: rgba(15, 23, 42, 0.92);
+  background: rgba(15, 23, 42, 0.94);
   backdrop-filter: blur(10px);
-  border: 1.5px solid #38bdf8;
-  border-radius: 14px;
-  padding: 6px 12px;
+  border: 1px solid #38bdf8;
+  border-radius: 999px;
+  padding: 3px 10px;
   color: #ffffff;
   font-family: inherit;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4), 0 0 10px rgba(56, 189, 248, 0.3);
-  pointer-events: auto;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35), 0 0 8px rgba(56, 189, 248, 0.25);
+  pointer-events: none;
   display: flex;
-  flex-direction: column;
-  gap: 3px;
-  min-width: 130px;
-  transition: all 0.2s ease;
-}
-
-.map-radar-ratio-badge:hover {
-  background: rgba(15, 23, 42, 0.98);
-  border-color: #67e8f9;
-  transform: translateY(-1px);
-}
-
-.ratio-header {
-  display: flex;
+  flex-direction: row;
   align-items: center;
-  justify-content: space-between;
   gap: 6px;
-  font-size: 10.5px;
+  white-space: nowrap;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(4px);
+  transition: opacity 0.3s ease, transform 0.3s ease, visibility 0.3s;
+}
+
+.map-radar-ratio-badge.visible {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+.ratio-pill-scale {
+  font-size: 11px;
   font-weight: 800;
   color: #38bdf8;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.02em;
 }
 
-.ratio-val-row {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 6px;
+.ratio-pill-divider {
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.4);
 }
 
-.ratio-val {
-  font-size: 12.5px;
-  font-weight: 800;
+.ratio-pill-measure {
+  font-size: 11px;
+  font-weight: 700;
   color: #f8fafc;
 }
 
-.ratio-radius {
-  font-size: 10px;
-  font-weight: 600;
-  color: #94a3b8;
-}
-
-.ratio-scale-bar-wrap {
-  width: 100%;
-  height: 3px;
-  background: rgba(255, 255, 255, 0.15);
-  border-radius: 999px;
-  overflow: hidden;
-  margin-top: 2px;
-}
-
-.ratio-scale-bar {
-  height: 100%;
-  background: linear-gradient(90deg, #38bdf8, #22c55e);
-  border-radius: 999px;
-  width: 100%;
-  transition: width 0.3s ease;
-}
-
-.radar-mini-toolbar {
-  display: flex;
-  gap: 5px;
-  margin-top: 6px;
-  padding-top: 5px;
-  border-top: 1px solid rgba(255, 255, 255, 0.12);
-}
-
-.btn-radar-tool {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  padding: 4px 6px;
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  color: #e2e8f0;
-  font-size: 9.5px;
-  font-weight: 700;
-  cursor: pointer;
-  font-family: inherit;
-  transition: all 0.15s ease;
-  white-space: nowrap;
-}
-
-.btn-radar-tool:hover {
-  background: rgba(56, 189, 248, 0.2);
-  border-color: #38bdf8;
-  color: #ffffff;
-  transform: translateY(-1px);
-}
-
-.btn-radar-tool.active {
-  background: rgba(14, 165, 233, 0.3);
-  border-color: #38bdf8;
-  color: #38bdf8;
-  font-weight: 800;
-}
-
-.btn-radar-tool.calibrating {
-  background: #ea580c !important;
-  border-color: #fde047 !important;
-  color: #ffffff !important;
-  animation: pulse-dot 1s infinite alternate;
-}
-
-.radar-tool-icon {
-  font-size: 11px;
+@media (max-width: 640px) {
+  .map-radar-ratio-badge {
+    bottom: 46px;
+    left: 40px;
+    padding: 2.5px 8px;
+  }
+  .ratio-pill-scale {
+    font-size: 10px;
+  }
+  .ratio-pill-measure {
+    font-size: 10px;
+  }
 }
 
 .map-zoom-controls {
@@ -1271,12 +1207,6 @@ body[data-active-tab="itinerary"] .map-zoom-controls,
 }
 
 @media (max-width: 640px) {
-  .map-radar-ratio-badge {
-    top: 60px;
-    right: 10px;
-    padding: 5px 10px;
-    min-width: 110px;
-  }
   .map-zoom-controls {
     right: 10px;
     bottom: 74px;
