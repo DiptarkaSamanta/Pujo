@@ -2293,6 +2293,7 @@ function toggleCategoryFilter(cat) {
 
   currentMapCategoryFilter = activeMapCategories.has('all') ? 'all' : Array.from(activeMapCategories)[0];
   updateCategoryFilterUI();
+  syncToolboxFilterUI();
   renderPandalMarkers();
 
   if (activeMapCategories.has('all')) {
@@ -2306,11 +2307,29 @@ function toggleCategoryFilter(cat) {
   }
 }
 
+function handleToolboxFilterToggle(cat, e) {
+  if (e) {
+    if (typeof e.stopPropagation === 'function') e.stopPropagation();
+  }
+  toggleCategoryFilter(cat);
+}
+
+function syncToolboxFilterUI() {
+  const isAll = activeMapCategories.has('all');
+  document.querySelectorAll('#toolbox-category-filter-box .filter-radio-chip').forEach(chip => {
+    const cat = chip.dataset.cat;
+    const isSelected = isAll ? (cat === 'all') : activeMapCategories.has(cat);
+    chip.classList.toggle('active', isSelected);
+    chip.setAttribute('aria-checked', isSelected ? 'true' : 'false');
+  });
+}
+
 function updateCategoryFilterUI() {
   document.querySelectorAll('.cat-filter-btn').forEach(b => {
     const cat = b.dataset.cat;
     b.classList.toggle('active', activeMapCategories.has(cat));
   });
+  syncToolboxFilterUI();
 }
 
 function filterMapCategory(cat, btn) {
@@ -9653,6 +9672,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Initialize Photo Zoom & Lightbox Events
   initLightboxZoomEvents();
+
+  // Synchronize toolbox category filters
+  syncToolboxFilterUI();
 
   // Ensure default active tab is map and overlays are properly synced
   switchTab('map');

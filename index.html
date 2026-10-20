@@ -211,14 +211,55 @@
                   </div>
                 </button>
 
-                <!-- 6. Festive Dark / Night Mode -->
-                <button class="tool-tile tile-square" onclick="toggleDarkModeTheme()" title="Toggle Night & Gold Theme">
-                  <div class="tile-icon-box icon-slate" id="tool-theme-icon-box">🌓</div>
-                  <div class="tile-content">
-                    <span class="tile-title">Festive Night Theme</span>
-                    <span class="tile-desc" id="tool-theme-label">Switch dark / light</span>
+                <!-- 6. Map Spot Category Filters Box (Pandals, Food Hub, Stalls, Festivals Fair Market & more) -->
+                <div class="tool-tile-filter-box" id="toolbox-category-filter-box">
+                  <div class="filter-box-header">
+                    <span class="filter-box-title">🎯 Map Spot Filters</span>
+                    <span class="filter-box-subtitle">Select 1, 2 or more</span>
                   </div>
-                </button>
+                  <div class="filter-radio-grid">
+                    <button type="button" class="filter-radio-chip active" role="checkbox" aria-checked="true" data-cat="all" onclick="handleToolboxFilterToggle('all', event)">
+                      <span class="chip-custom-radio"></span>
+                      <span class="chip-icon">🌟</span>
+                      <span class="chip-text">All Spots</span>
+                    </button>
+                    <button type="button" class="filter-radio-chip" role="checkbox" aria-checked="false" data-cat="pandal" onclick="handleToolboxFilterToggle('pandal', event)">
+                      <span class="chip-custom-radio"></span>
+                      <span class="chip-icon">🪔</span>
+                      <span class="chip-text">Pandals</span>
+                    </button>
+                    <button type="button" class="filter-radio-chip" role="checkbox" aria-checked="false" data-cat="food" onclick="handleToolboxFilterToggle('food', event)">
+                      <span class="chip-custom-radio"></span>
+                      <span class="chip-icon">🍛</span>
+                      <span class="chip-text">Food Hub</span>
+                    </button>
+                    <button type="button" class="filter-radio-chip" role="checkbox" aria-checked="false" data-cat="streetfood" onclick="handleToolboxFilterToggle('streetfood', event)">
+                      <span class="chip-custom-radio"></span>
+                      <span class="chip-icon">🥟</span>
+                      <span class="chip-text">Stalls</span>
+                    </button>
+                    <button type="button" class="filter-radio-chip" role="checkbox" aria-checked="false" data-cat="mela" onclick="handleToolboxFilterToggle('mela', event)">
+                      <span class="chip-custom-radio"></span>
+                      <span class="chip-icon">🎡</span>
+                      <span class="chip-text">Fair & Mela</span>
+                    </button>
+                    <button type="button" class="filter-radio-chip" role="checkbox" aria-checked="false" data-cat="grocery" onclick="handleToolboxFilterToggle('grocery', event)">
+                      <span class="chip-custom-radio"></span>
+                      <span class="chip-icon">🛒</span>
+                      <span class="chip-text">Grocery</span>
+                    </button>
+                    <button type="button" class="filter-radio-chip" role="checkbox" aria-checked="false" data-cat="icecream" onclick="handleToolboxFilterToggle('icecream', event)">
+                      <span class="chip-custom-radio"></span>
+                      <span class="chip-icon">🍦</span>
+                      <span class="chip-text">Ice Cream</span>
+                    </button>
+                    <button type="button" class="filter-radio-chip" role="checkbox" aria-checked="false" data-cat="bookstall" onclick="handleToolboxFilterToggle('bookstall', event)">
+                      <span class="chip-custom-radio"></span>
+                      <span class="chip-icon">📚</span>
+                      <span class="chip-text">Book Stalls</span>
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
