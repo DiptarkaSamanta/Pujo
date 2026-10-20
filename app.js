@@ -478,6 +478,36 @@ const MARKER_CATEGORY_CONFIG = {
     pinClass: 'marker-pin-activity',
     shadowColor: 'rgba(59, 130, 246, 0.45)',
     accentColor: '#38bdf8'
+  },
+  icecream: {
+    id: 'icecream',
+    label: 'Ice Cream & Dessert Shop',
+    icon: '🍦',
+    badge: 'ICE CREAM',
+    bgGradient: 'linear-gradient(135deg, #ec4899 0%, #f43f5e 50%, #fb7185 100%)',
+    pinClass: 'marker-pin-icecream',
+    shadowColor: 'rgba(236, 72, 153, 0.45)',
+    accentColor: '#f472b6'
+  },
+  bookstall: {
+    id: 'bookstall',
+    label: 'Book Stall / Boi Mela',
+    icon: '📚',
+    badge: 'BOOKS',
+    bgGradient: 'linear-gradient(135deg, #0284c7 0%, #0369a1 50%, #075985 100%)',
+    pinClass: 'marker-pin-bookstall',
+    shadowColor: 'rgba(2, 132, 199, 0.45)',
+    accentColor: '#38bdf8'
+  },
+  xerox: {
+    id: 'xerox',
+    label: 'Xerox & Cyber Cafe / Print',
+    icon: '🖨️',
+    badge: 'XEROX',
+    bgGradient: 'linear-gradient(135deg, #475569 0%, #334155 50%, #1e293b 100%)',
+    pinClass: 'marker-pin-xerox',
+    shadowColor: 'rgba(71, 85, 105, 0.45)',
+    accentColor: '#94a3b8'
   }
 };
 
@@ -495,6 +525,12 @@ function getSpotCategoryFallbackImg(category) {
       return 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=600&q=80';
     case 'activity':
       return 'https://images.unsplash.com/photo-1465847899084-d164df4dedc6?auto=format&fit=crop&w=600&q=80';
+    case 'icecream':
+      return 'https://images.unsplash.com/photo-1501443762994-82bd5dace89a?auto=format&fit=crop&w=600&q=80';
+    case 'bookstall':
+      return 'https://images.unsplash.com/photo-1507842229451-7f01be7ff6ab?auto=format&fit=crop&w=600&q=80';
+    case 'xerox':
+      return 'https://images.unsplash.com/photo-1563986768609-322da13575f3?auto=format&fit=crop&w=600&q=80';
     default:
       return DEFAULT_DURGA_IDOL_IMG;
   }
@@ -2159,6 +2195,7 @@ let isTrafficFilterActive = false;
 const TILE_KEYS = ['osm', 'hot', 'esri_streets', 'satellite'];
 let currentTileIndex = 0;
 
+let activeMapCategories = new Set(['all']);
 let currentMapCategoryFilter = 'all';
 
 function renderPandalMarkers() {
@@ -2180,14 +2217,15 @@ function renderPandalMarkers() {
     displayList = displayList.filter(p => p.trafficLevel === 'low' || p.trafficLevel === 'moderate');
   }
 
-  // Multi-Category Map Filter
-  if (currentMapCategoryFilter && currentMapCategoryFilter !== 'all') {
-    displayList = displayList.filter(p => (p.category || 'pandal') === currentMapCategoryFilter);
+  // Multi-Category Map Filter: supports pandals only, food stalls only, grocery only, or any combination!
+  if (activeMapCategories.size > 0 && !activeMapCategories.has('all')) {
+    displayList = displayList.filter(p => activeMapCategories.has(p.category || 'pandal'));
   }
 
   displayList.forEach(p => {
     const cat = p.category || 'pandal';
     const cfg = MARKER_CATEGORY_CONFIG[cat] || MARKER_CATEGORY_CONFIG.pandal;
+    const pinEmoji = p.customEmoji || p.icon || cfg.icon || '🪔';
 
     const trafficColor = 
       p.trafficLevel === 'low' ? '#10b981' :
@@ -2200,7 +2238,7 @@ function renderPandalMarkers() {
       <div class="pandal-pin-container ${cfg.pinClass || ''}" title="${p.name} (${cfg.label})">
         <div class="marker-halo-ring" style="border-color: ${cfg.accentColor}88;"></div>
         <div class="pandal-pin-inner" style="background: ${cfg.bgGradient}; box-shadow: 0 4px 14px ${cfg.shadowColor};">
-          <span class="marker-cat-icon">${cfg.icon}</span>
+          <span class="marker-cat-icon">${pinEmoji}</span>
           ${p.isBeautyPick ? '<span class="pandal-star-badge">★</span>' : ''}
           <span class="traffic-dot" style="background-color: ${trafficColor};"></span>
         </div>
@@ -2213,26 +2251,70 @@ function renderPandalMarkers() {
       openPandalDetail(p);
     });
 
-    const marker = new mapboxgl.Marker({ element: el, anchor: 'bottom' })
-      .setLngLat([p.location.lng, p.location.lat])
-      .addTo(map);
+    if (!p || !p.location) return;
+    const lat = Number(p.location.lat ?? p.location.latitude);
+    const lng = Number(p.location.lng ?? p.location.lon ?? p.location.longitude);
+    if (isNaN(lat) || isNaN(lng) || lat === 0 || lng === 0) return;
 
-    pandalMarkers.push(marker);
+    try {
+      const marker = new mapboxgl.Marker({ element: el, anchor: 'bottom' })
+        .setLngLat([lng, lat])
+        .addTo(map);
+
+      pandalMarkers.push(marker);
+    } catch (err) {
+      console.warn('Could not add marker for', p.name, err);
+    }
+  });
+}
+
+function toggleCategoryFilter(cat) {
+  if (cat === 'all') {
+    activeMapCategories.clear();
+    activeMapCategories.add('all');
+  } else {
+    // If 'all' was active, isolate this category
+    if (activeMapCategories.has('all')) {
+      activeMapCategories.clear();
+      activeMapCategories.add(cat);
+    } else {
+      // Multi-select toggle
+      if (activeMapCategories.has(cat)) {
+        activeMapCategories.delete(cat);
+      } else {
+        activeMapCategories.add(cat);
+      }
+      // If all deselected, fall back to 'all'
+      if (activeMapCategories.size === 0) {
+        activeMapCategories.add('all');
+      }
+    }
+  }
+
+  currentMapCategoryFilter = activeMapCategories.has('all') ? 'all' : Array.from(activeMapCategories)[0];
+  updateCategoryFilterUI();
+  renderPandalMarkers();
+
+  if (activeMapCategories.has('all')) {
+    showToast('🌟 Showing all spots on map');
+  } else {
+    const labels = Array.from(activeMapCategories).map(c => {
+      const cCfg = MARKER_CATEGORY_CONFIG[c];
+      return cCfg ? `${cCfg.icon} ${cCfg.label}` : c;
+    });
+    showToast(`Filter: ${labels.join(' + ')}`);
+  }
+}
+
+function updateCategoryFilterUI() {
+  document.querySelectorAll('.cat-filter-btn').forEach(b => {
+    const cat = b.dataset.cat;
+    b.classList.toggle('active', activeMapCategories.has(cat));
   });
 }
 
 function filterMapCategory(cat, btn) {
-  currentMapCategoryFilter = cat || 'all';
-
-  document.querySelectorAll('.cat-filter-btn').forEach(b => {
-    b.classList.toggle('active', b.dataset.cat === currentMapCategoryFilter);
-  });
-
-  renderPandalMarkers();
-
-  const cfg = MARKER_CATEGORY_CONFIG[cat];
-  const label = cfg ? `${cfg.icon} Showing ${cfg.label} spots` : '🌟 Showing all spots on map';
-  showToast(label);
+  toggleCategoryFilter(cat);
 }
 
 function fitNearestPandals(count = 5) {
@@ -2583,6 +2665,7 @@ function openPandalDetail(pandal) {
   const cfg = MARKER_CATEGORY_CONFIG[cat] || MARKER_CATEGORY_CONFIG.pandal;
 
   const displayName = selectedPandal.pujaName || selectedPandal.name;
+  const pinEmoji = selectedPandal.customEmoji || cfg.icon;
   const titleEl = document.getElementById('modal-detail-title');
   if (titleEl) {
     titleEl.textContent = displayName;
@@ -2592,7 +2675,7 @@ function openPandalDetail(pandal) {
   if (pujaEl) {
     pujaEl.innerHTML = `
       <span style="display:inline-flex; align-items:center; gap:4px; background:${cfg.bgGradient}; color:#fff; font-size:10.5px; font-weight:800; padding:2px 8px; border-radius:999px; margin-right:6px; box-shadow:0 2px 6px ${cfg.shadowColor};">
-        ${cfg.icon} ${cfg.badge}
+        ${pinEmoji} ${cfg.badge}
       </span>
       <span>${displayName}</span>
     `;
@@ -2651,8 +2734,62 @@ function openPandalDetail(pandal) {
 }
 
 function closePandalDetail() {
-  document.getElementById('modal-pandal-detail').classList.remove('active');
+  const modal = document.getElementById('modal-pandal-detail');
+  if (modal) modal.classList.remove('active');
 }
+
+function deletePandal(id) {
+  if (!id) return;
+  const p = pandals.find(x => x.id === id);
+  const pName = p ? p.name : 'Location';
+
+  // 1. Add to permanent deleted set so cloud sync poll never restores it
+  addDeletedPandalId(id);
+
+  // 2. Remove from active memory array
+  pandals = pandals.filter(x => x.id !== id);
+
+  // 3. Save to localStorage
+  savePandals(pandals);
+
+  // 4. Remove from COMMUNITY_SYNC in localStorage
+  try {
+    const raw = localStorage.getItem(STORAGE_KEYS.COMMUNITY_SYNC) || '[]';
+    const list = JSON.parse(raw);
+    const filtered = (list || []).filter(item => item && item.id !== id);
+    localStorage.setItem(STORAGE_KEYS.COMMUNITY_SYNC, JSON.stringify(filtered));
+  } catch (e) {}
+
+  // 5. Delete from Firebase Firestore if connected
+  if (firestoreDb) {
+    try {
+      firestoreDb.collection('pandals').doc(id).delete().catch(() => {});
+      firestoreDb.collection('deleted_pandals').doc(id).set({ deletedAt: Date.now() }).catch(() => {});
+    } catch (e) {}
+  }
+
+  // 6. Update UI & markers
+  renderPandalMarkers();
+  renderPandalList();
+  renderShortestFinder();
+  updateCloudPandalsCount();
+
+  closePandalDetail();
+  showToast(`🗑️ "${pName}" removed permanently from map!`);
+}
+
+function deleteCurrentPandal() {
+  if (!selectedPandal) return;
+  const id = selectedPandal.id;
+  const name = selectedPandal.name || 'this location';
+  if (!confirm(`Are you sure you want to permanently delete "${name}" from the map?`)) {
+    return;
+  }
+  deletePandal(id);
+}
+
+window.deleteCurrentPandal = deleteCurrentPandal;
+window.deletePandal = deletePandal;
 
 // ----------------------------------------------------------------------------
 // 9B. Community Photos Gallery & Lightbox (Google Maps Style)
@@ -3866,20 +4003,11 @@ async function autoDetectLocationAndLandmark(mode) {
   const curCity = cityEl ? cityEl.value.trim() : '';
 
   try {
-    // 1. If user already chose/typed a district or city in Bengal other than default empty,
-    // prioritize resolving coordinates for their chosen location!
-    let resolvedCoords = null;
+    // 1. If adding and user already tapped a location on map, PRESERVE IT!
+    let resolvedCoords = (!isEdit && manualPinLocation) ? manualPinLocation : null;
     let locationDisplayName = '';
 
-    if (curCity || (curZone && curZone !== 'Kolkata')) {
-      const placeMatch = getCoordsForBengalPlace(curZone, curCity);
-      if (placeMatch && placeMatch.lat) {
-        resolvedCoords = { lat: placeMatch.lat, lng: placeMatch.lng };
-        locationDisplayName = curCity ? `${curCity}, ${curZone}` : curZone;
-      }
-    }
-
-    // 2. If no location chosen yet, try browser GPS
+    // 2. Otherwise try browser / device GPS
     if (!resolvedCoords && navigator.geolocation) {
       const gpsCoords = await new Promise((resolve) => {
         navigator.geolocation.getCurrentPosition(
@@ -3893,21 +4021,24 @@ async function autoDetectLocationAndLandmark(mode) {
       }
     }
 
-    // 3. Fallback to existing pandal location (if not Kolkata default) or district coords
-    if (!resolvedCoords) {
-      if (isEdit && selectedPandal && selectedPandal.location && (selectedPandal.location.lat !== 22.5726 || selectedPandal.zone === 'Kolkata')) {
-        resolvedCoords = selectedPandal.location;
-      } else {
-        const placeMatch = getCoordsForBengalPlace(curZone, curCity);
+    // 3. Fallback to existing pandal location if editing
+    if (!resolvedCoords && isEdit && selectedPandal && selectedPandal.location) {
+      resolvedCoords = selectedPandal.location;
+    }
+
+    // 4. Fallback to district coords if adding a new spot with no location yet
+    if (!resolvedCoords && (curCity || curZone)) {
+      const placeMatch = getCoordsForBengalPlace(curZone, curCity);
+      if (placeMatch && placeMatch.lat) {
         resolvedCoords = { lat: placeMatch.lat, lng: placeMatch.lng };
         locationDisplayName = curCity ? `${curCity}, ${curZone}` : curZone;
       }
     }
 
     // Update location state for current edit/add spot
-    if (isEdit && selectedPandal) {
+    if (isEdit && selectedPandal && resolvedCoords) {
       selectedPandal.location = resolvedCoords;
-    } else {
+    } else if (resolvedCoords) {
       manualPinLocation = resolvedCoords;
       const coordDisplay = document.getElementById('add-coord-display');
       if (coordDisplay) {
@@ -4066,15 +4197,6 @@ function openEditPandalModal(pandalId) {
   if (descEl) descEl.value = p.description || '';
   const coverEl = document.getElementById('edit-pandal-cover');
   if (coverEl) coverEl.value = p.thumbnail || (p.images && p.images[0]) || '';
-
-  // If pandal's location was defaulted to Kolkata (22.5726, 88.3639) but pandal belongs to Nadia, Hooghly, etc.,
-  // automatically update coordinates to match its actual Bengal district/city!
-  if (matchedZone !== 'Kolkata' && p.location && (Math.abs(p.location.lat - 22.5726) < 0.001 && Math.abs(p.location.lng - 88.3639) < 0.001)) {
-    const realCoords = getCoordsForBengalPlace(matchedZone, p.city || '');
-    if (realCoords && realCoords.lat) {
-      p.location = { lat: realCoords.lat, lng: realCoords.lng };
-    }
-  }
 
   renderLandmarkSuggestions('edit', p.location, p.id, matchedZone, p.city || '');
 
@@ -4790,7 +4912,7 @@ function setManualPin(latlng) {
   el.className = 'custom-temp-pin';
   el.innerHTML = `
     <div style="display: flex; flex-direction: column; align-items: center;">
-      <div style="width: 44px; height: 44px; border-radius: 14px; background: ${cfg.bgGradient}; border: 2.5px solid #fff; display: flex; align-items: center; justify-content: center; font-size: 22px; box-shadow: 0 4px 15px ${cfg.shadowColor}; animation: bounce 1s infinite;">${cfg.icon}</div>
+      <div class="temp-pin-emoji-bubble" style="width: 44px; height: 44px; border-radius: 14px; background: ${cfg.bgGradient}; border: 2.5px solid #fff; display: flex; align-items: center; justify-content: center; font-size: 22px; box-shadow: 0 4px 15px ${cfg.shadowColor}; animation: bounce 1s infinite;">${cfg.icon}</div>
     </div>
   `;
 
@@ -4853,7 +4975,10 @@ function setManualPin(latlng) {
 
   document.getElementById('add-coord-display').textContent = `${latlng.lat.toFixed(5)}, ${latlng.lng.toFixed(5)}`;
   document.getElementById('modal-add-pandal').classList.add('active');
-  cancelPinningMode();
+  isPinningMode = false;
+  document.body.classList.remove('pinning-mode');
+  const banner = document.getElementById('pinning-active-banner');
+  if (banner) banner.style.display = 'none';
 }
 
 function selectPinCategory(cat, btn) {
@@ -4943,6 +5068,39 @@ function selectPinCategory(cat, btn) {
       if (inpClub) inpClub.placeholder = 'e.g. Bengal Folk Troupe';
       break;
 
+    case 'icecream':
+      if (lblName) lblName.textContent = 'Ice Cream & Dessert Shop *';
+      if (inpName) inpName.placeholder = 'e.g. Kwality Wall’s Swirls, Pabrai’s Fresh Naturelle, Rollick';
+      if (lblTheme) lblTheme.textContent = 'Special Flavors & Desserts';
+      if (inpTheme) inpTheme.placeholder = 'e.g. Nolen Gur Ice Cream, Kulfi Falooda, Sundaes, Softy Cones';
+      if (lblDesc) lblDesc.textContent = 'Shop Highlights & Night Timings';
+      if (inpDesc) inpDesc.placeholder = 'e.g. Open till 4 AM during pujo, seating available';
+      if (lblClub) lblClub.textContent = 'Brand / Parlour Owner';
+      if (inpClub) inpClub.placeholder = 'e.g. Parlour Manager / Vendor';
+      break;
+
+    case 'bookstall':
+      if (lblName) lblName.textContent = 'Book Stall / Publication Name *';
+      if (inpName) inpName.placeholder = 'e.g. Boi Mela Little Magazine Stall, Dey’s Publishing';
+      if (lblTheme) lblTheme.textContent = 'Featured Books & Publications';
+      if (inpTheme) inpTheme.placeholder = 'e.g. Pujabarshiki, Bengali Novels, Poetry, Thrillers, Comics';
+      if (lblDesc) lblDesc.textContent = 'Offers & Timings';
+      if (inpDesc) inpDesc.placeholder = 'e.g. 20% festive discount on all books, open till 1 AM';
+      if (lblClub) lblClub.textContent = 'Publisher / Bookseller';
+      if (inpClub) inpClub.placeholder = 'e.g. Stall Owner / Book Club';
+      break;
+
+    case 'xerox':
+      if (lblName) lblName.textContent = 'Xerox & Cyber Cafe / Print Center *';
+      if (inpName) inpName.placeholder = 'e.g. Quick Xerox & Print Hub, Cyber Cafe 24x7';
+      if (lblTheme) lblTheme.textContent = 'Printing, Copying & Urgent Services';
+      if (inpTheme) inpTheme.placeholder = 'e.g. Color Xerox, ID Card Print, Urgent Scan, Mobile Recharge';
+      if (lblDesc) lblDesc.textContent = 'Services Offered & Timings';
+      if (inpDesc) inpDesc.placeholder = 'e.g. Urgent document print via WhatsApp/Email, open till 11 PM';
+      if (lblClub) lblClub.textContent = 'Shop / Operator Name';
+      if (inpClub) inpClub.placeholder = 'e.g. Shop Owner / Operator';
+      break;
+
     default: // pandal
       if (lblName) lblName.textContent = 'Puja Pandal Name *';
       if (inpName) inpName.placeholder = 'e.g. Sreebhumi Sporting Club, Maddox Square';
@@ -4953,6 +5111,47 @@ function selectPinCategory(cat, btn) {
       if (lblClub) lblClub.textContent = 'Organizer / Club Name';
       if (inpClub) inpClub.placeholder = 'e.g. Sreebhumi Sporting Club';
       break;
+  }
+
+  // Update default emoji if user hasn't manually entered a custom emoji
+  const cfg = MARKER_CATEGORY_CONFIG[targetCat] || MARKER_CATEGORY_CONFIG.pandal;
+  const emojiInput = document.getElementById('add-marker-emoji');
+  const emojiPreview = document.getElementById('add-marker-emoji-preview');
+  if (emojiInput && (!emojiInput.dataset.userEdited || emojiInput.dataset.userEdited === 'false')) {
+    emojiInput.value = cfg.icon;
+  }
+  if (emojiPreview) {
+    emojiPreview.textContent = (emojiInput && emojiInput.value) || cfg.icon;
+  }
+}
+
+function setCustomPinEmoji(emoji) {
+  const emojiInput = document.getElementById('add-marker-emoji');
+  const emojiPreview = document.getElementById('add-marker-emoji-preview');
+  if (emojiInput) {
+    emojiInput.value = emoji;
+    emojiInput.dataset.userEdited = 'true';
+  }
+  if (emojiPreview) {
+    emojiPreview.textContent = emoji;
+  }
+  if (tempPinMarker) {
+    const bubble = tempPinMarker.getElement().querySelector('.temp-pin-emoji-bubble');
+    if (bubble) bubble.textContent = emoji;
+  }
+}
+
+function updatePinEmojiPreview(val) {
+  const emojiInput = document.getElementById('add-marker-emoji');
+  const emojiPreview = document.getElementById('add-marker-emoji-preview');
+  if (emojiInput) emojiInput.dataset.userEdited = 'true';
+  const clean = val.trim();
+  if (emojiPreview) {
+    emojiPreview.textContent = clean || '📍';
+  }
+  if (tempPinMarker && clean) {
+    const bubble = tempPinMarker.getElement().querySelector('.temp-pin-emoji-bubble');
+    if (bubble) bubble.textContent = clean;
   }
 }
 
@@ -4998,11 +5197,15 @@ window.addEventListener('keydown', (e) => {
 });
 
 function closeAddModal() {
-  document.getElementById('modal-add-pandal').classList.remove('active');
-  if (tempPinMarker && map) {
-    map.removeLayer(tempPinMarker);
+  const modal = document.getElementById('modal-add-pandal');
+  if (modal) modal.classList.remove('active');
+  if (tempPinMarker) {
+    try {
+      tempPinMarker.remove();
+    } catch (e) {}
     tempPinMarker = null;
   }
+  manualPinLocation = null;
 }
 
 async function submitNewPandal(e) {
@@ -5029,12 +5232,24 @@ async function submitNewPandal(e) {
     if (up && up.url) imgUrl = up.url;
   }
 
-  let loc = manualPinLocation;
-  if (!loc || (Math.abs(loc.lat - 22.5726) < 0.001 && Math.abs(loc.lng - 88.3639) < 0.001 && zone !== 'Kolkata')) {
-    const placeMatch = getCoordsForBengalPlace(zone, city);
-    loc = { lat: placeMatch.lat, lng: placeMatch.lng };
+  if (!manualPinLocation || typeof manualPinLocation.lat !== 'number' || typeof manualPinLocation.lng !== 'number') {
+    alert('📍 Please tap on the map to place your pin first!');
+    return;
   }
-  if (!loc) loc = userLocation;
+  let loc = manualPinLocation;
+
+  const validLat = Number(loc.lat);
+  const validLng = Number(loc.lng);
+  const safeLoc = {
+    lat: isNaN(validLat) ? 22.5726 : validLat,
+    lng: isNaN(validLng) ? 88.3639 : validLng
+  };
+
+  const authorName = (currentAuth && currentAuth.name && currentAuth.name !== 'Pandal Hopper') 
+    ? currentAuth.name 
+    : (localStorage.getItem('puja_last_author') || 'Bengal Hopper');
+
+  const customEmoji = (document.getElementById('add-marker-emoji') ? document.getElementById('add-marker-emoji').value.trim() : '') || cfg.icon || '🪔';
 
   const newPandal = {
     id: 'pandal-custom-' + Date.now(),
@@ -5042,14 +5257,17 @@ async function submitNewPandal(e) {
     pujaName: category === 'pandal' ? `${name} Sarbojanin Durgotsav` : `${name} (${cfg.label})`,
     clubName: club || name,
     category: category,
+    customEmoji: customEmoji,
+    icon: customEmoji,
     theme: theme,
     description: desc,
-    location: loc,
+    location: safeLoc,
     address: (document.getElementById('add-address') && document.getElementById('add-address').value.trim()) 
       ? document.getElementById('add-address').value.trim() 
       : (city ? `${city}, ${zone}, West Bengal` : `${zone}, West Bengal`),
     zone: zone,
     city: city,
+    contributedBy: authorName,
     images: hasCustomImg ? [imgUrl] : [],
     thumbnail: hasCustomImg ? imgUrl : getSpotCategoryFallbackImg(category),
     userPhotos: [],
@@ -5071,6 +5289,24 @@ async function submitNewPandal(e) {
 
   pandals.unshift(newPandal);
   savePandals(pandals);
+
+  // Clear filters so the newly added location is guaranteed to be visible on the map
+  if (isFamousFilterActive) {
+    isFamousFilterActive = false;
+    const fb = document.getElementById('filter-famous');
+    if (fb) fb.classList.remove('active');
+  }
+  if (isTrafficFilterActive) {
+    isTrafficFilterActive = false;
+    const tb = document.getElementById('filter-traffic');
+    if (tb) tb.classList.remove('active');
+  }
+  // Ensure the new spot's category is visible in activeMapCategories
+  if (!activeMapCategories.has('all') && !activeMapCategories.has(category)) {
+    activeMapCategories.add(category);
+  }
+  updateCategoryFilterUI();
+
   renderPandalMarkers();
   renderPandalList();
   renderShortestFinder();
@@ -5079,6 +5315,10 @@ async function submitNewPandal(e) {
   broadcastPandalToCloud(newPandal);
 
   closeAddModal();
+
+  // Navigate to map (keep user camera view untouched without abrupt pointer fly jumps)
+  switchTab('map');
+
   showToast(`🎉 "${name}" (${cfg.icon} ${cfg.label}) added to map & synced!`);
   openPandalDetail(newPandal);
 }
@@ -5252,7 +5492,7 @@ function renderPandalList() {
       </div>
       <div class="card-body">
         <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 8px;">
-          <h4 class="card-title">${p.name}</h4>
+          <h4 class="card-title">${p.customEmoji ? `${p.customEmoji} ` : ''}${p.name}</h4>
           ${(currentAuth && currentAuth.role === 'admin') ? `
             <button onclick="event.stopPropagation(); deletePandal('${p.id}')" title="Admin Delete Pandal" style="background:#fee2e2; color:#dc2626; border:1px solid #fca5a5; border-radius:8px; padding:3px 7px; font-size:11px; font-weight:800; cursor:pointer; flex-shrink:0;">
               🗑️ Delete
@@ -5635,34 +5875,15 @@ function startCommunityRelaySync() {
 }
 
 function cleanDuplicatePins() {
+  // Allow locations to be very close (e.g. ice cream stall or xerox shop right next to a pandal)
   const deletedIds = getDeletedPandalIds();
-  let currentList = (pandals || []).filter(p => p && p.id && !deletedIds.has(p.id));
-
-  // Dynamically deduplicate any pandals located at the exact same coordinates (within 35 meters)
-  const deduped = [];
-  currentList.forEach(p => {
-    if (!p || !p.location || typeof p.location.lat !== 'number' || typeof p.location.lng !== 'number') {
-      return;
-    }
-    const isNearbyDuplicate = deduped.some(existing => {
-      const distKm = calculateDistanceKm(existing.location, p.location);
-      return distKm < 0.035; // less than 35 meters apart
-    });
-
-    if (isNearbyDuplicate) {
-      addDeletedPandalId(p.id);
-    } else {
-      deduped.push(p);
-    }
-  });
-
-  pandals = deduped;
+  pandals = (pandals || []).filter(p => p && p.id && !deletedIds.has(p.id));
   savePandals(pandals);
   renderPandalMarkers();
   renderPandalList();
   renderShortestFinder();
   updateCloudPandalsCount();
-  showToast('🧹 Cleaned duplicate & deleted points! Map updated.');
+  showToast('📍 Close locations allowed! All spots preserved on map.');
 }
 
 function broadcastPandalToCloud(newPandal) {
@@ -6154,10 +6375,16 @@ function updateAuthUI() {
     adminIconBox.textContent = isAdmin ? '🗑️' : '🔒';
   }
 
-  // Admin delete button in pandal detail modal
+  // Delete button in pandal detail modal (Admin or Custom Pinned Location)
   const detailDeleteBtn = document.getElementById('btn-admin-delete-pandal');
   if (detailDeleteBtn) {
-    detailDeleteBtn.style.display = isAdmin ? 'inline-flex' : 'none';
+    const isCustom = Boolean(selectedPandal && selectedPandal.id && (selectedPandal.id.startsWith('pandal-custom') || selectedPandal.id.startsWith('spot-')));
+    detailDeleteBtn.style.display = (isAdmin || isCustom) ? 'inline-flex' : 'none';
+    if (isCustom) {
+      detailDeleteBtn.textContent = '🗑️ Delete This Pinned Location';
+    } else if (isAdmin) {
+      detailDeleteBtn.textContent = '🗑️ Delete This Pandal (Admin)';
+    }
   }
 
   // Refresh pandal lists & markers so admin delete buttons are properly updated
@@ -6559,43 +6786,109 @@ function closeLeaderboardModal() {
   if (modal) modal.classList.remove('active');
 }
 
+function getRealContributors() {
+  const mapByUser = new Map();
+
+  (pandals || []).forEach(p => {
+    // 1. Custom pinned spots
+    const author = p.contributedBy || p.authorName;
+    if (author && author !== 'Pandal Contributor' && author !== 'Pandal Creator') {
+      const entry = mapByUser.get(author) || { name: author, pandalsCount: 0, photosCount: 0, reviewsCount: 0 };
+      entry.pandalsCount += 1;
+      mapByUser.set(author, entry);
+    }
+
+    // 2. Uploaded photos
+    if (Array.isArray(p.userPhotos)) {
+      p.userPhotos.forEach(ph => {
+        const phAuthor = ph && ph.authorName;
+        if (phAuthor && phAuthor !== 'Pandal Contributor' && phAuthor !== 'Committee / Official') {
+          const entry = mapByUser.get(phAuthor) || { name: phAuthor, pandalsCount: 0, photosCount: 0, reviewsCount: 0 };
+          entry.photosCount += 1;
+          mapByUser.set(phAuthor, entry);
+        }
+      });
+    }
+
+    // 3. User reviews/ratings
+    if (Array.isArray(p.userRatings)) {
+      p.userRatings.forEach(ur => {
+        const urAuthor = ur && ur.userName;
+        if (urAuthor && urAuthor !== 'Pandal Contributor' && urAuthor !== 'Pandal Creator') {
+          const entry = mapByUser.get(urAuthor) || { name: urAuthor, pandalsCount: 0, photosCount: 0, reviewsCount: 0 };
+          entry.reviewsCount += 1;
+          mapByUser.set(urAuthor, entry);
+        }
+      });
+    }
+  });
+
+  return Array.from(mapByUser.values()).map(c => {
+    const totalScore = (c.pandalsCount * 3) + (c.photosCount * 2) + c.reviewsCount;
+    let badge = '📍 Pujo Explorer';
+    let role = 'Community Contributor';
+    if (c.pandalsCount >= 5 || totalScore >= 12) {
+      badge = '👑 Golden Hopper';
+      role = 'Chief Pandal Mapper';
+    } else if (c.pandalsCount >= 3 || totalScore >= 6) {
+      badge = '🌟 Super Contributor';
+      role = 'Kolkata Heritage Scout';
+    } else if (c.pandalsCount >= 1 || totalScore >= 2) {
+      badge = '🪔 Verified Guide';
+      role = 'Bengal Pandal Guide';
+    }
+    return { ...c, totalScore, badge, role };
+  }).sort((a, b) => b.totalScore - a.totalScore);
+}
+
 function openContributorsModal() {
   closeToolboxWindow();
   const modal = document.getElementById('modal-contributors');
   const body = document.getElementById('contributors-modal-body');
   if (!modal || !body) return;
 
-  const contributors = [
-    { name: 'Sayan Banerjee', role: 'Chief Pandal Mapper', count: 9, badge: '👑 Golden Hopper' },
-    { name: 'Ananya Mukherjee', role: 'Kolkata Heritage Scout', count: 6, badge: '🌟 Super Contributor' },
-    { name: 'Debashis Roy', role: 'Nadia & Kalyani Guide', count: 5, badge: '🪔 Verified Guide' },
-    { name: 'Rohan Sen', role: 'Howrah Crowd Reporter', count: 4, badge: '📍 Pujo Explorer' }
-  ];
+  const contributors = getRealContributors();
 
-  body.innerHTML = `
-    <div style="display:flex; flex-direction:column; gap:10px;">
-      <div style="background:#f5f3ff; border:1px solid #ddd6fe; border-radius:12px; padding:10px 14px; font-size:11.5px; color:#5b21b6;">
-        🏆 Community members who pinned and verified pandals live on Bengal's Parikrama map!
-      </div>
-      ${contributors.map(c => `
-        <div style="background:#fff; border:1.5px solid var(--border-light); border-radius:14px; padding:12px 14px; display:flex; justify-content:space-between; align-items:center;">
-          <div style="display:flex; align-items:center; gap:10px;">
-            <div style="width:36px; height:36px; border-radius:10px; background:linear-gradient(135deg, #7c3aed, #4f46e5); color:#fff; display:flex; align-items:center; justify-content:center; font-size:16px;">
-              👤
-            </div>
-            <div>
-              <h4 style="margin:0; font-size:13px; font-weight:800; color:#0f172a;">${c.name}</h4>
-              <p style="margin:2px 0 0 0; font-size:11px; color:#64748b;">${c.role}</p>
-            </div>
-          </div>
-          <div style="text-align:right;">
-            <span style="background:#ede9fe; color:#6d28d9; padding:2px 8px; border-radius:6px; font-size:10px; font-weight:800;">${c.badge}</span>
-            <p style="margin:3px 0 0 0; font-size:11px; color:#475569; font-weight:700;">${c.count} Pandals Pinned</p>
-          </div>
+  if (contributors.length === 0) {
+    body.innerHTML = `
+      <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; padding:36px 16px; text-align:center;">
+        <div style="width:54px; height:54px; border-radius:50%; background:#f5f3ff; color:#7c3aed; display:flex; align-items:center; justify-content:center; font-size:26px; margin-bottom:12px; box-shadow:0 4px 12px rgba(124, 58, 237, 0.15);">
+          🏆
         </div>
-      `).join('')}
-    </div>
-  `;
+        <h4 style="margin:0 0 6px 0; font-size:15px; font-weight:800; color:#0f172a;">No Community Contributors Yet</h4>
+        <p style="margin:0; font-size:12.5px; color:#64748b; max-width:320px; line-height:1.5;">
+          Be the first hopper on the leaderboard! Pin a missing pandal with <strong>➕ Add Spot</strong>, upload idol photos, or rate your visits.
+        </p>
+      </div>
+    `;
+  } else {
+    body.innerHTML = `
+      <div style="display:flex; flex-direction:column; gap:10px;">
+        <div style="background:#f5f3ff; border:1px solid #ddd6fe; border-radius:12px; padding:10px 14px; font-size:11.5px; color:#5b21b6;">
+          🏆 Verified community hoppers who contributed live pandals, photos, and crowd updates!
+        </div>
+        ${contributors.map(c => `
+          <div style="background:#fff; border:1.5px solid var(--border-light); border-radius:14px; padding:12px 14px; display:flex; justify-content:space-between; align-items:center;">
+            <div style="display:flex; align-items:center; gap:10px;">
+              <div style="width:36px; height:36px; border-radius:10px; background:linear-gradient(135deg, #7c3aed, #4f46e5); color:#fff; display:flex; align-items:center; justify-content:center; font-size:16px;">
+                👤
+              </div>
+              <div>
+                <h4 style="margin:0; font-size:13px; font-weight:800; color:#0f172a;">${c.name}</h4>
+                <p style="margin:2px 0 0 0; font-size:11px; color:#64748b;">${c.role}</p>
+              </div>
+            </div>
+            <div style="text-align:right;">
+              <span style="background:#ede9fe; color:#6d28d9; padding:2px 8px; border-radius:6px; font-size:10px; font-weight:800;">${c.badge}</span>
+              <p style="margin:3px 0 0 0; font-size:11px; color:#475569; font-weight:700;">
+                ${c.pandalsCount > 0 ? `${c.pandalsCount} Pinned` : ''}${c.pandalsCount > 0 && c.photosCount > 0 ? ' • ' : ''}${c.photosCount > 0 ? `${c.photosCount} Photos` : ''}${c.pandalsCount === 0 && c.photosCount === 0 ? `${c.reviewsCount} Reviews` : ''}
+              </p>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    `;
+  }
   modal.classList.add('active');
 }
 

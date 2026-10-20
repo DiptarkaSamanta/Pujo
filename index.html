@@ -230,7 +230,7 @@
         <!-- Leaflet / Mapbox Canvas -->
         <div id="map"></div>
 
-        <!-- Floating Action Pills Overlay (Pin Pandal, My Pinpoint, Styles & 3D) -->
+        <!-- Floating Action Pills Overlay (Pin Pandal, My Pinpoint, Styles & 3D + Multi-Category Filters) -->
         <div id="map-top-overlay">
           <div class="overlay-row-1">
             <!-- Pin Spot Orange Pill -->
@@ -1427,8 +1427,54 @@
                   <span class="cat-icon">🎭</span>
                   <span class="cat-name">Activities</span>
                 </button>
+                <button type="button" class="pin-cat-option" data-cat="icecream" onclick="selectPinCategory('icecream', this)">
+                  <span class="cat-icon">🍦</span>
+                  <span class="cat-name">Ice Cream Shop</span>
+                </button>
+                <button type="button" class="pin-cat-option" data-cat="bookstall" onclick="selectPinCategory('bookstall', this)">
+                  <span class="cat-icon">📚</span>
+                  <span class="cat-name">Book Stall</span>
+                </button>
+                <button type="button" class="pin-cat-option" data-cat="xerox" onclick="selectPinCategory('xerox', this)">
+                  <span class="cat-icon">🖨️</span>
+                  <span class="cat-name">Xerox / Print</span>
+                </button>
               </div>
               <input type="hidden" id="add-category" value="pandal" />
+            </div>
+
+            <!-- Custom Marker Emoji for Mobile & Desktop -->
+            <div class="emoji-picker-group">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                <label style="font-size:12px; font-weight:800; color:#0f172a; margin:0;">
+                  Pin Marker Emoji <span style="font-size:11px; font-weight:500; color:#64748b;">(Shown on map pin)</span>
+                </label>
+                <span id="add-marker-emoji-preview" style="display:inline-flex; align-items:center; justify-content:center; width:34px; height:34px; border-radius:10px; background:#fef3c7; border:1.5px solid #fde68a; font-size:20px; box-shadow:0 2px 6px rgba(0,0,0,0.06);">🪔</span>
+              </div>
+              <div style="display:flex; gap:8px; align-items:center; margin-bottom:6px;">
+                <input type="text" id="add-marker-emoji" class="form-input" style="font-size:18px; max-width:85px; text-align:center; padding:6px 10px; font-weight:700;" placeholder="🪔" value="🪔" oninput="updatePinEmojiPreview(this.value)" />
+                <span style="font-size:11.5px; color:#475569; line-height:1.35;">Tap quick emoji or type any emoji from your phone keyboard!</span>
+              </div>
+              <div class="quick-emoji-scroll" id="quick-emoji-bar">
+                <button type="button" class="emoji-chip-btn" onclick="setCustomPinEmoji('🪔')">🪔</button>
+                <button type="button" class="emoji-chip-btn" onclick="setCustomPinEmoji('🍛')">🍛</button>
+                <button type="button" class="emoji-chip-btn" onclick="setCustomPinEmoji('🥟')">🥟</button>
+                <button type="button" class="emoji-chip-btn" onclick="setCustomPinEmoji('🍦')">🍦</button>
+                <button type="button" class="emoji-chip-btn" onclick="setCustomPinEmoji('📚')">📚</button>
+                <button type="button" class="emoji-chip-btn" onclick="setCustomPinEmoji('🖨️')">🖨️</button>
+                <button type="button" class="emoji-chip-btn" onclick="setCustomPinEmoji('🛒')">🛒</button>
+                <button type="button" class="emoji-chip-btn" onclick="setCustomPinEmoji('🎡')">🎡</button>
+                <button type="button" class="emoji-chip-btn" onclick="setCustomPinEmoji('💊')">💊</button>
+                <button type="button" class="emoji-chip-btn" onclick="setCustomPinEmoji('🎭')">🎭</button>
+                <button type="button" class="emoji-chip-btn" onclick="setCustomPinEmoji('☕')">☕</button>
+                <button type="button" class="emoji-chip-btn" onclick="setCustomPinEmoji('🥤')">🥤</button>
+                <button type="button" class="emoji-chip-btn" onclick="setCustomPinEmoji('🌸')">🌸</button>
+                <button type="button" class="emoji-chip-btn" onclick="setCustomPinEmoji('🎈')">🎈</button>
+                <button type="button" class="emoji-chip-btn" onclick="setCustomPinEmoji('📸')">📸</button>
+                <button type="button" class="emoji-chip-btn" onclick="setCustomPinEmoji('🅿️')">🅿️</button>
+                <button type="button" class="emoji-chip-btn" onclick="setCustomPinEmoji('🚻')">🚻</button>
+                <button type="button" class="emoji-chip-btn" onclick="setCustomPinEmoji('⭐')">⭐</button>
+              </div>
             </div>
 
             <div class="form-group">

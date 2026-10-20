@@ -779,9 +779,17 @@ h1, h2, h3, .festive-font {
   background-color: #f3ece4;
 }
 
-/* Map pinning cursor */
+/* Map pinning cursor and pass-through so taps always register on map surface */
 .pinning-mode #map {
   cursor: crosshair !important;
+}
+
+.pinning-mode .user-marker-wrapper,
+.pinning-mode .user-marker-container,
+.pinning-mode .user-marker-dot,
+.pinning-mode .user-marker-badge,
+.pinning-mode .pandal-custom-marker {
+  pointer-events: none !important;
 }
 
 /* --------------------------------------------------------------------------
@@ -1561,6 +1569,9 @@ body[data-active-tab="itinerary"] .map-zoom-controls,
   display: flex;
   align-items: center;
   justify-content: center;
+  font-family: "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji", sans-serif;
+  font-size: 20px;
+  line-height: 1;
   filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
 }
 
@@ -1735,6 +1746,59 @@ body[data-active-tab="itinerary"] .map-zoom-controls,
   color: #991b1b;
   font-weight: 800;
   box-shadow: 0 0 0 2px rgba(185, 28, 28, 0.2);
+}
+
+.cat-filter-btn .cat-check {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 9px;
+  background: rgba(255, 255, 255, 0.35);
+  border-radius: 50%;
+  width: 14px;
+  height: 14px;
+  margin-left: 2px;
+}
+.cat-filter-btn:not(.active) .cat-check {
+  display: none;
+}
+
+.emoji-picker-group {
+  background: #f8fafc;
+  border: 1.5px dashed #cbd5e1;
+  border-radius: 14px;
+  padding: 10px 12px;
+  margin-top: 10px;
+}
+.quick-emoji-scroll {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding: 6px 2px 2px 2px;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+.quick-emoji-scroll::-webkit-scrollbar {
+  display: none;
+}
+.emoji-chip-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  font-size: 18px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+.emoji-chip-btn:hover, .emoji-chip-btn:active {
+  transform: scale(1.18);
+  background: #fef3c7;
+  border-color: #f59e0b;
 }
 
 /* --------------------------------------------------------------------------
