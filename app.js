@@ -508,6 +508,16 @@ const MARKER_CATEGORY_CONFIG = {
     pinClass: 'marker-pin-xerox',
     shadowColor: 'rgba(71, 85, 105, 0.45)',
     accentColor: '#94a3b8'
+  },
+  other: {
+    id: 'other',
+    label: 'Other / Custom Emojis',
+    icon: '📍',
+    badge: 'CUSTOM',
+    bgGradient: 'linear-gradient(135deg, #0284c7 0%, #6366f1 50%, #ec4899 100%)',
+    pinClass: 'marker-pin-other',
+    shadowColor: 'rgba(99, 102, 241, 0.45)',
+    accentColor: '#818cf8'
   }
 };
 
@@ -2217,9 +2227,18 @@ function renderPandalMarkers() {
     displayList = displayList.filter(p => p.trafficLevel === 'low' || p.trafficLevel === 'moderate');
   }
 
-  // Multi-Category Map Filter: supports pandals only, food stalls only, grocery only, or any combination!
+  // Multi-Category Map Filter: supports pandals only, food stalls only, grocery only, custom emojis, or any combination!
   if (activeMapCategories.size > 0 && !activeMapCategories.has('all')) {
-    displayList = displayList.filter(p => activeMapCategories.has(p.category || 'pandal'));
+    displayList = displayList.filter(p => {
+      const cat = p.category || 'pandal';
+      if (activeMapCategories.has(cat)) return true;
+      if (activeMapCategories.has('other')) {
+        if (cat === 'other' || p.customEmoji || (p.icon && p.icon !== '🪔')) {
+          return true;
+        }
+      }
+      return false;
+    });
   }
 
   displayList.forEach(p => {
@@ -2314,14 +2333,53 @@ function handleToolboxFilterToggle(cat, e) {
   toggleCategoryFilter(cat);
 }
 
+function openToolboxFilterView() {
+  const mainView = document.getElementById('toolbox-view-main');
+  const filterView = document.getElementById('toolbox-view-filter');
+  if (mainView && filterView) {
+    mainView.style.display = 'none';
+    filterView.style.display = 'flex';
+  }
+  syncToolboxFilterUI();
+}
+
+function closeToolboxFilterView() {
+  const mainView = document.getElementById('toolbox-view-main');
+  const filterView = document.getElementById('toolbox-view-filter');
+  if (mainView && filterView) {
+    filterView.style.display = 'none';
+    mainView.style.display = 'block';
+  }
+  updateToolboxFilterSummary();
+}
+
+function updateToolboxFilterSummary() {
+  const summaryEl = document.getElementById('tool-filter-summary');
+  if (!summaryEl) return;
+  if (activeMapCategories.has('all') || activeMapCategories.size === 0) {
+    summaryEl.textContent = 'All spots showing';
+  } else {
+    const list = Array.from(activeMapCategories).map(c => {
+      const cfg = MARKER_CATEGORY_CONFIG[c];
+      return cfg ? cfg.label.split(' ')[0] : c;
+    });
+    if (list.length <= 2) {
+      summaryEl.textContent = list.join(', ');
+    } else {
+      summaryEl.textContent = `${list.slice(0, 2).join(', ')} (+${list.length - 2})`;
+    }
+  }
+}
+
 function syncToolboxFilterUI() {
   const isAll = activeMapCategories.has('all');
-  document.querySelectorAll('#toolbox-category-filter-box .filter-radio-chip').forEach(chip => {
+  document.querySelectorAll('#toolbox-view-filter .filter-radio-card, #toolbox-category-filter-box .filter-radio-chip').forEach(chip => {
     const cat = chip.dataset.cat;
     const isSelected = isAll ? (cat === 'all') : activeMapCategories.has(cat);
     chip.classList.toggle('active', isSelected);
     chip.setAttribute('aria-checked', isSelected ? 'true' : 'false');
   });
+  updateToolboxFilterSummary();
 }
 
 function updateCategoryFilterUI() {
@@ -5120,6 +5178,17 @@ function selectPinCategory(cat, btn) {
       if (inpClub) inpClub.placeholder = 'e.g. Shop Owner / Operator';
       break;
 
+    case 'other':
+      if (lblName) lblName.textContent = 'Custom Spot / Location Name *';
+      if (inpName) inpName.placeholder = 'e.g. My Favorite Chai Adda, Meeting Point, Parking Area';
+      if (lblTheme) lblTheme.textContent = 'Spot Specialty / Custom Notes';
+      if (inpTheme) inpTheme.placeholder = 'e.g. Landmark next to big banyan tree, Custom spot';
+      if (lblDesc) lblDesc.textContent = 'Description & Tips for Visitors';
+      if (inpDesc) inpDesc.placeholder = 'Add helpful info for visitors and hoppers...';
+      if (lblClub) lblClub.textContent = 'Added By / Info';
+      if (inpClub) inpClub.placeholder = 'e.g. Pujo Hopper';
+      break;
+
     default: // pandal
       if (lblName) lblName.textContent = 'Puja Pandal Name *';
       if (inpName) inpName.placeholder = 'e.g. Sreebhumi Sporting Club, Maddox Square';
@@ -6447,6 +6516,12 @@ function closeToolboxWindow() {
   const btn = document.getElementById('btn-toolbox-capsule');
   if (win) win.classList.remove('active');
   if (btn) btn.classList.remove('open');
+  const mainView = document.getElementById('toolbox-view-main');
+  const filterView = document.getElementById('toolbox-view-filter');
+  if (mainView && filterView) {
+    filterView.style.display = 'none';
+    mainView.style.display = 'block';
+  }
 }
 
 // ----------------------------------------------------------------------------

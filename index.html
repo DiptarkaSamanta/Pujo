@@ -94,171 +94,250 @@
               </div>
             </div>
 
-            <!-- Festive Tithi & Song Quick Banner -->
-            <div class="toolbox-banner-bar">
-              <div class="banner-item" onclick="openPanjikaModal()" title="View Durga Puja Tithi Calendar">
-                <span class="banner-icon">🪔</span>
-                <span class="banner-text" id="toolbox-tithi-text">Durga Puja 2026 • Live Parikrama</span>
+            <!-- View 1: Main Tools Grid -->
+            <div id="toolbox-view-main">
+              <!-- Festive Tithi & Song Quick Banner -->
+              <div class="toolbox-banner-bar">
+                <div class="banner-item" onclick="openPanjikaModal()" title="View Durga Puja Tithi Calendar">
+                  <span class="banner-icon">🪔</span>
+                  <span class="banner-text" id="toolbox-tithi-text">Durga Puja 2026 • Live Parikrama</span>
+                </div>
+                <button class="banner-audio-toggle" id="btn-toolbox-audio-toggle" onclick="toggleFestiveSong()" title="Toggle Dhak Music">
+                  <span id="toolbox-dhak-status">🥁 Play Dhak Beats</span>
+                </button>
               </div>
-              <button class="banner-audio-toggle" id="btn-toolbox-audio-toggle" onclick="toggleFestiveSong()" title="Toggle Dhak Music">
-                <span id="toolbox-dhak-status">🥁 Play Dhak Beats</span>
-              </button>
+
+              <!-- Two-Column Interactive Tool Grid (Matching Hand-Drawn Wireframe) -->
+              <div class="toolbox-grid">
+                <!-- Column 1 (Left - Round Tool Buttons) -->
+                <div class="toolbox-col">
+                  <!-- 1. Pet Pujo (Food, Sweets & Groceries) -->
+                  <button class="tool-tile tile-round" onclick="openPetPujoModal()" title="Pet Pujo — Nearest Biryani, Rolls & Sweets">
+                    <div class="tile-icon-circle icon-amber">🍛</div>
+                    <div class="tile-content">
+                      <span class="tile-title">Pet Pujo (Food)</span>
+                      <span class="tile-desc">Biryani, Rolls & Mishti</span>
+                    </div>
+                  </button>
+
+                  <!-- 2. Medical & Emergency Services -->
+                  <button class="tool-tile tile-round" onclick="openMedicalModal()" title="24x7 Pharmacies, Hospitals & SOS">
+                    <div class="tile-icon-circle icon-crimson">🏥</div>
+                    <div class="tile-content">
+                      <span class="tile-title">Medical 24x7</span>
+                      <span class="tile-desc">Pharmacies, SSKM & SOS</span>
+                    </div>
+                  </button>
+
+                  <!-- 3. Calendar / Time / Song -->
+                  <button class="tool-tile tile-round" onclick="openPanjikaModal()" title="Durga Puja Panjika & Festive Music">
+                    <div class="tile-icon-circle icon-gold">🥁</div>
+                    <div class="tile-content">
+                      <span class="tile-title">Puja Panjika & Dhak</span>
+                      <span class="tile-desc">Live rhythm & Tithi timing</span>
+                    </div>
+                  </button>
+
+                  <!-- 4. My Location -->
+                  <button class="tool-tile tile-round" onclick="handleToolMyLocation()" title="Center GPS on my location">
+                    <div class="tile-icon-circle icon-blue">📍</div>
+                    <div class="tile-content">
+                      <span class="tile-title">My GPS Location</span>
+                      <span class="tile-desc">Pinpoint & auto-follow</span>
+                    </div>
+                  </button>
+
+                  <!-- 5. Distance / Route -->
+                  <button class="tool-tile tile-round" onclick="handleToolDistanceRoute()" title="Shortest route navigation">
+                    <div class="tile-icon-circle icon-emerald">🧭</div>
+                    <div class="tile-content">
+                      <span class="tile-title">Route Navigator</span>
+                      <span class="tile-desc">A ➔ B road directions</span>
+                    </div>
+                  </button>
+
+                  <!-- 6. Pin Point Pandal Location -->
+                  <button class="tool-tile tile-round" onclick="handleToolPinPandal()" title="Pin point pandal location on map">
+                    <div class="tile-icon-circle icon-gold">🪔</div>
+                    <div class="tile-content">
+                      <span class="tile-title">Pin Pandal Location</span>
+                      <span class="tile-desc">Drop pin & add puja</span>
+                    </div>
+                  </button>
+                </div>
+
+                <!-- Column 2 (Right - Boxed Tool Buttons) -->
+                <div class="toolbox-col">
+                  <!-- 1. Smart Hopper Tour Planner -->
+                  <button class="tool-tile tile-square" onclick="handleToolItinerary()" title="Smart Pandal Hopper Tour Planner">
+                    <div class="tile-icon-box icon-purple">📅</div>
+                    <div class="tile-content">
+                      <span class="tile-title">Hopper Planner</span>
+                      <span class="tile-desc">Smart tour & break scheduler</span>
+                    </div>
+                  </button>
+
+                  <!-- 2. Leaderboard -->
+                  <button class="tool-tile tile-square" onclick="openLeaderboardModal()" title="Top Pandals Leaderboard">
+                    <div class="tile-icon-box icon-gold">📊</div>
+                    <div class="tile-content">
+                      <span class="tile-title">Top Leaderboard</span>
+                      <span class="tile-desc">Most visited & top rated</span>
+                    </div>
+                  </button>
+
+                  <!-- 3. Highest Contributors -->
+                  <button class="tool-tile tile-square" onclick="openContributorsModal()" title="Community Contributors Leaderboard">
+                    <div class="tile-icon-box icon-blue">👑</div>
+                    <div class="tile-content">
+                      <span class="tile-title">Top Contributors</span>
+                      <span class="tile-desc">Hoppers adding new pujas</span>
+                    </div>
+                  </button>
+
+                  <!-- 4. Admin: Delete Unnecessary Pandals -->
+                  <button class="tool-tile tile-square tile-admin" id="btn-tool-admin-manager" onclick="handleToolAdminManager()" title="Admin: Delete Unnecessary Pandals">
+                    <div class="tile-icon-box icon-red" id="tool-admin-icon-box">🗑️</div>
+                    <div class="tile-content">
+                      <span class="tile-title" id="tool-admin-title">Delete Pandals</span>
+                      <span class="tile-desc" id="tool-admin-desc">Admin deletion panel</span>
+                    </div>
+                  </button>
+
+                  <!-- 5. Change Map Style & 3D -->
+                  <button class="tool-tile tile-square" onclick="openMapStylesModal()" title="Choose from 7 Mapbox Styles & 3D Perspective">
+                    <div class="tile-icon-box icon-indigo">🗺️</div>
+                    <div class="tile-content">
+                      <span class="tile-title">Map Styles & 3D</span>
+                      <span class="tile-desc" id="tool-current-style-label">Map View</span>
+                    </div>
+                  </button>
+
+                  <!-- 6. Filter Option (Opens Full Filter Panel) -->
+                  <button class="tool-tile tile-square" id="btn-tool-open-filters" onclick="openToolboxFilterView()" title="Filter markings shown on map">
+                    <div class="tile-icon-box icon-amber">🎯</div>
+                    <div class="tile-content">
+                      <span class="tile-title">Filter</span>
+                      <span class="tile-desc" id="tool-filter-summary">Pandals, food, stalls & fair</span>
+                    </div>
+                  </button>
+                </div>
+              </div>
             </div>
 
-            <!-- Two-Column Interactive Tool Grid (Matching Hand-Drawn Wireframe) -->
-            <div class="toolbox-grid">
-              <!-- Column 1 (Left - Round Tool Buttons) -->
-              <div class="toolbox-col">
-                <!-- 1. Pet Pujo (Food, Sweets & Groceries) -->
-                <button class="tool-tile tile-round" onclick="openPetPujoModal()" title="Pet Pujo — Nearest Biryani, Rolls & Sweets">
-                  <div class="tile-icon-circle icon-amber">🍛</div>
-                  <div class="tile-content">
-                    <span class="tile-title">Pet Pujo (Food)</span>
-                    <span class="tile-desc">Biryani, Rolls & Mishti</span>
-                  </div>
+            <!-- View 2: Dedicated Filter Panel (Turns the whole box into a filter panel) -->
+            <div id="toolbox-view-filter" class="toolbox-filter-view" style="display: none;">
+              <div class="toolbox-filter-header">
+                <button type="button" class="btn-toolbox-back" onclick="closeToolboxFilterView()" title="Back to tools">
+                  <span class="back-arrow">←</span> <span>Back</span>
                 </button>
-
-                <!-- 2. Medical & Emergency Services -->
-                <button class="tool-tile tile-round" onclick="openMedicalModal()" title="24x7 Pharmacies, Hospitals & SOS">
-                  <div class="tile-icon-circle icon-crimson">🏥</div>
-                  <div class="tile-content">
-                    <span class="tile-title">Medical 24x7</span>
-                    <span class="tile-desc">Pharmacies, SSKM & SOS</span>
-                  </div>
-                </button>
-
-                <!-- 3. Calendar / Time / Song -->
-                <button class="tool-tile tile-round" onclick="openPanjikaModal()" title="Durga Puja Panjika & Festive Music">
-                  <div class="tile-icon-circle icon-gold">🥁</div>
-                  <div class="tile-content">
-                    <span class="tile-title">Puja Panjika & Dhak</span>
-                    <span class="tile-desc">Live rhythm & Tithi timing</span>
-                  </div>
-                </button>
-
-                <!-- 4. My Location -->
-                <button class="tool-tile tile-round" onclick="handleToolMyLocation()" title="Center GPS on my location">
-                  <div class="tile-icon-circle icon-blue">📍</div>
-                  <div class="tile-content">
-                    <span class="tile-title">My GPS Location</span>
-                    <span class="tile-desc">Pinpoint & auto-follow</span>
-                  </div>
-                </button>
-
-                <!-- 5. Distance / Route -->
-                <button class="tool-tile tile-round" onclick="handleToolDistanceRoute()" title="Shortest route navigation">
-                  <div class="tile-icon-circle icon-emerald">🧭</div>
-                  <div class="tile-content">
-                    <span class="tile-title">Route Navigator</span>
-                    <span class="tile-desc">A ➔ B road directions</span>
-                  </div>
-                </button>
-
-                <!-- 6. Pin Point Pandal Location -->
-                <button class="tool-tile tile-round" onclick="handleToolPinPandal()" title="Pin point pandal location on map">
-                  <div class="tile-icon-circle icon-gold">🪔</div>
-                  <div class="tile-content">
-                    <span class="tile-title">Pin Pandal Location</span>
-                    <span class="tile-desc">Drop pin & add puja</span>
-                  </div>
-                </button>
+                <div class="filter-header-text">
+                  <span class="filter-header-title">🎯 Map Spot Filters</span>
+                  <span class="filter-header-subtitle">Select single or multiple markings</span>
+                </div>
               </div>
 
-              <!-- Column 2 (Right - Boxed Tool Buttons) -->
-              <div class="toolbox-col">
-                <!-- 1. Smart Hopper Tour Planner -->
-                <button class="tool-tile tile-square" onclick="handleToolItinerary()" title="Smart Pandal Hopper Tour Planner">
-                  <div class="tile-icon-box icon-purple">📅</div>
-                  <div class="tile-content">
-                    <span class="tile-title">Hopper Planner</span>
-                    <span class="tile-desc">Smart tour & break scheduler</span>
-                  </div>
-                </button>
+              <div class="toolbox-filter-content">
+                <div class="filter-cards-list">
+                  <!-- 1. All Spots -->
+                  <button type="button" class="filter-radio-card active" role="checkbox" aria-checked="true" data-cat="all" onclick="handleToolboxFilterToggle('all', event)">
+                    <span class="chip-custom-radio"></span>
+                    <span class="filter-card-icon">🌟</span>
+                    <div class="filter-card-details">
+                      <span class="filter-card-name">All Spots</span>
+                      <span class="filter-card-hint">Show all pandals, food, stalls & carnivals</span>
+                    </div>
+                  </button>
 
-                <!-- 2. Leaderboard -->
-                <button class="tool-tile tile-square" onclick="openLeaderboardModal()" title="Top Pandals Leaderboard">
-                  <div class="tile-icon-box icon-gold">📊</div>
-                  <div class="tile-content">
-                    <span class="tile-title">Top Leaderboard</span>
-                    <span class="tile-desc">Most visited & top rated</span>
-                  </div>
-                </button>
+                  <!-- 2. Puja Pandals -->
+                  <button type="button" class="filter-radio-card" role="checkbox" aria-checked="false" data-cat="pandal" onclick="handleToolboxFilterToggle('pandal', event)">
+                    <span class="chip-custom-radio"></span>
+                    <span class="filter-card-icon">🪔</span>
+                    <div class="filter-card-details">
+                      <span class="filter-card-name">Puja Pandals</span>
+                      <span class="filter-card-hint">Heritage, bonedi bari & community pujos</span>
+                    </div>
+                  </button>
 
-                <!-- 3. Highest Contributors -->
-                <button class="tool-tile tile-square" onclick="openContributorsModal()" title="Community Contributors Leaderboard">
-                  <div class="tile-icon-box icon-blue">👑</div>
-                  <div class="tile-content">
-                    <span class="tile-title">Top Contributors</span>
-                    <span class="tile-desc">Hoppers adding new pujas</span>
-                  </div>
-                </button>
+                  <!-- 3. Food Hubs -->
+                  <button type="button" class="filter-radio-card" role="checkbox" aria-checked="false" data-cat="food" onclick="handleToolboxFilterToggle('food', event)">
+                    <span class="chip-custom-radio"></span>
+                    <span class="filter-card-icon">🍛</span>
+                    <div class="filter-card-details">
+                      <span class="filter-card-name">Food Hubs</span>
+                      <span class="filter-card-hint">Biryani, restaurants, dhabas & dining</span>
+                    </div>
+                  </button>
 
-                <!-- 4. Admin: Delete Unnecessary Pandals -->
-                <button class="tool-tile tile-square tile-admin" id="btn-tool-admin-manager" onclick="handleToolAdminManager()" title="Admin: Delete Unnecessary Pandals">
-                  <div class="tile-icon-box icon-red" id="tool-admin-icon-box">🗑️</div>
-                  <div class="tile-content">
-                    <span class="tile-title" id="tool-admin-title">Delete Pandals</span>
-                    <span class="tile-desc" id="tool-admin-desc">Admin deletion panel</span>
-                  </div>
-                </button>
+                  <!-- 4. Food Stalls -->
+                  <button type="button" class="filter-radio-card" role="checkbox" aria-checked="false" data-cat="streetfood" onclick="handleToolboxFilterToggle('streetfood', event)">
+                    <span class="chip-custom-radio"></span>
+                    <span class="filter-card-icon">🥟</span>
+                    <div class="filter-card-details">
+                      <span class="filter-card-name">Food Stalls</span>
+                      <span class="filter-card-hint">Kathi rolls, chowmein, momos & fuchka</span>
+                    </div>
+                  </button>
 
-                <!-- 5. Change Map Style & 3D -->
-                <button class="tool-tile tile-square" onclick="openMapStylesModal()" title="Choose from 7 Mapbox Styles & 3D Perspective">
-                  <div class="tile-icon-box icon-indigo">🗺️</div>
-                  <div class="tile-content">
-                    <span class="tile-title">Map Styles & 3D</span>
-                    <span class="tile-desc" id="tool-current-style-label">Map View</span>
-                  </div>
-                </button>
+                  <!-- 5. Festivals Fair Market / Mela -->
+                  <button type="button" class="filter-radio-card" role="checkbox" aria-checked="false" data-cat="mela" onclick="handleToolboxFilterToggle('mela', event)">
+                    <span class="chip-custom-radio"></span>
+                    <span class="filter-card-icon">🎡</span>
+                    <div class="filter-card-details">
+                      <span class="filter-card-name">Festivals Fair Market (Mela)</span>
+                      <span class="filter-card-hint">Nagordola, rides, carnival games & toy stalls</span>
+                    </div>
+                  </button>
 
-                <!-- 6. Map Spot Category Filters Box (Pandals, Food Hub, Stalls, Festivals Fair Market & more) -->
-                <div class="tool-tile-filter-box" id="toolbox-category-filter-box">
-                  <div class="filter-box-header">
-                    <span class="filter-box-title">🎯 Map Spot Filters</span>
-                    <span class="filter-box-subtitle">Select 1, 2 or more</span>
-                  </div>
-                  <div class="filter-radio-grid">
-                    <button type="button" class="filter-radio-chip active" role="checkbox" aria-checked="true" data-cat="all" onclick="handleToolboxFilterToggle('all', event)">
-                      <span class="chip-custom-radio"></span>
-                      <span class="chip-icon">🌟</span>
-                      <span class="chip-text">All Spots</span>
-                    </button>
-                    <button type="button" class="filter-radio-chip" role="checkbox" aria-checked="false" data-cat="pandal" onclick="handleToolboxFilterToggle('pandal', event)">
-                      <span class="chip-custom-radio"></span>
-                      <span class="chip-icon">🪔</span>
-                      <span class="chip-text">Pandals</span>
-                    </button>
-                    <button type="button" class="filter-radio-chip" role="checkbox" aria-checked="false" data-cat="food" onclick="handleToolboxFilterToggle('food', event)">
-                      <span class="chip-custom-radio"></span>
-                      <span class="chip-icon">🍛</span>
-                      <span class="chip-text">Food Hub</span>
-                    </button>
-                    <button type="button" class="filter-radio-chip" role="checkbox" aria-checked="false" data-cat="streetfood" onclick="handleToolboxFilterToggle('streetfood', event)">
-                      <span class="chip-custom-radio"></span>
-                      <span class="chip-icon">🥟</span>
-                      <span class="chip-text">Stalls</span>
-                    </button>
-                    <button type="button" class="filter-radio-chip" role="checkbox" aria-checked="false" data-cat="mela" onclick="handleToolboxFilterToggle('mela', event)">
-                      <span class="chip-custom-radio"></span>
-                      <span class="chip-icon">🎡</span>
-                      <span class="chip-text">Fair & Mela</span>
-                    </button>
-                    <button type="button" class="filter-radio-chip" role="checkbox" aria-checked="false" data-cat="grocery" onclick="handleToolboxFilterToggle('grocery', event)">
-                      <span class="chip-custom-radio"></span>
-                      <span class="chip-icon">🛒</span>
-                      <span class="chip-text">Grocery</span>
-                    </button>
-                    <button type="button" class="filter-radio-chip" role="checkbox" aria-checked="false" data-cat="icecream" onclick="handleToolboxFilterToggle('icecream', event)">
-                      <span class="chip-custom-radio"></span>
-                      <span class="chip-icon">🍦</span>
-                      <span class="chip-text">Ice Cream</span>
-                    </button>
-                    <button type="button" class="filter-radio-chip" role="checkbox" aria-checked="false" data-cat="bookstall" onclick="handleToolboxFilterToggle('bookstall', event)">
-                      <span class="chip-custom-radio"></span>
-                      <span class="chip-icon">📚</span>
-                      <span class="chip-text">Book Stalls</span>
-                    </button>
-                  </div>
+                  <!-- 6. Grocery & Water Points -->
+                  <button type="button" class="filter-radio-card" role="checkbox" aria-checked="false" data-cat="grocery" onclick="handleToolboxFilterToggle('grocery', event)">
+                    <span class="chip-custom-radio"></span>
+                    <span class="filter-card-icon">🛒</span>
+                    <div class="filter-card-details">
+                      <span class="filter-card-name">Grocery & Water</span>
+                      <span class="filter-card-hint">Drinking water points & 24x7 convenience</span>
+                    </div>
+                  </button>
+
+                  <!-- 7. Ice Cream & Sweets -->
+                  <button type="button" class="filter-radio-card" role="checkbox" aria-checked="false" data-cat="icecream" onclick="handleToolboxFilterToggle('icecream', event)">
+                    <span class="chip-custom-radio"></span>
+                    <span class="filter-card-icon">🍦</span>
+                    <div class="filter-card-details">
+                      <span class="filter-card-name">Ice Cream & Sweets</span>
+                      <span class="filter-card-hint">Kulfi, cones, falooda & traditional mishti</span>
+                    </div>
+                  </button>
+
+                  <!-- 8. Book Stalls -->
+                  <button type="button" class="filter-radio-card" role="checkbox" aria-checked="false" data-cat="bookstall" onclick="handleToolboxFilterToggle('bookstall', event)">
+                    <span class="chip-custom-radio"></span>
+                    <span class="filter-card-icon">📚</span>
+                    <div class="filter-card-details">
+                      <span class="filter-card-name">Book Stalls</span>
+                      <span class="filter-card-hint">Boi mela, pujabarshiki, comics & magazines</span>
+                    </div>
+                  </button>
+
+                  <!-- 9. Medical 24x7 -->
+                  <button type="button" class="filter-radio-card" role="checkbox" aria-checked="false" data-cat="medical" onclick="handleToolboxFilterToggle('medical', event)">
+                    <span class="chip-custom-radio"></span>
+                    <span class="filter-card-icon">💊</span>
+                    <div class="filter-card-details">
+                      <span class="filter-card-name">Medical & Pharmacy 24x7</span>
+                      <span class="filter-card-hint">Emergency pharmacies, first aid & clinics</span>
+                    </div>
+                  </button>
+
+                  <!-- 10. Other / Custom Location Emojis -->
+                  <button type="button" class="filter-radio-card" role="checkbox" aria-checked="false" data-cat="other" onclick="handleToolboxFilterToggle('other', event)">
+                    <span class="chip-custom-radio"></span>
+                    <span class="filter-card-icon">📍</span>
+                    <div class="filter-card-details">
+                      <span class="filter-card-name">Other / Custom Emojis</span>
+                      <span class="filter-card-hint">Community added custom markers & emojis</span>
+                    </div>
+                  </button>
                 </div>
               </div>
             </div>
@@ -1479,6 +1558,10 @@
                 <button type="button" class="pin-cat-option" data-cat="xerox" onclick="selectPinCategory('xerox', this)">
                   <span class="cat-icon">🖨️</span>
                   <span class="cat-name">Xerox / Print</span>
+                </button>
+                <button type="button" class="pin-cat-option" data-cat="other" onclick="selectPinCategory('other', this)">
+                  <span class="cat-icon">📍</span>
+                  <span class="cat-name">Other / Custom</span>
                 </button>
               </div>
               <input type="hidden" id="add-category" value="pandal" />
