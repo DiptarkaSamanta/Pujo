@@ -1788,6 +1788,9 @@ function initMap() {
       activeRouteLayerIds = [];
       drawAllRoutesOnMap(activeMultiRoutes, selectedRouteIndex);
     }
+    if (typeof isMatrixRadarActive !== 'undefined' && isMatrixRadarActive) {
+      drawMatrixRadarCirclesOnMap(false);
+    }
     update3DUIState();
   });
 
@@ -5457,6 +5460,11 @@ function switchTab(tabId) {
     zoomControls.style.setProperty('display', isMap ? 'flex' : 'none', 'important');
   }
 
+  const radarBanner = document.getElementById('matrix-radar-map-banner');
+  if (radarBanner) {
+    radarBanner.style.display = (isMap && typeof isMatrixRadarActive !== 'undefined' && isMatrixRadarActive) ? 'flex' : 'none';
+  }
+
   if (!isMap) {
     let targetView = document.getElementById(`view-${normalizedTab}`);
     if (targetView) {
@@ -5625,42 +5633,726 @@ function renderPandalList() {
   }).join('');
 }
 
+// ----------------------------------------------------------------------------
+// Nearest Pandals Matrix: 5 Concentric Rings Distance System & Map Radar
+// ----------------------------------------------------------------------------
+let matrixDistanceConfig = {
+  baseRadiusMeters: 500, // Circle 1 radius in meters
+  unit: 'm', // 'm' or 'km'
+  activeViewRing: 'all' // 'all', '1', '2', '3', '4', '5', 'beyond'
+};
+
+let isMatrixRadarActive = false;
+let matrixCircleLayers = [];
+let matrixCircleSources = [];
+let matrixOriginMarker = null;
+let matrixCircleLabelMarkers = [];
+let matrixPandalMarkers = [];
+
+const MATRIX_RINGS = [
+  { index: 1, label: 'Circle 1', color: '#ef4444', bg: '#fef2f2', border: '#fca5a5', icon: '🔴', tag: 'Core Base Radius' },
+  { index: 2, label: 'Circle 2', color: '#f97316', bg: '#fff7ed', border: '#fdba74', icon: '🟠', tag: '+100m Ring' },
+  { index: 3, label: 'Circle 3', color: '#f59e0b', bg: '#fffbeb', border: '#fde68a', icon: '🟡', tag: '+200m Ring' },
+  { index: 4, label: 'Circle 4', color: '#10b981', bg: '#ecfdf5', border: '#a7f3d0', icon: '🟢', tag: '+300m Ring' },
+  { index: 5, label: 'Circle 5', color: '#6366f1', bg: '#eef2ff', border: '#c7d2fe', icon: '🔵', tag: '+400m Ring' }
+];
+
+function calculateDistanceMeters(c1, c2) {
+  if (!c1 || !c2) return 0;
+  const lat1 = Number(c1.lat ?? c1.latitude);
+  const lng1 = Number(c1.lng ?? c1.lon ?? c1.longitude);
+  const lat2 = Number(c2.lat ?? c2.latitude);
+  const lng2 = Number(c2.lng ?? c2.lon ?? c2.longitude);
+  if (isNaN(lat1) || isNaN(lng1) || isNaN(lat2) || isNaN(lng2)) return 0;
+
+  const R = 6371000; // Earth radius in meters
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLng = (lng2 - lng1) * Math.PI / 180;
+  const a = 
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+    Math.sin(dLng / 2) * Math.sin(dLng / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return Math.round(R * c);
+}
+
+function formatDistanceValue(meters) {
+  if (meters < 1000) {
+    return `${Math.round(meters)} m`;
+  }
+  return `${(meters / 1000).toFixed(2)} km`;
+}
+
+function getMatrixOriginPoint() {
+  if (routeLocations && routeLocations.A && routeLocations.A.lat && routeLocations.A.lng) {
+    return {
+      lat: routeLocations.A.lat,
+      lng: routeLocations.A.lng,
+      name: routeLocations.A.name || 'Origin (Location A)',
+      icon: routeLocations.A.icon || '📍'
+    };
+  }
+  return {
+    lat: userLocation.lat,
+    lng: userLocation.lng,
+    name: 'My Current GPS Location',
+    icon: '📍'
+  };
+}
+
+function updateMatrixOriginDisplay() {
+  const textEl = document.getElementById('matrix-loc-a-text');
+  const iconEl = document.getElementById('matrix-loc-a-icon');
+  const origin = getMatrixOriginPoint();
+  if (textEl) textEl.textContent = origin.name || 'Origin (Location A)';
+  if (iconEl) iconEl.textContent = origin.icon || '📍';
+}
+
+function onMatrixOriginChanged() {
+  updateMatrixOriginDisplay();
+  renderShortestFinder();
+  if (isMatrixRadarActive) {
+    drawMatrixRadarCirclesOnMap(false);
+  }
+}
+
+function getMatrixBaseRadiusMeters() {
+  const inputEl = document.getElementById('matrix-base-dist-input');
+  let val = inputEl ? parseFloat(inputEl.value) : matrixDistanceConfig.baseRadiusMeters;
+  if (isNaN(val) || val <= 0) val = 500;
+  
+  if (matrixDistanceConfig.unit === 'km') {
+    return Math.round(val * 1000);
+  }
+  return Math.round(val);
+}
+
+function setMatrixDistanceUnit(unit) {
+  if (matrixDistanceConfig.unit === unit) return;
+  const inputEl = document.getElementById('matrix-base-dist-input');
+  const labelEl = document.getElementById('matrix-input-unit-label');
+  const btnM = document.getElementById('matrix-unit-m');
+  const btnKm = document.getElementById('matrix-unit-km');
+
+  let curVal = inputEl ? parseFloat(inputEl.value) : 500;
+  if (isNaN(curVal) || curVal <= 0) curVal = (matrixDistanceConfig.unit === 'km') ? 0.5 : 500;
+
+  if (unit === 'km') {
+    const inKm = +(curVal / 1000).toFixed(2);
+    if (inputEl) {
+      inputEl.value = inKm;
+      inputEl.step = '0.1';
+    }
+    if (labelEl) labelEl.textContent = 'km';
+  } else {
+    const inM = Math.round(curVal * 1000);
+    if (inputEl) {
+      inputEl.value = inM;
+      inputEl.step = '50';
+    }
+    if (labelEl) labelEl.textContent = 'meters';
+  }
+
+  matrixDistanceConfig.unit = unit;
+  if (btnM) btnM.classList.toggle('active', unit === 'm');
+  if (btnKm) btnKm.classList.toggle('active', unit === 'km');
+
+  matrixDistanceConfig.baseRadiusMeters = getMatrixBaseRadiusMeters();
+  updatePresetChipsHighlight();
+  renderShortestFinder();
+
+  if (isMatrixRadarActive) {
+    drawMatrixRadarCirclesOnMap(false);
+  }
+}
+
+function applyMatrixPreset(val, unit) {
+  if (matrixDistanceConfig.unit !== unit) {
+    setMatrixDistanceUnit(unit);
+  }
+  const inputEl = document.getElementById('matrix-base-dist-input');
+  if (inputEl) inputEl.value = val;
+  matrixDistanceConfig.baseRadiusMeters = getMatrixBaseRadiusMeters();
+  updatePresetChipsHighlight();
+  renderShortestFinder();
+
+  if (isMatrixRadarActive) {
+    drawMatrixRadarCirclesOnMap(false);
+  }
+  showToast(`🎯 Circle 1 Radius set to ${val} ${unit}`);
+}
+
+function updatePresetChipsHighlight() {
+  const baseMeters = getMatrixBaseRadiusMeters();
+  document.querySelectorAll('.matrix-preset-chip').forEach(chip => {
+    const text = chip.textContent.trim();
+    let chipMeters = 0;
+    if (text === '300m') chipMeters = 300;
+    else if (text === '500m') chipMeters = 500;
+    else if (text === '800m') chipMeters = 800;
+    else if (text === '1 km') chipMeters = 1000;
+    else if (text === '2 km') chipMeters = 2000;
+    else if (text === '3 km') chipMeters = 3000;
+    chip.classList.toggle('active', chipMeters === baseMeters);
+  });
+}
+
+function onMatrixDistanceInputChange() {
+  matrixDistanceConfig.baseRadiusMeters = getMatrixBaseRadiusMeters();
+  updatePresetChipsHighlight();
+  renderShortestFinder();
+
+  if (isMatrixRadarActive) {
+    drawMatrixRadarCirclesOnMap(false);
+  }
+}
+
+function setMatrixActiveRingFilter(ringKey) {
+  matrixDistanceConfig.activeViewRing = ringKey;
+  renderShortestFinder();
+}
+
+function generateGeoJsonCircle(center, radiusInMeters, points = 64) {
+  const km = radiusInMeters / 1000;
+  const distanceX = km / (111.320 * Math.cos((center.lat * Math.PI) / 180));
+  const distanceY = km / 110.574;
+
+  const coords = [];
+  for (let i = 0; i < points; i++) {
+    const theta = (i / points) * (2 * Math.PI);
+    const x = distanceX * Math.cos(theta);
+    const y = distanceY * Math.sin(theta);
+    coords.push([center.lng + x, center.lat + y]);
+  }
+  coords.push(coords[0]); // close polygon
+
+  return {
+    type: 'Feature',
+    properties: {
+      radius: radiusInMeters
+    },
+    geometry: {
+      type: 'Polygon',
+      coordinates: [coords]
+    }
+  };
+}
+
+function drawMatrixRadarCirclesOnMap(autoSwitchTab = true) {
+  if (!map) return;
+  clearMatrixRadarFromMap(false);
+
+  const origin = getMatrixOriginPoint();
+  const baseR = getMatrixBaseRadiusMeters();
+  isMatrixRadarActive = true;
+
+  // 1. Origin Marker at Point A with glowing pulse
+  const elA = document.createElement('div');
+  elA.className = 'matrix-radar-origin-marker';
+  elA.innerHTML = `
+    <div class="matrix-origin-pulse"></div>
+    <div class="matrix-origin-pin">📍 A</div>
+    <div class="matrix-origin-label">${origin.name}</div>
+  `;
+  matrixOriginMarker = new mapboxgl.Marker({ element: elA, anchor: 'center' })
+    .setLngLat([origin.lng, origin.lat])
+    .addTo(map);
+
+  const bounds = new mapboxgl.LngLatBounds();
+  bounds.extend([origin.lng, origin.lat]);
+
+  // 2. Draw 5 Concentric Circles (from 5 down to 1)
+  for (let i = 5; i >= 1; i--) {
+    const meta = MATRIX_RINGS[i - 1];
+    const ringRadius = baseR + (i - 1) * 100;
+    const circleGeoJson = generateGeoJsonCircle(origin, ringRadius, 64);
+
+    circleGeoJson.geometry.coordinates[0].forEach(coord => bounds.extend(coord));
+
+    const sourceId = `matrix-radar-source-${i}`;
+    const fillLayerId = `matrix-radar-fill-${i}`;
+    const lineLayerId = `matrix-radar-line-${i}`;
+
+    map.addSource(sourceId, {
+      type: 'geojson',
+      data: circleGeoJson
+    });
+    matrixCircleSources.push(sourceId);
+
+    // Translucent filled area
+    map.addLayer({
+      id: fillLayerId,
+      type: 'fill',
+      source: sourceId,
+      paint: {
+        'fill-color': meta.color,
+        'fill-opacity': 0.06 + (6 - i) * 0.015
+      }
+    });
+    matrixCircleLayers.push(fillLayerId);
+
+    // Outline stroke
+    map.addLayer({
+      id: lineLayerId,
+      type: 'line',
+      source: sourceId,
+      layout: {
+        'line-cap': 'round',
+        'line-join': 'round'
+      },
+      paint: {
+        'line-color': meta.color,
+        'line-width': (i === 1) ? 3 : 2.2,
+        'line-opacity': 0.85,
+        'line-dasharray': (i % 2 === 0) ? [3, 2] : [1]
+      }
+    });
+    matrixCircleLayers.push(lineLayerId);
+
+    // Radius edge label at North edge (i=16 is theta=pi/2 -> North)
+    const northCoord = circleGeoJson.geometry.coordinates[0][Math.floor(64 / 4)];
+    if (northCoord) {
+      const labelEl = document.createElement('div');
+      labelEl.className = 'matrix-circle-edge-label';
+      labelEl.style.borderColor = meta.color;
+      labelEl.style.color = meta.color;
+      labelEl.innerHTML = `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${meta.color};margin-right:4px;"></span>Circle ${i}: ${formatDistanceValue(ringRadius)}`;
+      
+      const labelMarker = new mapboxgl.Marker({ element: labelEl, anchor: 'bottom' })
+        .setLngLat(northCoord)
+        .addTo(map);
+      matrixCircleLabelMarkers.push(labelMarker);
+    }
+  }
+
+  // 3. Mark Pandals inside the 5 circles on the map
+  const maxRadarRadius = baseR + 400;
+  let totalInsideCount = 0;
+
+  pandals.forEach(p => {
+    if (!p.location) return;
+    const distM = calculateDistanceMeters(origin, p.location);
+    if (distM <= maxRadarRadius) {
+      totalInsideCount++;
+      // Determine which ring it belongs to
+      let ringIndex = 1;
+      for (let i = 1; i <= 5; i++) {
+        const rMin = (i === 1) ? 0 : baseR + (i - 2) * 100;
+        const rMax = baseR + (i - 1) * 100;
+        if (distM > rMin && distM <= rMax) {
+          ringIndex = i;
+          break;
+        }
+      }
+      const ringMeta = MATRIX_RINGS[ringIndex - 1];
+
+      const pEl = document.createElement('div');
+      pEl.className = 'matrix-pandal-radar-marker';
+      pEl.innerHTML = `
+        <div class="matrix-radar-badge" style="background:${ringMeta.color}; border: 2.5px solid #fff; box-shadow: 0 4px 12px ${ringMeta.color}99;" title="${p.name} (Circle ${ringIndex}: ${formatDistanceValue(distM)})">
+          <span>${ringIndex}</span>
+        </div>
+      `;
+
+      const popupHtml = `
+        <div style="font-family: inherit; min-width: 200px; padding: 4px;">
+          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom: 6px;">
+            <span style="background:${ringMeta.bg}; color:${ringMeta.color}; border: 1px solid ${ringMeta.border}; border-radius: 999px; padding: 2px 8px; font-size: 10px; font-weight: 800;">
+              ${ringMeta.icon} Circle ${ringIndex}
+            </span>
+            <span style="font-size: 11px; font-weight: 800; color: #0284c7;">
+              ${formatDistanceValue(distM)} from A
+            </span>
+          </div>
+          <h4 style="margin: 0 0 2px 0; font-size: 13.5px; font-weight: 800; color: #0f172a;">${p.name}</h4>
+          <p style="margin: 0 0 8px 0; font-size: 11px; color: #64748b;">${p.zone} • ${p.crowd || 'Moderate'} Crowd</p>
+          <div style="display:flex; gap: 6px;">
+            <button onclick="navigateFromMatrixToPandal('${p.id}')" style="flex:1; background:linear-gradient(135deg, #b91c1c, #d97706); color:#fff; border:none; border-radius:8px; padding:6px 8px; font-size:11px; font-weight:800; cursor:pointer;">
+              🚗 Route from A
+            </button>
+            <button onclick="openPandalDetailById('${p.id}')" style="background:#f1f5f9; color:#0f172a; border:1px solid #cbd5e1; border-radius:8px; padding:6px 8px; font-size:11px; font-weight:700; cursor:pointer;">
+              Details
+            </button>
+          </div>
+        </div>
+      `;
+
+      const popup = new mapboxgl.Popup({ offset: 16 }).setHTML(popupHtml);
+      const marker = new mapboxgl.Marker({ element: pEl, anchor: 'center' })
+        .setLngLat([p.location.lng, p.location.lat])
+        .setPopup(popup)
+        .addTo(map);
+
+      matrixPandalMarkers.push(marker);
+    }
+  });
+
+  // 4. Update Floating Banner on Map
+  const banner = document.getElementById('matrix-radar-map-banner');
+  const bannerTitle = document.getElementById('radar-banner-title');
+  const bannerSub = document.getElementById('radar-banner-sub');
+  const clearBtn = document.getElementById('btn-matrix-clear-map');
+
+  if (banner) {
+    banner.style.display = 'flex';
+    if (bannerTitle) bannerTitle.textContent = `🎯 5 Concentric Rings (${totalInsideCount} Pandals Inside)`;
+    if (bannerSub) bannerSub.textContent = `Rings: ${formatDistanceValue(baseR)} to ${formatDistanceValue(maxRadarRadius)} from ${origin.name}`;
+  }
+  if (clearBtn) clearBtn.style.display = 'inline-flex';
+
+  if (autoSwitchTab) {
+    switchTab('map');
+    try {
+      map.fitBounds(bounds, {
+        padding: { top: 80, bottom: 80, left: 60, right: 60 },
+        duration: 1000,
+        maxZoom: 16.5
+      });
+    } catch (e) {}
+    showToast(`🎯 Marked 5 distance circles! Found ${totalInsideCount} pandals within ${formatDistanceValue(maxRadarRadius)}`);
+  }
+}
+
+function clearMatrixRadarFromMap(notify = false) {
+  if (map) {
+    matrixCircleLayers.forEach(layerId => {
+      try {
+        if (map.getLayer(layerId)) map.removeLayer(layerId);
+      } catch (e) {}
+    });
+    matrixCircleSources.forEach(sourceId => {
+      try {
+        if (map.getSource(sourceId)) map.removeSource(sourceId);
+      } catch (e) {}
+    });
+  }
+  matrixCircleLayers = [];
+  matrixCircleSources = [];
+
+  if (matrixOriginMarker) {
+    matrixOriginMarker.remove();
+    matrixOriginMarker = null;
+  }
+
+  matrixCircleLabelMarkers.forEach(m => m.remove());
+  matrixCircleLabelMarkers = [];
+
+  matrixPandalMarkers.forEach(m => m.remove());
+  matrixPandalMarkers = [];
+
+  isMatrixRadarActive = false;
+
+  const banner = document.getElementById('matrix-radar-map-banner');
+  if (banner) banner.style.display = 'none';
+
+  const clearBtn = document.getElementById('btn-matrix-clear-map');
+  if (clearBtn) clearBtn.style.display = 'none';
+
+  if (notify) {
+    showToast('Radar circles cleared from map');
+  }
+}
+
+function zoomToMatrixRing(ringNum) {
+  if (!map) return;
+  const origin = getMatrixOriginPoint();
+  const baseMeters = getMatrixBaseRadiusMeters();
+  const ringRadius = baseMeters + (ringNum - 1) * 100;
+  
+  if (!isMatrixRadarActive) {
+    drawMatrixRadarCirclesOnMap(false);
+  }
+  switchTab('map');
+
+  const circleGeoJson = generateGeoJsonCircle(origin, ringRadius, 40);
+  const bounds = new mapboxgl.LngLatBounds();
+  circleGeoJson.geometry.coordinates[0].forEach(c => bounds.extend(c));
+
+  try {
+    map.fitBounds(bounds, {
+      padding: { top: 70, bottom: 70, left: 50, right: 50 },
+      duration: 1000
+    });
+  } catch (e) {}
+  showToast(`🔍 Focused on Circle ${ringNum} (${formatDistanceValue(ringRadius)})`);
+}
+
+function focusPandalFromMatrix(pandalId) {
+  const pandal = pandals.find(p => p.id === pandalId);
+  if (!pandal || !pandal.location) return;
+
+  if (!isMatrixRadarActive) {
+    drawMatrixRadarCirclesOnMap(false);
+  }
+  switchTab('map');
+
+  map.flyTo({
+    center: [pandal.location.lng, pandal.location.lat],
+    zoom: 16.5,
+    speed: 1.4,
+    curve: 1.2
+  });
+
+  openPandalDetail(pandal);
+  showToast(`📍 Focused on ${pandal.name}`);
+}
+
+function navigateFromMatrixToPandal(pandalId) {
+  const pandal = pandals.find(p => p.id === pandalId);
+  if (!pandal || !pandal.location) return;
+
+  routeLocations.B = {
+    id: pandal.id,
+    name: pandal.name,
+    lat: pandal.location.lat,
+    lng: pandal.location.lng,
+    icon: '🪔'
+  };
+  updateLocationDisplay('B');
+  switchFinderSubtab('nav');
+  calculateAndDisplayMultiRoutes();
+  showToast(`🚗 Routing from Point A to ${pandal.name}`);
+}
+
 function renderShortestFinder() {
   const container = document.getElementById('finder-results-container');
   if (!container) return;
 
-  const sorted = pandals.map(p => ({
-    ...p,
-    distanceKm: calculateDistanceKm(userLocation, p.location)
-  })).sort((a, b) => a.distanceKm - b.distanceKm);
+  const origin = getMatrixOriginPoint();
+  updateMatrixOriginDisplay();
 
-  container.innerHTML = sorted.map((p, idx) => `
-    <div style="background: #fff; border-radius: 16px; border: 1.5px solid var(--border-light); padding: 12px 16px; margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between; gap: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.03);">
-      <div style="display: flex; align-items: center; gap: 12px;">
-        <div style="width: 32px; height: 32px; border-radius: 10px; background: ${idx < 3 ? '#b91c1c' : '#f1f5f9'}; color: ${idx < 3 ? '#fff' : '#64748b'}; font-weight: 800; font-size: 13px; display: flex; align-items: center; justify-content: center;">
-          ${idx + 1}
+  const baseMeters = getMatrixBaseRadiusMeters();
+  const maxRadarMeters = baseMeters + 400; // 5th circle
+
+  // 1. Calculate distances from origin for all pandals
+  const pandalsWithDistance = pandals.map(p => {
+    const distM = calculateDistanceMeters(origin, p.location);
+    let ring = 0; // 0 = beyond 5th circle
+    if (distM <= baseMeters) {
+      ring = 1;
+    } else if (distM <= baseMeters + 100) {
+      ring = 2;
+    } else if (distM <= baseMeters + 200) {
+      ring = 3;
+    } else if (distM <= baseMeters + 300) {
+      ring = 4;
+    } else if (distM <= baseMeters + 400) {
+      ring = 5;
+    }
+    return {
+      ...p,
+      distanceMeters: distM,
+      distanceKm: +(distM / 1000).toFixed(2),
+      ring: ring
+    };
+  }).sort((a, b) => a.distanceMeters - b.distanceMeters);
+
+  // Group by ring
+  const ringGroups = {
+    1: pandalsWithDistance.filter(p => p.ring === 1),
+    2: pandalsWithDistance.filter(p => p.ring === 2),
+    3: pandalsWithDistance.filter(p => p.ring === 3),
+    4: pandalsWithDistance.filter(p => p.ring === 4),
+    5: pandalsWithDistance.filter(p => p.ring === 5),
+    beyond: pandalsWithDistance.filter(p => p.ring === 0)
+  };
+
+  const totalInsideCircles = pandalsWithDistance.filter(p => p.ring > 0).length;
+
+  // 2. Render 5 Concentric Rings Indicator Grid
+  const indicatorGrid = document.getElementById('matrix-rings-indicator');
+  if (indicatorGrid) {
+    indicatorGrid.innerHTML = MATRIX_RINGS.map((meta, idx) => {
+      const ringNum = idx + 1;
+      const rMin = (ringNum === 1) ? 0 : baseMeters + (ringNum - 2) * 100;
+      const rMax = baseMeters + (ringNum - 1) * 100;
+      const count = ringGroups[ringNum].length;
+      return `
+        <div class="matrix-ring-indicator-card" style="background:${meta.bg}; border-color:${meta.border}; cursor:pointer;" onclick="setMatrixActiveRingFilter('${ringNum}')" title="Filter to ${meta.label}">
+          <div class="matrix-ring-indicator-badge" style="color:${meta.color};">
+            <span>${meta.icon}</span> ${meta.label}
+          </div>
+          <div class="matrix-ring-indicator-radius">
+            ${ringNum === 1 ? `≤ ${formatDistanceValue(rMax)}` : `${formatDistanceValue(rMin)} - ${formatDistanceValue(rMax)}`}
+          </div>
+          <div class="matrix-ring-indicator-tag" style="color:${meta.color}; font-weight:700;">
+            ${count} pandal${count === 1 ? '' : 's'}
+          </div>
         </div>
-        <div>
-          <h4 style="font-size: 14px; font-weight: 800; color: #0f172a; margin-bottom: 2px;">${p.name}</h4>
-          <p style="font-size: 11px; color: #64748b;">${p.zone} • ~${Math.round(p.distanceKm * 3.5)} mins drive</p>
-        </div>
-      </div>
-      <div style="text-align: right; display: flex; align-items: center; gap: 8px;">
-        <div>
-          <span style="font-size: 14px; font-weight: 900; color: #0284c7; display: block;">${p.distanceKm} km</span>
-          <span style="font-size: 10px; color: #64748b; font-weight: 600;">Shortest Path</span>
-        </div>
-        <button onclick="startNavigationToById('${p.id}')" style="background: linear-gradient(135deg, #b91c1c, #d97706); color: #fff; border: none; border-radius: 10px; padding: 6px 12px; font-size: 11px; font-weight: 800; cursor: pointer;">
-          Go 🚗
+      `;
+    }).join('');
+  }
+
+  // 3. Render Filter Tabs
+  const filtersWrap = document.getElementById('matrix-ring-filters-wrap');
+  if (filtersWrap) {
+    const activeFilter = matrixDistanceConfig.activeViewRing || 'all';
+    filtersWrap.innerHTML = `
+      <button type="button" class="matrix-filter-pill ${activeFilter === 'all' ? 'active' : ''}" onclick="setMatrixActiveRingFilter('all')">
+        <span>🎯 All 5 Rings</span>
+        <span class="pill-count">${totalInsideCircles}</span>
+      </button>
+      ${MATRIX_RINGS.map(meta => `
+        <button type="button" class="matrix-filter-pill ${activeFilter === String(meta.index) ? 'active' : ''}" onclick="setMatrixActiveRingFilter('${meta.index}')">
+          <span>${meta.icon} ${meta.label}</span>
+          <span class="pill-count">${ringGroups[meta.index].length}</span>
         </button>
-        ${(currentAuth && currentAuth.role === 'admin') ? `
-          <button onclick="event.stopPropagation(); deletePandal('${p.id}')" title="Admin Delete Pandal" style="background:#fee2e2; color:#dc2626; border:1px solid #fca5a5; border-radius:10px; padding:6px 10px; font-size:12px; font-weight:800; cursor:pointer;">
-            🗑️
-          </button>
-        ` : ''}
+      `).join('')}
+      <button type="button" class="matrix-filter-pill ${activeFilter === 'beyond' ? 'active' : ''}" onclick="setMatrixActiveRingFilter('beyond')">
+        <span>⚪ Beyond 5th</span>
+        <span class="pill-count">${ringGroups.beyond.length}</span>
+      </button>
+    `;
+  }
+
+  // 4. Render Groups / Cards
+  const activeFilter = matrixDistanceConfig.activeViewRing || 'all';
+  let html = '';
+
+  // Summary banner
+  html += `
+    <div style="background: linear-gradient(135deg, #f8fafc, #f1f5f9); border: 1.5px solid #e2e8f0; border-radius: 14px; padding: 10px 14px; margin-bottom: 14px; display: flex; align-items: center; justify-content: space-between; gap: 10px;">
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <span style="font-size: 16px;">📍</span>
+        <div>
+          <span style="font-size: 12px; font-weight: 800; color: #0f172a; display: block;">Radar Center: ${origin.name}</span>
+          <span style="font-size: 10.5px; color: #64748b;">${totalInsideCircles} pandals found across 5 concentric circles (0 to ${formatDistanceValue(maxRadarMeters)})</span>
+        </div>
       </div>
+      <button type="button" onclick="drawMatrixRadarCirclesOnMap(true)" style="background: #0f172a; color: #fff; border: none; border-radius: 8px; padding: 6px 12px; font-size: 11px; font-weight: 700; cursor: pointer; white-space: nowrap;">
+        🗺️ Map View
+      </button>
     </div>
-  `).join('');
+  `;
+
+  // Render individual rings
+  const ringsToRender = (activeFilter === 'all') 
+    ? [1, 2, 3, 4, 5]
+    : (activeFilter === 'beyond' ? [] : [parseInt(activeFilter, 10)]);
+
+  ringsToRender.forEach(ringNum => {
+    const meta = MATRIX_RINGS[ringNum - 1];
+    const rMin = (ringNum === 1) ? 0 : baseMeters + (ringNum - 2) * 100;
+    const rMax = baseMeters + (ringNum - 1) * 100;
+    const list = ringGroups[ringNum];
+
+    html += `
+      <div class="matrix-ring-group" id="matrix-ring-card-${ringNum}">
+        <div class="matrix-ring-header" style="background: linear-gradient(135deg, ${meta.bg}, #ffffff);">
+          <div class="matrix-ring-title-row">
+            <span class="matrix-ring-header-icon">${meta.icon}</span>
+            <div>
+              <span class="matrix-ring-header-title">${meta.label}</span>
+              <span class="matrix-ring-header-sub">(${ringNum === 1 ? `0m – ${formatDistanceValue(rMax)}` : `${formatDistanceValue(rMin)} – ${formatDistanceValue(rMax)}`})</span>
+            </div>
+          </div>
+          <div style="display: flex; align-items: center; gap: 6px;">
+            <span class="matrix-ring-header-count" style="background:${meta.bg}; color:${meta.color}; border: 1px solid ${meta.border};">
+              ${list.length} ${list.length === 1 ? 'Pandal' : 'Pandals'}
+            </span>
+            <button type="button" onclick="zoomToMatrixRing(${ringNum})" title="Focus this ring on map" style="background: transparent; border: 1px solid ${meta.border}; color: ${meta.color}; border-radius: 8px; padding: 4px 8px; font-size: 10px; font-weight: 800; cursor: pointer;">
+              🗺️ Zoom Ring
+            </button>
+          </div>
+        </div>
+        <div class="matrix-ring-list">
+          ${list.length === 0 ? `
+            <div class="matrix-empty-ring">
+              No pandals found within this ring (${formatDistanceValue(rMin)} to ${formatDistanceValue(rMax)})
+            </div>
+          ` : list.map((p, idx) => `
+            <div class="matrix-pandal-card">
+              <div class="matrix-pandal-left">
+                <div class="matrix-pandal-rank" style="background:${meta.color};">
+                  ${idx + 1}
+                </div>
+                <div class="matrix-pandal-info">
+                  <h4 class="matrix-pandal-name">${p.name}</h4>
+                  <p class="matrix-pandal-meta">
+                    ${p.zone} • ${p.crowd || 'Moderate'} Crowd • ★ ${p.rating || 4.5}
+                  </p>
+                </div>
+              </div>
+              <div class="matrix-pandal-right">
+                <div class="matrix-dist-box">
+                  <span class="matrix-dist-num">${formatDistanceValue(p.distanceMeters)}</span>
+                  <span class="matrix-dist-time">~${Math.max(1, Math.round(p.distanceKm * 3.5))}m drive</span>
+                </div>
+                <button type="button" class="matrix-btn-pin" onclick="focusPandalFromMatrix('${p.id}')" title="Pinpoint on Map">
+                  🗺️ Pin
+                </button>
+                <button type="button" class="matrix-btn-go" onclick="navigateFromMatrixToPandal('${p.id}')" title="Navigate from Location A">
+                  Go 🚗
+                </button>
+                ${(currentAuth && currentAuth.role === 'admin') ? `
+                  <button type="button" class="matrix-btn-delete" onclick="event.stopPropagation(); deletePandal('${p.id}')" title="Admin Delete">
+                    🗑️
+                  </button>
+                ` : ''}
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `;
+  });
+
+  // Render beyond 5th circle
+  if (activeFilter === 'all' || activeFilter === 'beyond') {
+    const beyondList = ringGroups.beyond;
+    html += `
+      <div class="matrix-ring-group" style="border-color: #e2e8f0;">
+        <div class="matrix-ring-header" style="background: #f8fafc;">
+          <div class="matrix-ring-title-row">
+            <span class="matrix-ring-header-icon">⚪</span>
+            <div>
+              <span class="matrix-ring-header-title">Other Pandals Beyond 5 Circles</span>
+              <span class="matrix-ring-header-sub">(&gt; ${formatDistanceValue(maxRadarMeters)})</span>
+            </div>
+          </div>
+          <span class="matrix-ring-header-count" style="background: #e2e8f0; color: #475569;">
+            ${beyondList.length} Pandals
+          </span>
+        </div>
+        <div class="matrix-ring-list">
+          ${beyondList.length === 0 ? `
+            <div class="matrix-empty-ring">All pandals are within the 5 distance circles!</div>
+          ` : beyondList.map((p, idx) => `
+            <div class="matrix-pandal-card">
+              <div class="matrix-pandal-left">
+                <div class="matrix-pandal-rank" style="background: #64748b;">
+                  ${idx + 1}
+                </div>
+                <div class="matrix-pandal-info">
+                  <h4 class="matrix-pandal-name">${p.name}</h4>
+                  <p class="matrix-pandal-meta">${p.zone} • ~${Math.round(p.distanceKm * 3.5)}m drive</p>
+                </div>
+              </div>
+              <div class="matrix-pandal-right">
+                <div class="matrix-dist-box">
+                  <span class="matrix-dist-num" style="color: #64748b;">${formatDistanceValue(p.distanceMeters)}</span>
+                  <span class="matrix-dist-time">Beyond Ring 5</span>
+                </div>
+                <button type="button" class="matrix-btn-pin" onclick="focusPandalFromMatrix('${p.id}')" title="Pinpoint on Map">
+                  🗺️ Pin
+                </button>
+                <button type="button" class="matrix-btn-go" onclick="navigateFromMatrixToPandal('${p.id}')">
+                  Go 🚗
+                </button>
+                ${(currentAuth && currentAuth.role === 'admin') ? `
+                  <button type="button" class="matrix-btn-delete" onclick="event.stopPropagation(); deletePandal('${p.id}')">
+                    🗑️
+                  </button>
+                ` : ''}
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `;
+  }
+
+  container.innerHTML = html;
 }
 
 function renderItineraryList() {
@@ -8109,6 +8801,9 @@ function updateLocationDisplay(which) {
     if (iconEl) iconEl.textContent = loc.icon || (which === 'A' ? '📍' : '🎯');
     displayEl.classList.toggle('loc-selected', !!(loc.name));
   }
+  if (which === 'A' && typeof updateMatrixOriginDisplay === 'function') {
+    updateMatrixOriginDisplay();
+  }
 }
 
 // --- GPS Quick Set ---
@@ -8437,6 +9132,7 @@ function switchFinderSubtab(tab) {
     if (matrixSection) matrixSection.style.display = 'block';
     if (btnNav) btnNav.classList.remove('active');
     if (btnMatrix) btnMatrix.classList.add('active');
+    if (typeof updateMatrixOriginDisplay === 'function') updateMatrixOriginDisplay();
     renderShortestFinder();
   }
 }

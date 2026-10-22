@@ -436,6 +436,25 @@
           </div>
         </div>
 
+        <!-- Matrix 5-Distance Concentric Circles Map Banner -->
+        <div id="matrix-radar-map-banner" class="matrix-radar-banner" style="display:none;">
+          <div class="radar-banner-info">
+            <span class="radar-pulse-dot"></span>
+            <div>
+              <strong id="radar-banner-title">🎯 5 Concentric Radar Circles</strong>
+              <span id="radar-banner-sub">500m to 900m from Location A</span>
+            </div>
+          </div>
+          <div class="radar-banner-actions">
+            <button type="button" class="btn-radar-pill" onclick="switchTab('finder'); switchFinderSubtab('matrix');" title="Open Nearest Pandals Matrix">
+              📋 Pandals Matrix
+            </button>
+            <button type="button" class="btn-radar-close" onclick="clearMatrixRadarFromMap(true)" title="Remove circles from map">
+              ✕ Clear
+            </button>
+          </div>
+        </div>
+
         <!-- On-Map Road Traffic Color Legend -->
         <div id="map-traffic-legend" class="map-traffic-legend" style="display:none;">
           <div class="legend-header">
@@ -688,8 +707,94 @@
             </div>
           </div>
 
-          <!-- Sub-Panel 2: Nearest Pandals Matrix -->
+          <!-- Sub-Panel 2: Nearest Pandals Matrix with Distance Rings -->
           <div id="finder-matrix-section" class="finder-panel" style="display:none;">
+            <!-- Origin Location A & Distance Configuration Card -->
+            <div class="matrix-radar-config-card">
+              <!-- Point A Origin Header -->
+              <div class="matrix-config-group">
+                <div class="matrix-group-label">
+                  <span class="route-dot dot-origin"></span>
+                  <strong>Origin Radar Center (Location A)</strong>
+                </div>
+                <div class="loc-picker-display" id="matrix-loc-a-display" onclick="openLocationPicker('A')" title="Change Origin Point A">
+                  <span class="loc-picker-icon" id="matrix-loc-a-icon">📍</span>
+                  <span class="loc-picker-text" id="matrix-loc-a-text">My Current GPS Location</span>
+                  <span class="loc-picker-chevron">›</span>
+                </div>
+                <div class="loc-action-row">
+                  <button type="button" class="loc-action-btn loc-gps-btn" onclick="setLocationGPS('A'); onMatrixOriginChanged();" title="Use Live GPS for Point A">
+                    📍 My GPS
+                  </button>
+                  <button type="button" class="loc-action-btn loc-map-btn" id="matrix-loc-a-map-btn" onclick="startMapPickerMode('A')" title="Tap on Map to Mark Location A">
+                    🗺️ Mark on Map
+                  </button>
+                  <button type="button" class="loc-action-btn loc-search-btn" onclick="openLocationPicker('A')" title="Search / Choose Location A">
+                    🔍 Search / Choose
+                  </button>
+                  <button type="button" class="loc-action-btn loc-pandal-btn" onclick="openPandalPickerForRoute('A')" title="Pick a Pandal as Point A">
+                    🪔 Pandals
+                  </button>
+                </div>
+              </div>
+
+              <!-- Distance Input Section -->
+              <div class="matrix-distance-input-section">
+                <div class="matrix-dist-header">
+                  <div class="matrix-dist-title-box">
+                    <span class="matrix-dist-icon">🎯</span>
+                    <div>
+                      <h4 class="matrix-dist-heading">Base Distance (Circle 1 Radius)</h4>
+                      <p class="matrix-dist-sub">Sets Circle 1. Next 4 circles expand outward in +100m rings up to 5 circles</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="matrix-input-row">
+                  <div class="matrix-input-field-wrap">
+                    <input type="number" id="matrix-base-dist-input" class="matrix-dist-input" value="500" min="50" max="50000" step="50" oninput="onMatrixDistanceInputChange()" onchange="onMatrixDistanceInputChange()" placeholder="500">
+                    <span class="matrix-input-unit-badge" id="matrix-input-unit-label">meters</span>
+                  </div>
+                  <div class="matrix-unit-toggles">
+                    <button type="button" class="matrix-unit-btn active" id="matrix-unit-m" onclick="setMatrixDistanceUnit('m')">Meters (m)</button>
+                    <button type="button" class="matrix-unit-btn" id="matrix-unit-km" onclick="setMatrixDistanceUnit('km')">Kilometers (km)</button>
+                  </div>
+                </div>
+
+                <!-- Distance Presets -->
+                <div class="matrix-presets-row">
+                  <span class="matrix-presets-label">⚡ Quick Presets:</span>
+                  <div class="matrix-presets-chips">
+                    <button type="button" class="matrix-preset-chip" onclick="applyMatrixPreset(300, 'm')">300m</button>
+                    <button type="button" class="matrix-preset-chip active" onclick="applyMatrixPreset(500, 'm')">500m</button>
+                    <button type="button" class="matrix-preset-chip" onclick="applyMatrixPreset(800, 'm')">800m</button>
+                    <button type="button" class="matrix-preset-chip" onclick="applyMatrixPreset(1, 'km')">1 km</button>
+                    <button type="button" class="matrix-preset-chip" onclick="applyMatrixPreset(2, 'km')">2 km</button>
+                    <button type="button" class="matrix-preset-chip" onclick="applyMatrixPreset(3, 'km')">3 km</button>
+                  </div>
+                </div>
+
+                <!-- Interactive 5 Concentric Rings Preview Grid -->
+                <div class="matrix-rings-indicator-grid" id="matrix-rings-indicator">
+                  <!-- Dynamically populated in JS -->
+                </div>
+
+                <!-- Action CTAs -->
+                <div class="matrix-cta-row">
+                  <button type="button" class="btn-festive btn-mark-circles" onclick="drawMatrixRadarCirclesOnMap(true)" title="Draw 5 concentric circles on the map and view pandals">
+                    <span>🗺️</span> Mark 5 Circles on Map & Explore
+                  </button>
+                  <button type="button" class="btn-secondary btn-clear-circles" id="btn-matrix-clear-map" onclick="clearMatrixRadarFromMap(true)" style="display:none;" title="Remove radar circles from map">
+                    ✕ Clear Map Circles
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Filter Tabs across Circles -->
+            <div id="matrix-ring-filters-wrap" class="matrix-filters-wrap"></div>
+
+            <!-- List of Pandals Grouped by Circles -->
             <div id="finder-results-container"></div>
           </div>
         </section>
