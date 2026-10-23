@@ -25,7 +25,143 @@
     <link href="https://api.mapbox.com/mapbox-gl-js/v3.4.0/mapbox-gl.css" rel="stylesheet" />
 
     <!-- Custom Festive Stylesheet -->
-    <link rel="stylesheet" href="./styles.css?v=11.0" />
+    <link rel="stylesheet" href="./styles.css?v=17.0" />
+
+    <!-- Dedicated Styles for Authentic Bengal Dhak Player -->
+    <style>
+      @keyframes pulse-dot {
+        0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.7); }
+        70% { transform: scale(1.08); box-shadow: 0 0 0 8px rgba(220, 38, 38, 0); }
+        100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(220, 38, 38, 0); }
+      }
+      @keyframes dhak-bar-anim {
+        0%, 100% { height: 4px; }
+        50% { height: 18px; }
+      }
+      .dhak-player-container {
+        background: linear-gradient(135deg, #fff7ed, #fef2f2) !important;
+        border: 1.5px solid #fca5a5 !important;
+        border-radius: 16px !important;
+        padding: 14px !important;
+        margin-bottom: 16px !important;
+        box-shadow: 0 4px 12px rgba(185, 28, 28, 0.08) !important;
+      }
+      .dhak-player-top {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: space-between !important;
+        gap: 10px !important;
+      }
+      .dhak-player-info {
+        display: flex !important;
+        align-items: center !important;
+        gap: 10px !important;
+      }
+      .dhak-icon-badge {
+        width: 42px !important;
+        height: 42px !important;
+        border-radius: 12px !important;
+        background: linear-gradient(135deg, #b91c1c, #d97706) !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        font-size: 22px !important;
+        color: #ffffff !important;
+        box-shadow: 0 2px 8px rgba(185, 28, 28, 0.25) !important;
+        flex-shrink: 0 !important;
+      }
+      .dhak-icon-badge.playing {
+        animation: pulse-dot 1.2s infinite !important;
+      }
+      .dhak-visualizer-bars {
+        display: flex !important;
+        align-items: flex-end !important;
+        gap: 2.5px !important;
+        height: 20px !important;
+        margin-top: 4px !important;
+      }
+      .dhak-bar {
+        width: 3.5px !important;
+        height: 4px !important;
+        background: #dc2626 !important;
+        border-radius: 3px !important;
+        transition: height 0.2s ease !important;
+      }
+      .dhak-visualizer-bars.active .dhak-bar:nth-child(1) { animation: dhak-bar-anim 0.6s infinite ease-in-out !important; }
+      .dhak-visualizer-bars.active .dhak-bar:nth-child(2) { animation: dhak-bar-anim 0.45s infinite ease-in-out 0.15s !important; }
+      .dhak-visualizer-bars.active .dhak-bar:nth-child(3) { animation: dhak-bar-anim 0.7s infinite ease-in-out 0.1s !important; }
+      .dhak-visualizer-bars.active .dhak-bar:nth-child(4) { animation: dhak-bar-anim 0.5s infinite ease-in-out 0.25s !important; }
+      .dhak-track-selector {
+        display: flex !important;
+        gap: 8px !important;
+        margin-top: 12px !important;
+        padding-top: 10px !important;
+        border-top: 1px dashed #fecaca !important;
+      }
+      .dhak-track-pill {
+        flex: 1 !important;
+        background: #ffffff !important;
+        border: 1.5px solid #fecaca !important;
+        color: #991b1b !important;
+        border-radius: 10px !important;
+        padding: 7px 10px !important;
+        font-size: 11px !important;
+        font-weight: 700 !important;
+        cursor: pointer !important;
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        transition: all 0.2s ease !important;
+        font-family: inherit !important;
+        text-align: left !important;
+      }
+      .dhak-track-pill:hover {
+        background: #fee2e2 !important;
+        border-color: #f87171 !important;
+      }
+      .dhak-track-pill.active-track {
+        background: linear-gradient(135deg, #b91c1c, #991b1b) !important;
+        border-color: #7f1d1d !important;
+        color: #ffffff !important;
+        box-shadow: 0 2px 6px rgba(185, 28, 28, 0.25) !important;
+      }
+      .dhak-track-pill .track-subtitle {
+        font-size: 9.5px !important;
+        opacity: 0.85 !important;
+        font-weight: 500 !important;
+        margin-top: 2px !important;
+      }
+      .dhak-controls-row {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: space-between !important;
+        gap: 10px !important;
+        margin-top: 10px !important;
+      }
+      .dhak-vol-container {
+        display: flex !important;
+        align-items: center !important;
+        gap: 6px !important;
+        flex: 1 !important;
+      }
+      .dhak-vol-label {
+        font-size: 11.5px !important;
+        color: #7f1d1d !important;
+        font-weight: 700 !important;
+      }
+      .dhak-vol-slider {
+        flex: 1 !important;
+        max-width: 140px !important;
+        height: 6px !important;
+        border-radius: 5px !important;
+        accent-color: #dc2626 !important;
+        cursor: pointer !important;
+      }
+      .btn-festive.btn-playing {
+        background: linear-gradient(135deg, #dc2626, #b91c1c) !important;
+        box-shadow: 0 0 10px rgba(220, 38, 38, 0.5) !important;
+      }
+    </style>
   </head>
   <body data-active-tab="map">
     <div id="app-container">
@@ -2046,19 +2182,51 @@
             <button class="close-btn" style="color:#fff;" onclick="closePanjikaModal()">✕</button>
           </div>
           <div class="modal-body" style="padding: 18px;">
-            <!-- Audio Player Card -->
-            <div style="background: #fef2f2; border: 1.5px solid #fecaca; border-radius: 14px; padding: 14px; margin-bottom: 14px; display: flex; align-items: center; justify-content: space-between;">
-              <div style="display: flex; align-items: center; gap: 10px;">
-                <span style="font-size: 30px; animation: bounce 1s infinite;">🥁</span>
-                <div>
-                  <h4 style="margin: 0; font-size: 13.5px; font-weight: 800; color: #991b1b;">Traditional Bengal Dhak Beats</h4>
-                  <p style="margin: 2px 0 0 0; font-size: 11px; color: #7f1d1d;" id="panjika-dhak-label">Status: Muted</p>
+            <!-- Audio Player Card with Real Dhak Audio -->
+            <div class="dhak-player-container" style="background: linear-gradient(135deg, #fff7ed, #fef2f2); border: 1.5px solid #fca5a5; border-radius: 16px; padding: 14px; margin-bottom: 16px; box-shadow: 0 4px 12px rgba(185, 28, 28, 0.08);">
+              <div class="dhak-player-top" style="display: flex; align-items: center; justify-content: space-between; gap: 10px;">
+                <div class="dhak-player-info" style="display: flex; align-items: center; gap: 10px;">
+                  <div class="dhak-icon-badge" id="panjika-dhak-icon-badge" style="width: 42px; height: 42px; border-radius: 12px; background: linear-gradient(135deg, #b91c1c, #d97706); display: flex; align-items: center; justify-content: center; font-size: 22px; color: #ffffff; box-shadow: 0 2px 8px rgba(185, 28, 28, 0.25); flex-shrink: 0;">🥁</div>
+                  <div>
+                    <h4 style="margin: 0; font-size: 13.5px; font-weight: 800; color: #991b1b;">Traditional Bengal Dhak Beats</h4>
+                    <p style="margin: 2px 0 0 0; font-size: 11px; color: #7f1d1d;" id="panjika-dhak-label">Status: Muted</p>
+                    <div class="dhak-visualizer-bars" id="dhak-visualizer-bars" title="Audio Equalizer" style="display: flex; align-items: flex-end; gap: 2.5px; height: 18px; margin-top: 4px;">
+                      <div class="dhak-bar" style="width: 3.5px; height: 4px; background: #dc2626; border-radius: 3px;"></div>
+                      <div class="dhak-bar" style="width: 3.5px; height: 4px; background: #dc2626; border-radius: 3px;"></div>
+                      <div class="dhak-bar" style="width: 3.5px; height: 4px; background: #dc2626; border-radius: 3px;"></div>
+                      <div class="dhak-bar" style="width: 3.5px; height: 4px; background: #dc2626; border-radius: 3px;"></div>
+                    </div>
+                  </div>
                 </div>
+                <button type="button" onclick="toggleFestiveSong()" id="btn-panjika-dhak-toggle" class="btn-festive" style="padding: 9px 16px; font-size: 12px; font-weight: 800; border-radius: 8px; border: none; cursor: pointer; background: linear-gradient(135deg, #b91c1c, #d97706); color: #fff; box-shadow: 0 2px 8px rgba(185, 28, 28, 0.3);">
+                  ▶ Play Dhak
+                </button>
               </div>
-              <button type="button" onclick="toggleFestiveSong()" id="btn-panjika-dhak-toggle" class="btn-festive" style="padding: 8px 14px; font-size: 12px;">
-                ▶ Play Dhak
-              </button>
+
+              <!-- Dhak Beats Track Selection (Beat 1 & Beat 2) -->
+              <div class="dhak-track-selector" style="display: flex; gap: 8px; margin-top: 12px; padding-top: 10px; border-top: 1px dashed #fecaca;">
+                <button type="button" class="dhak-track-pill active-track" id="btn-dhak-track-0" onclick="selectDhakTrack(0)" title="Switch to Track 1" style="flex: 1; border-radius: 10px; padding: 7px 10px; font-size: 11px; font-weight: 700; cursor: pointer; display: flex; flex-direction: column; align-items: flex-start; border: 1.5px solid #7f1d1d; background: linear-gradient(135deg, #b91c1c, #991b1b); color: #ffffff; box-shadow: 0 2px 6px rgba(185, 28, 28, 0.25); text-align: left;">
+                  <span style="font-weight: 800;">🥁 Beat 1: Sharadotsav</span>
+                  <span class="track-subtitle" style="font-size: 9.5px; opacity: 0.9; font-weight: 500; margin-top: 2px;">Classic Dhak & Kanshi</span>
+                </button>
+                <button type="button" class="dhak-track-pill" id="btn-dhak-track-1" onclick="selectDhakTrack(1)" title="Switch to Track 2" style="flex: 1; border-radius: 10px; padding: 7px 10px; font-size: 11px; font-weight: 700; cursor: pointer; display: flex; flex-direction: column; align-items: flex-start; border: 1px solid #fecaca; background: #ffffff; color: #991b1b; text-align: left;">
+                  <span style="font-weight: 800;">🥁 Beat 2: Traditional</span>
+                  <span class="track-subtitle" style="font-size: 9.5px; opacity: 0.85; font-weight: 500; margin-top: 2px;">Deep resonance rhythm</span>
+                </button>
+              </div>
+
+              <!-- Dhak Volume & Loop Controls -->
+              <div class="dhak-controls-row" style="display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 10px;">
+                <div class="dhak-vol-container" style="display: flex; align-items: center; gap: 8px; flex: 1;">
+                  <span class="dhak-vol-label" style="font-size: 11.5px; color: #7f1d1d; font-weight: 800;">🔊 Vol:</span>
+                  <input type="range" class="dhak-vol-slider" id="dhak-vol-slider" min="0" max="1" step="0.05" value="0.8" oninput="setDhakVolume(this.value)" title="Dhak beats volume" style="flex: 1; max-width: 140px; height: 6px; border-radius: 5px; accent-color: #dc2626; cursor: pointer;" />
+                </div>
+                <span style="font-size: 10.5px; color: #991b1b; font-weight: 700; background: #fee2e2; border: 1px solid #fecaca; padding: 3px 8px; border-radius: 6px;">🔁 Seamless Loop</span>
+              </div>
             </div>
+
+            <!-- Hidden Audio Element for Bengal Dhak Tracks -->
+            <audio id="dhak-audio-player" preload="auto" loop src="mythologychallengeryt-durga-puja-dhak-sound-125241.mp3"></audio>
 
             <!-- Puja Tithi Schedule -->
             <h4 style="font-size: 13px; font-weight: 800; color: #0f172a; margin-bottom: 10px;">Sharadotsav 2026 Tithi Calendar</h4>
@@ -2337,6 +2505,6 @@
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-storage-compat.js"></script>
 
     <!-- Pure Vanilla Application Logic -->
-    <script src="./app.js?v=16.0"></script>
+    <script src="./app.js?v=17.0"></script>
   </body>
 </html>

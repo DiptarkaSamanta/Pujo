@@ -6639,4 +6639,176 @@ body[data-active-tab="itinerary"] .matrix-radar-banner,
   font-size: 12px;
 }
 
+/* ==========================================================================
+   Authentic Bengal Dhak Beats Audio Player Styles & Keyframes
+   ========================================================================== */
+@keyframes pulse-dot {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.7);
+  }
+  70% {
+    transform: scale(1.08);
+    box-shadow: 0 0 0 8px rgba(220, 38, 38, 0);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(220, 38, 38, 0);
+  }
+}
+
+@keyframes dhak-bar-anim {
+  0%, 100% { height: 4px; }
+  50% { height: 18px; }
+}
+
+.dhak-player-container {
+  background: linear-gradient(135deg, #fff7ed, #fef2f2);
+  border: 1.5px solid #fca5a5;
+  border-radius: 16px;
+  padding: 14px;
+  margin-bottom: 16px;
+  box-shadow: 0 4px 12px rgba(185, 28, 28, 0.08);
+}
+
+.dhak-player-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.dhak-player-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.dhak-icon-badge {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #b91c1c, #d97706);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(185, 28, 28, 0.25);
+  flex-shrink: 0;
+}
+
+.dhak-icon-badge.playing {
+  animation: pulse-dot 1.2s infinite;
+}
+
+.dhak-visualizer-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 2.5px;
+  height: 20px;
+  margin-top: 4px;
+}
+
+.dhak-bar {
+  width: 3.5px;
+  height: 4px;
+  background: #dc2626;
+  border-radius: 3px;
+  transition: height 0.2s ease;
+}
+
+.dhak-visualizer-bars.active .dhak-bar:nth-child(1) {
+  animation: dhak-bar-anim 0.6s infinite ease-in-out;
+}
+.dhak-visualizer-bars.active .dhak-bar:nth-child(2) {
+  animation: dhak-bar-anim 0.45s infinite ease-in-out 0.15s;
+}
+.dhak-visualizer-bars.active .dhak-bar:nth-child(3) {
+  animation: dhak-bar-anim 0.7s infinite ease-in-out 0.1s;
+}
+.dhak-visualizer-bars.active .dhak-bar:nth-child(4) {
+  animation: dhak-bar-anim 0.5s infinite ease-in-out 0.25s;
+}
+
+.dhak-track-selector {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px dashed #fecaca;
+}
+
+.dhak-track-pill {
+  flex: 1;
+  background: #ffffff;
+  border: 1px solid #fecaca;
+  color: #991b1b;
+  border-radius: 10px;
+  padding: 6px 8px;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+
+.dhak-track-pill:hover {
+  background: #fee2e2;
+  border-color: #f87171;
+}
+
+.dhak-track-pill.active-track {
+  background: linear-gradient(135deg, #b91c1c, #991b1b);
+  border-color: #7f1d1d;
+  color: #ffffff;
+  box-shadow: 0 2px 6px rgba(185, 28, 28, 0.25);
+}
+
+.dhak-track-pill .track-subtitle {
+  font-size: 9.5px;
+  opacity: 0.85;
+  font-weight: 500;
+  margin-top: 1px;
+}
+
+.dhak-controls-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.dhak-vol-container {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+}
+
+.dhak-vol-label {
+  font-size: 11px;
+  color: #7f1d1d;
+  font-weight: 700;
+}
+
+.dhak-vol-slider {
+  flex: 1;
+  max-width: 130px;
+  height: 5px;
+  border-radius: 5px;
+  accent-color: #dc2626;
+  cursor: pointer;
+}
+
+.btn-festive.btn-playing {
+  background: linear-gradient(135deg, #dc2626, #b91c1c);
+  box-shadow: 0 0 10px rgba(220, 38, 38, 0.5);
+}
+
+
 

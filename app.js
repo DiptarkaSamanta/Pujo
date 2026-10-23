@@ -7254,118 +7254,135 @@ async function fetchKolkataWeather() {
 }
 
 // ----------------------------------------------------------------------------
-// 17. Authentic Web Audio API Bengali Dhak Beat Synthesizer
+// 17. Authentic Bengal Dhak Beat Audio Player (Real Dhak Sound Tracks)
 // ----------------------------------------------------------------------------
-let audioCtx = null;
-let isDhakPlaying = false;
-let dhakIntervalId = null;
-
-function initAudioContext() {
-  if (!audioCtx) {
-    const AudioContext = window.AudioContext || window.webkitAudioContext;
-    if (AudioContext) audioCtx = new AudioContext();
+const DHAK_TRACKS = [
+  {
+    id: 'dhak-track-1',
+    name: 'Beat 1: Sharadotsav Dhak & Kanshi',
+    file: 'mythologychallengeryt-durga-puja-dhak-sound-125241.mp3',
+    subtitle: 'Classic festive Durga Puja beat'
+  },
+  {
+    id: 'dhak-track-2',
+    name: 'Beat 2: Traditional Kathi Dhak Rhythm',
+    file: 'mythologychallengeryt-durga-puja-dhak-sound-9330.mp3',
+    subtitle: 'Deep resonance authentic beats'
   }
-  if (audioCtx && audioCtx.state === 'suspended') {
-    audioCtx.resume();
-  }
-}
-
-function playDhakHit(isBass = true, gainValue = 0.8) {
-  if (!audioCtx) return;
-  const now = audioCtx.currentTime;
-
-  const osc = audioCtx.createOscillator();
-  const gain = audioCtx.createGain();
-  osc.connect(gain);
-  gain.connect(audioCtx.destination);
-
-  if (isBass) {
-    // Deep Dhak skin boom
-    osc.type = 'triangle';
-    osc.frequency.setValueAtTime(140, now);
-    osc.frequency.exponentialRampToValueAtTime(45, now + 0.18);
-    gain.gain.setValueAtTime(gainValue * 1.2, now);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
-    osc.start(now);
-    osc.stop(now + 0.25);
-  } else {
-    // Sharp rim / kathi strike
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(480, now);
-    osc.frequency.exponentialRampToValueAtTime(180, now + 0.08);
-    gain.gain.setValueAtTime(gainValue * 0.7, now);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
-    osc.start(now);
-    osc.stop(now + 0.12);
-
-    // Noise snap
-    const bufferSize = Math.floor(audioCtx.sampleRate * 0.05);
-    const noiseBuffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
-    const output = noiseBuffer.getChannelData(0);
-    for (let i = 0; i < bufferSize; i++) {
-      output[i] = Math.random() * 2 - 1;
-    }
-    const noise = audioCtx.createBufferSource();
-    noise.buffer = noiseBuffer;
-    const noiseFilter = audioCtx.createBiquadFilter();
-    noiseFilter.type = 'highpass';
-    noiseFilter.frequency.value = 1800;
-    const noiseGain = audioCtx.createGain();
-    noiseGain.gain.setValueAtTime(gainValue * 0.45, now);
-    noiseGain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
-
-    noise.connect(noiseFilter);
-    noiseFilter.connect(noiseGain);
-    noiseGain.connect(audioCtx.destination);
-    noise.start(now);
-  }
-}
-
-const DHAK_PATTERN = [
-  { bass: true, delay: 0 },
-  { bass: false, delay: 180 },
-  { bass: false, delay: 320 },
-  { bass: true, delay: 480 },
-  { bass: true, delay: 680 },
-  { bass: false, delay: 840 },
-  { bass: false, delay: 960 },
-  { bass: true, delay: 1120 }
 ];
 
-function startDhakBeats() {
-  initAudioContext();
-  isDhakPlaying = true;
-  updateDhakUI(true);
+let currentDhakTrackIndex = 0;
+let isDhakPlaying = false;
+let dhakAudio = null;
 
-  const loopLength = 1300;
-  const playLoop = () => {
-    DHAK_PATTERN.forEach(item => {
-      setTimeout(() => {
-        if (isDhakPlaying) playDhakHit(item.bass, 0.75);
-      }, item.delay);
+function getDhakAudio() {
+  if (!dhakAudio) {
+    dhakAudio = document.getElementById('dhak-audio-player');
+    if (!dhakAudio) {
+      dhakAudio = new Audio();
+      dhakAudio.id = 'dhak-audio-player';
+      dhakAudio.loop = true;
+      dhakAudio.preload = 'auto';
+      document.body.appendChild(dhakAudio);
+    }
+    dhakAudio.src = DHAK_TRACKS[currentDhakTrackIndex].file;
+    dhakAudio.loop = true;
+    dhakAudio.volume = 0.8;
+
+    dhakAudio.addEventListener('play', () => {
+      isDhakPlaying = true;
+      updateDhakUI(true);
     });
-  };
 
-  playLoop();
-  dhakIntervalId = setInterval(playLoop, loopLength);
+    dhakAudio.addEventListener('pause', () => {
+      isDhakPlaying = false;
+      updateDhakUI(false);
+    });
+
+    dhakAudio.addEventListener('ended', () => {
+      if (isDhakPlaying) {
+        dhakAudio.currentTime = 0;
+        dhakAudio.play().catch(() => {});
+      }
+    });
+
+    dhakAudio.addEventListener('error', (e) => {
+      console.warn('Dhak MP3 playback error:', e);
+      isDhakPlaying = false;
+      updateDhakUI(false);
+    });
+  }
+  return dhakAudio;
+}
+
+function startDhakBeats() {
+  const audio = getDhakAudio();
+  const currentTrackFile = DHAK_TRACKS[currentDhakTrackIndex].file;
+  if (!audio.src || !audio.src.includes(currentTrackFile)) {
+    audio.src = currentTrackFile;
+  }
+  
+  const playPromise = audio.play();
+  if (playPromise !== undefined) {
+    playPromise.then(() => {
+      isDhakPlaying = true;
+      updateDhakUI(true);
+    }).catch(err => {
+      console.warn('Playback prevented by browser policy:', err);
+      showToast('⚠️ Click again to allow audio playback');
+      isDhakPlaying = false;
+      updateDhakUI(false);
+    });
+  }
 }
 
 function stopDhakBeats() {
-  isDhakPlaying = false;
-  if (dhakIntervalId) {
-    clearInterval(dhakIntervalId);
-    dhakIntervalId = null;
+  const audio = getDhakAudio();
+  if (audio) {
+    audio.pause();
   }
+  isDhakPlaying = false;
   updateDhakUI(false);
 }
 
 function toggleFestiveSong() {
-  if (isDhakPlaying) {
+  const audio = getDhakAudio();
+  if (isDhakPlaying || (audio && !audio.paused)) {
     stopDhakBeats();
     showToast('🔇 Dhak music paused');
   } else {
     startDhakBeats();
-    showToast('🥁 Playing Authentic Bengal Dhak Beats!');
+    const trackName = DHAK_TRACKS[currentDhakTrackIndex].name;
+    showToast(`🥁 Playing Authentic Dhak: ${trackName}`);
+  }
+}
+
+function selectDhakTrack(index) {
+  if (index < 0 || index >= DHAK_TRACKS.length) return;
+  const wasPlaying = isDhakPlaying;
+  currentDhakTrackIndex = index;
+  const audio = getDhakAudio();
+  audio.src = DHAK_TRACKS[currentDhakTrackIndex].file;
+  audio.currentTime = 0;
+
+  if (wasPlaying) {
+    audio.play().then(() => {
+      isDhakPlaying = true;
+      updateDhakUI(true);
+      showToast(`🥁 Switched to ${DHAK_TRACKS[currentDhakTrackIndex].name}`);
+    }).catch(err => {
+      console.warn(err);
+    });
+  } else {
+    updateDhakUI(false);
+    showToast(`🎵 Selected track: ${DHAK_TRACKS[currentDhakTrackIndex].name}`);
+  }
+}
+
+function setDhakVolume(volume) {
+  const audio = getDhakAudio();
+  if (audio) {
+    audio.volume = Math.max(0, Math.min(1, parseFloat(volume) || 0.8));
   }
 }
 
@@ -7376,13 +7393,72 @@ function updateDhakUI(playing) {
   const bannerBtn = document.getElementById('btn-toolbox-audio-toggle');
   const panjikaLabel = document.getElementById('panjika-dhak-label');
   const panjikaBtn = document.getElementById('btn-panjika-dhak-toggle');
+  const iconBadge = document.getElementById('panjika-dhak-icon-badge');
+  const visualizer = document.getElementById('dhak-visualizer-bars');
+  const track0Btn = document.getElementById('btn-dhak-track-0');
+  const track1Btn = document.getElementById('btn-dhak-track-1');
+  const volSlider = document.getElementById('dhak-vol-slider');
 
   if (soundIcon) soundIcon.textContent = playing ? '🔊' : '🔇';
-  if (audioBtn) audioBtn.classList.toggle('playing', playing);
+  if (audioBtn) {
+    audioBtn.classList.toggle('playing', playing);
+    audioBtn.title = playing ? 'Pause Authentic Dhak Sound' : 'Play Authentic Dhak Sound';
+  }
   if (dhakStatus) dhakStatus.textContent = playing ? '🥁 Pause Dhak Beats' : '🥁 Play Dhak Beats';
   if (bannerBtn) bannerBtn.classList.toggle('active', playing);
-  if (panjikaLabel) panjikaLabel.textContent = playing ? 'Status: 🔊 Playing Live' : 'Status: 🔇 Muted';
-  if (panjikaBtn) panjikaBtn.textContent = playing ? '⏸ Pause Dhak' : '▶ Play Dhak';
+  
+  if (panjikaLabel) {
+    const trackTitle = DHAK_TRACKS[currentDhakTrackIndex] ? DHAK_TRACKS[currentDhakTrackIndex].name : 'Authentic Dhak';
+    panjikaLabel.textContent = playing ? `Status: 🔊 Playing Live (${trackTitle})` : 'Status: 🔇 Muted';
+  }
+  if (panjikaBtn) {
+    panjikaBtn.textContent = playing ? '⏸ Pause Dhak' : '▶ Play Dhak';
+    panjikaBtn.classList.toggle('btn-playing', playing);
+    panjikaBtn.style.background = playing 
+      ? 'linear-gradient(135deg, #dc2626, #991b1b)' 
+      : 'linear-gradient(135deg, #b91c1c, #d97706)';
+  }
+  if (iconBadge) {
+    iconBadge.classList.toggle('playing', playing);
+  }
+  if (visualizer) {
+    visualizer.classList.toggle('active', playing);
+    const bars = visualizer.querySelectorAll('.dhak-bar');
+    bars.forEach((bar, idx) => {
+      bar.style.height = playing ? `${8 + (idx % 3) * 5}px` : '4px';
+    });
+  }
+  if (track0Btn) {
+    track0Btn.classList.toggle('active-track', currentDhakTrackIndex === 0);
+    if (currentDhakTrackIndex === 0) {
+      track0Btn.style.background = 'linear-gradient(135deg, #b91c1c, #991b1b)';
+      track0Btn.style.color = '#ffffff';
+      track0Btn.style.borderColor = '#7f1d1d';
+      track0Btn.style.boxShadow = '0 2px 6px rgba(185, 28, 28, 0.25)';
+    } else {
+      track0Btn.style.background = '#ffffff';
+      track0Btn.style.color = '#991b1b';
+      track0Btn.style.borderColor = '#fecaca';
+      track0Btn.style.boxShadow = 'none';
+    }
+  }
+  if (track1Btn) {
+    track1Btn.classList.toggle('active-track', currentDhakTrackIndex === 1);
+    if (currentDhakTrackIndex === 1) {
+      track1Btn.style.background = 'linear-gradient(135deg, #b91c1c, #991b1b)';
+      track1Btn.style.color = '#ffffff';
+      track1Btn.style.borderColor = '#7f1d1d';
+      track1Btn.style.boxShadow = '0 2px 6px rgba(185, 28, 28, 0.25)';
+    } else {
+      track1Btn.style.background = '#ffffff';
+      track1Btn.style.color = '#991b1b';
+      track1Btn.style.borderColor = '#fecaca';
+      track1Btn.style.boxShadow = 'none';
+    }
+  }
+  if (volSlider && dhakAudio) {
+    volSlider.value = dhakAudio.volume;
+  }
 }
 
 // ----------------------------------------------------------------------------
