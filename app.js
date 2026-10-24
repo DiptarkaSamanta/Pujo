@@ -440,8 +440,8 @@ const MARKER_CATEGORY_CONFIG = {
   pandal_durga: {
     id: 'pandal_durga',
     label: 'Durga Puja (দুর্গাপূজা)',
-    icon: DURGA_MATA_FACE_SVG,
-    iconText: '🔱',
+    icon: '🪔',
+    iconText: '🪔',
     badge: 'DURGA',
     bgGradient: 'linear-gradient(135deg, #991b1b 0%, #dc2626 45%, #ea580c 80%, #f59e0b 100%)',
     pinClass: 'marker-pin-durga',
@@ -1742,6 +1742,20 @@ let selectedPandal = null;
 function sanitizePandalImages(p) {
   if (!p) return p;
 
+  // Sync recent & community pandals: all recent pandals are Durga Puja by default
+  if (!p.category || p.category === 'pandal' || (p.id && p.id.startsWith('pandal-') && !p.category)) {
+    p.category = 'pandal_durga';
+    p.pujaType = p.pujaType || 'durga';
+  }
+
+  // Remove any obsolete SVG strings from customEmoji or icon and restore lamp marker
+  if (p.customEmoji && (p.customEmoji.includes('<svg') || p.customEmoji === '🔱')) {
+    p.customEmoji = '🪔';
+  }
+  if (p.icon && (p.icon.includes('<svg') || p.icon === '🔱')) {
+    p.icon = '🪔';
+  }
+
   // Clean userPhotos: remove any referencing the medical test photo
   if (Array.isArray(p.userPhotos)) {
     p.userPhotos = p.userPhotos.filter(ph => ph && ph.url && !ph.url.includes('1601055283742'));
@@ -2931,8 +2945,11 @@ function renderPandalMarkers() {
           return true;
         } else if (pType && (`pandal_${pType}` === act || pType === act)) {
           return true;
-        } else if (act === 'pandal_durga' && (cat === 'pandal' || cat === 'pandal_durga')) {
-          return true;
+        } else if (act === 'pandal_durga') {
+          // ALL recent pandals, default pandals, and community pandals are Durga Puja!
+          if (cat === 'pandal' || cat === 'pandal_durga' || !p.category || pType === 'durga' || (p.id && p.id.startsWith('pandal-'))) {
+            return true;
+          }
         } else if (act === 'other') {
           if (cat === 'other' || p.customEmoji || (p.icon && p.icon !== '🪔')) {
             return true;
@@ -2944,18 +2961,19 @@ function renderPandalMarkers() {
   }
 
   displayList.forEach(p => {
-    // Explicit sync: default or legacy pandals are all Durga Puja Pandals
-    const cat = (!p.category || p.category === 'pandal' || p.pujaType === 'durga') ? 'pandal_durga' : p.category;
+    // Explicit sync: default, legacy pandals and recent custom pandals are all Durga Puja Pandals
+    const isDurgaSpot = (!p.category || p.category === 'pandal' || p.category === 'pandal_durga' || p.pujaType === 'durga' || (p.id && p.id.startsWith('pandal-') && !p.category?.startsWith('spot-')));
+    const cat = isDurgaSpot ? 'pandal_durga' : (p.category || 'pandal_durga');
     const cfg = MARKER_CATEGORY_CONFIG[cat] || MARKER_CATEGORY_CONFIG.pandal_durga || MARKER_CATEGORY_CONFIG.pandal;
 
-    // Use authentic Maa Durga Face for Durga Puja markers
-    let pinIconHtml = '';
-    if (cat === 'pandal_durga' || (!p.category && !p.icon) || p.pujaType === 'durga') {
-      pinIconHtml = DURGA_MATA_FACE_SVG;
-    } else if (p.customEmoji) {
+    // Authentic golden lamp (diya) marker for Durga Puja (removed face marker)
+    let pinIconHtml = '🪔';
+    if (p.customEmoji && !p.customEmoji.includes('<svg') && p.customEmoji !== '🪔' && !isDurgaSpot) {
       pinIconHtml = p.customEmoji;
-    } else if (p.icon && p.icon !== '🪔' && p.icon !== '🔱') {
+    } else if (p.icon && !p.icon.includes('<svg') && p.icon !== '🪔' && p.icon !== '🔱' && !isDurgaSpot) {
       pinIconHtml = p.icon;
+    } else if (isDurgaSpot || cat === 'pandal_durga' || cat === 'pandal') {
+      pinIconHtml = '🪔';
     } else {
       pinIconHtml = cfg.icon || '🪔';
     }
@@ -5763,13 +5781,38 @@ function clearActiveRoute() {
 // ----------------------------------------------------------------------------
 // 10. Manual Pinning & Adding Custom Pandals
 // ----------------------------------------------------------------------------
-function startPinningMode() {
+let selectedPinningPujaType = 'pandal_durga';
+
+function setPinningSelectedPuja(cat) {
+  selectedPinningPujaType = cat || 'pandal_durga';
+  const cfg = MARKER_CATEGORY_CONFIG[selectedPinningPujaType] || MARKER_CATEGORY_CONFIG.pandal_durga;
+  
+  // Update banner badge
+  const badge = document.getElementById('pinning-selected-puja-badge');
+  if (badge) {
+    const shortLabel = cfg.label.split(' ')[0];
+    badge.textContent = `${cfg.icon || '🪔'} ${shortLabel}`;
+  }
+
+  // Update chip active classes
+  document.querySelectorAll('.pinning-puja-chip').forEach(chip => {
+    chip.classList.toggle('active', chip.dataset.cat === selectedPinningPujaType);
+  });
+
+  showToast(`Marking: ${cfg.icon || '🪔'} ${cfg.label}`);
+}
+window.setPinningSelectedPuja = setPinningSelectedPuja;
+
+function startPinningMode(preferredCat = null) {
   isPinningMode = true;
   document.body.classList.add('pinning-mode');
   switchTab('map');
+  
+  setPinningSelectedPuja(preferredCat || selectedPinningPujaType || 'pandal_durga');
+  
   const banner = document.getElementById('pinning-active-banner');
   if (banner) banner.style.display = 'flex';
-  showToast('📍 Tap map to place pin • Tap Exit Pin Mode to cancel');
+  showToast('📍 Tap map to place pin • Choose Puja type in top banner');
 }
 
 function setManualPin(latlng) {
@@ -5777,10 +5820,10 @@ function setManualPin(latlng) {
 
   if (tempPinMarker) tempPinMarker.remove();
 
-  const activeCat = (currentMapCategoryFilter && currentMapCategoryFilter !== 'all' && currentMapCategoryFilter !== 'pandal') ? currentMapCategoryFilter : 'pandal_durga';
+  const activeCat = selectedPinningPujaType || ((currentMapCategoryFilter && currentMapCategoryFilter !== 'all' && currentMapCategoryFilter !== 'pandal') ? currentMapCategoryFilter : 'pandal_durga');
   const cfg = MARKER_CATEGORY_CONFIG[activeCat] || MARKER_CATEGORY_CONFIG.pandal_durga;
 
-  const pinDisplayHtml = activeCat === 'pandal_durga' ? DURGA_MATA_FACE_SVG : (cfg.icon || '🪔');
+  const pinDisplayHtml = cfg.icon || '🪔';
 
   const el = document.createElement('div');
   el.className = 'custom-temp-pin';
@@ -7469,6 +7512,12 @@ function startFirestoreListener() {
         }
 
         if (change.type === 'added' || change.type === 'modified') {
+          const rawCloudPandal = change.doc.data();
+          if (!rawCloudPandal.category || rawCloudPandal.category === 'pandal' || (rawCloudPandal.id && rawCloudPandal.id.startsWith('pandal-') && !rawCloudPandal.category)) {
+            rawCloudPandal.category = 'pandal_durga';
+            rawCloudPandal.pujaType = rawCloudPandal.pujaType || 'durga';
+          }
+          const cloudPandal = sanitizePandalImages(rawCloudPandal);
           const idx = pandals.findIndex(p => p.id === cloudPandal.id);
           if (idx === -1) {
             pandals.unshift(cloudPandal);

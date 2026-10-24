@@ -1317,36 +1317,153 @@ h1, h2, h3, .festive-font {
   backdrop-filter: blur(8px);
 }
 
-/* Pinning Mode Active Banner - Sleek Compact Bar for Mobile & PC */
+/* Pinning Mode Active Banner - Sleek Compact Bar with Puja Selector */
 #pinning-active-banner {
   position: absolute;
   top: 10px;
   left: 50%;
   transform: translateX(-50%);
   z-index: 1200;
-  background: rgba(185, 28, 28, 0.95);
+  background: rgba(15, 23, 42, 0.94);
   color: #fff;
-  padding: 8px 14px;
-  border-radius: 14px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
-  border: 1px solid rgba(254, 240, 138, 0.6);
+  padding: 10px 14px;
+  border-radius: 18px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), 0 0 16px rgba(245, 158, 11, 0.35);
+  border: 1.5px solid rgba(250, 204, 21, 0.55);
   display: none;
+  flex-direction: column;
+  gap: 8px;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  animation: slideDown 0.25s ease;
+  width: calc(100% - 20px);
+  max-width: 480px;
+  box-sizing: border-box;
+}
+
+.pinning-header-row {
+  display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  animation: slideDown 0.25s ease;
-  width: calc(100% - 24px);
-  max-width: 390px;
-  box-sizing: border-box;
+  gap: 10px;
+  width: 100%;
+}
+
+.pinning-header-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  flex: 1;
+}
+
+.pinning-title {
+  display: block;
+  font-size: 12.5px;
+  font-weight: 800;
+  color: #ffffff;
+  line-height: 1.2;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
+}
+
+.pinning-subtitle {
+  display: block;
+  font-size: 10px;
+  color: #fef08a;
+  line-height: 1.2;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
+}
+
+.pinning-selected-badge {
+  background: linear-gradient(135deg, #b91c1c, #ea580c);
+  color: #fff;
+  border: 1px solid #fde047;
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+
+.pinning-puja-section {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding-top: 4px;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.pinning-puja-label {
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #fde047;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.pinning-puja-selector-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  overflow-x: auto;
+  padding: 2px 2px 4px 2px;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  flex: 1;
+}
+.pinning-puja-selector-row::-webkit-scrollbar {
+  display: none;
+}
+
+.pinning-puja-chip {
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  color: #ffffff;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 10.5px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+  transition: all 0.18s ease;
+  user-select: none;
+  font-family: inherit;
+}
+
+.pinning-puja-chip:hover {
+  background: rgba(255, 255, 255, 0.22);
+  border-color: #fde047;
+  transform: translateY(-1px);
+}
+
+.pinning-puja-chip.active {
+  background: linear-gradient(135deg, #b91c1c, #d97706);
+  border-color: #fef08a;
+  color: #ffffff;
+  box-shadow: 0 2px 10px rgba(217, 119, 6, 0.5), inset 0 0 6px rgba(254, 240, 138, 0.4);
+  transform: scale(1.04);
 }
 
 .btn-exit-pinning {
   background: #ffffff;
   color: #b91c1c;
   border: none;
-  padding: 5px 12px;
+  padding: 4px 11px;
   border-radius: 999px;
   font-size: 11px;
   font-weight: 800;
@@ -2121,22 +2238,10 @@ body[data-active-tab="itinerary"] .map-zoom-controls,
 }
 
 /* --- Sacred Puja & Temple Specific Custom Marker Pin Accents --- */
-/* 1. Durga Puja Marker: Sacred Maa Durga Face & Royal Divine Glow */
-.durga-face-svg {
-  display: block;
-  flex-shrink: 0;
-  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.5));
-  transition: transform 0.2s ease;
-}
-
-.marker-pin-durga .durga-face-svg {
-  width: 23px;
-  height: 23px;
-}
-
-.filter-sub-card:hover .durga-face-svg,
-.pin-cat-option:hover .durga-face-svg {
-  transform: scale(1.12);
+/* 1. Durga Puja Marker: Sacred Golden Lamp / Diya & Royal Divine Glow */
+.marker-pin-durga .marker-cat-icon {
+  font-size: 20px;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.45));
 }
 
 .marker-pin-durga .pandal-pin-inner {

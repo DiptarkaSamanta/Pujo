@@ -25,7 +25,7 @@
     <link href="https://api.mapbox.com/mapbox-gl-js/v3.4.0/mapbox-gl.css" rel="stylesheet" />
 
     <!-- Custom Festive Stylesheet -->
-    <link rel="stylesheet" href="./styles.css?v=19.0" />
+    <link rel="stylesheet" href="./styles.css?v=21.0" />
 
     <!-- Critical Inline Styles for Festive Puja Subcategories Drawer (immune to CSS cache) -->
     <style id="puja-subcategories-critical-styles">
@@ -614,31 +614,13 @@
                       </div>
 
                       <div class="puja-sub-cards-grid">
-                        <!-- 1. Durga Puja (Maa Durga Face Icon) -->
+                        <!-- 1. Durga Puja (Golden Lamp Icon) -->
                         <button type="button" class="filter-radio-card filter-sub-card" role="checkbox" aria-checked="false" data-cat="pandal_durga" onclick="handleToolboxFilterToggle('pandal_durga', event)">
                           <span class="chip-custom-radio"></span>
-                          <span class="filter-card-icon sub-card-icon durga-icon" title="Maa Durga Face">
-                            <svg viewBox="0 0 36 36" class="durga-face-svg" width="22" height="22" fill="none" xmlns="http://www.w3.org/2000/svg">
-                              <path d="M10 12 L18 3 L26 12 L22 14 L18 8 L14 14 Z" fill="#FBBF24" stroke="#78350F" stroke-width="0.8"/>
-                              <circle cx="18" cy="4" r="1.5" fill="#EF4444"/>
-                              <circle cx="12" cy="11" r="1" fill="#EF4444"/>
-                              <circle cx="24" cy="11" r="1" fill="#EF4444"/>
-                              <path d="M18 10 C16.5 12.5 16.5 14.5 18 17 C19.5 14.5 19.5 12.5 18 10 Z" fill="#DC2626"/>
-                              <circle cx="18" cy="13.5" r="0.8" fill="#FBBF24"/>
-                              <path d="M7 19 C10 16 14 17 16 20 C13 21.5 9 21.5 7 19 Z" fill="#FFFFFF" stroke="#1E1B4B" stroke-width="0.7"/>
-                              <circle cx="12" cy="19.2" r="1.6" fill="#18181B"/>
-                              <path d="M6 18 C9 14.5 14.5 15.5 16.5 19" stroke="#18181B" stroke-width="1.2" stroke-linecap="round"/>
-                              <path d="M29 19 C26 16 22 17 20 20 C23 21.5 27 21.5 29 19 Z" fill="#FFFFFF" stroke="#1E1B4B" stroke-width="0.7"/>
-                              <circle cx="24" cy="19.2" r="1.6" fill="#18181B"/>
-                              <path d="M30 18 C27 14.5 21.5 15.5 19.5 19" stroke="#18181B" stroke-width="1.2" stroke-linecap="round"/>
-                              <circle cx="14" cy="27" r="3.2" stroke="#F59E0B" stroke-width="1.1" fill="none"/>
-                              <circle cx="11.5" cy="26" r="1" fill="#EF4444"/>
-                              <path d="M15 28 C16.5 27 19.5 27 21 28 C19 30.5 17 30.5 15 28 Z" fill="#DC2626"/>
-                            </svg>
-                          </span>
+                          <span class="filter-card-icon sub-card-icon durga-icon" title="Durga Puja">🪔</span>
                           <div class="filter-card-details sub-card-text">
                             <span class="filter-card-name sub-card-name">Durga Puja <span class="bengali-label">দুর্গাপূজা</span></span>
-                            <span class="filter-card-hint sub-card-desc">Maa Durga Protima Face • Heritage & theme Durgotsav</span>
+                            <span class="filter-card-hint sub-card-desc">Sacred golden lamp • Heritage & theme Durgotsav</span>
                           </div>
                         </button>
 
@@ -899,18 +881,44 @@
           </button>
         </div>
 
-        <!-- Pinning Mode Floating Action Bar (Sleek Compact Bar for Mobile & Desktop) -->
+        <!-- Pinning Mode Floating Action Bar with Quick Puja Selector Section -->
         <div id="pinning-active-banner">
-          <div style="display:flex; align-items:center; gap:8px; min-width:0; flex:1;">
-            <span style="font-size:16px; animation:bounce 1s infinite; flex-shrink:0;">📍</span>
-            <div style="min-width:0; overflow:hidden;">
-              <strong style="display:block; font-size:12px; font-weight:800; line-height:1.2; white-space:nowrap; text-overflow:ellipsis; overflow:hidden;">Pinning Mode Active</strong>
-              <span style="display:block; font-size:10px; opacity:0.92; white-space:nowrap; text-overflow:ellipsis; overflow:hidden;">Tap anywhere on map to drop pin</span>
+          <div class="pinning-header-row">
+            <div class="pinning-header-left">
+              <span style="font-size:16px; animation:bounce 1s infinite; flex-shrink:0;">📍</span>
+              <div style="min-width:0; overflow:hidden;">
+                <strong class="pinning-title">Drop Pin on Map</strong>
+                <span class="pinning-subtitle">Tap anywhere on map to drop pin</span>
+              </div>
+            </div>
+            <div style="display:flex; align-items:center; gap:8px;">
+              <span id="pinning-selected-puja-badge" class="pinning-selected-badge">🪔 Durga Puja</span>
+              <button type="button" onclick="cancelPinningMode()" class="btn-exit-pinning" title="Exit pin mode">
+                ✕ Exit
+              </button>
             </div>
           </div>
-          <button type="button" onclick="cancelPinningMode()" class="btn-exit-pinning" title="Exit pin mode">
-            ✕ Exit
-          </button>
+          <!-- Puja Selection Section during marking -->
+          <div class="pinning-puja-section">
+            <span class="pinning-puja-label">Marking Puja:</span>
+            <div class="pinning-puja-selector-row" id="pinning-puja-chips">
+              <button type="button" class="pinning-puja-chip active" data-cat="pandal_durga" onclick="setPinningSelectedPuja('pandal_durga')">🪔 Durga Puja</button>
+              <button type="button" class="pinning-puja-chip" data-cat="pandal_kali" onclick="setPinningSelectedPuja('pandal_kali')">🌺 Kali Puja</button>
+              <button type="button" class="pinning-puja-chip" data-cat="temple" onclick="setPinningSelectedPuja('temple')">🛕 Mandir</button>
+              <button type="button" class="pinning-puja-chip" data-cat="pandal_saraswati" onclick="setPinningSelectedPuja('pandal_saraswati')">🎻 Saraswati</button>
+              <button type="button" class="pinning-puja-chip" data-cat="pandal_laxmi" onclick="setPinningSelectedPuja('pandal_laxmi')">🪙 Laxmi</button>
+              <button type="button" class="pinning-puja-chip" data-cat="pandal_ratha" onclick="setPinningSelectedPuja('pandal_ratha')">🚩 Ratha Jatra</button>
+              <button type="button" class="pinning-puja-chip" data-cat="pandal_ganesh" onclick="setPinningSelectedPuja('pandal_ganesh')">🐘 Ganesh</button>
+              <button type="button" class="pinning-puja-chip" data-cat="pandal_shiva" onclick="setPinningSelectedPuja('pandal_shiva')">🔱 Shiva</button>
+              <button type="button" class="pinning-puja-chip" data-cat="pandal_jagaddhatri" onclick="setPinningSelectedPuja('pandal_jagaddhatri')">🦁 Jagaddhatri</button>
+              <button type="button" class="pinning-puja-chip" data-cat="pandal_kartik" onclick="setPinningSelectedPuja('pandal_kartik')">🦚 Kartik</button>
+              <button type="button" class="pinning-puja-chip" data-cat="pandal_vishwakarma" onclick="setPinningSelectedPuja('pandal_vishwakarma')">⚙️ Vishwakarma</button>
+              <button type="button" class="pinning-puja-chip" data-cat="bonedi" onclick="setPinningSelectedPuja('bonedi')">🏛️ Bonedi Bari</button>
+              <button type="button" class="pinning-puja-chip" data-cat="food" onclick="setPinningSelectedPuja('food')">🍛 Food</button>
+              <button type="button" class="pinning-puja-chip" data-cat="mela" onclick="setPinningSelectedPuja('mela')">🎡 Mela</button>
+              <button type="button" class="pinning-puja-chip" data-cat="medical" onclick="setPinningSelectedPuja('medical')">💊 Medical</button>
+            </div>
+          </div>
         </div>
 
         <!-- Active Road Navigation Route Banner -->
@@ -2121,25 +2129,7 @@
               <label style="display:block; font-size:12px; font-weight:800; color:#0f172a; margin-bottom:6px;">Select Category / Puja Type *</label>
               <div class="pin-category-grid" id="pin-category-grid">
                 <button type="button" class="pin-cat-option active" data-cat="pandal_durga" onclick="selectPinCategory('pandal_durga', this)">
-                  <span class="cat-icon" title="Maa Durga Face">
-                    <svg viewBox="0 0 36 36" class="durga-face-svg" width="20" height="20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M10 12 L18 3 L26 12 L22 14 L18 8 L14 14 Z" fill="#FBBF24" stroke="#78350F" stroke-width="0.8"/>
-                      <circle cx="18" cy="4" r="1.5" fill="#EF4444"/>
-                      <circle cx="12" cy="11" r="1" fill="#EF4444"/>
-                      <circle cx="24" cy="11" r="1" fill="#EF4444"/>
-                      <path d="M18 10 C16.5 12.5 16.5 14.5 18 17 C19.5 14.5 19.5 12.5 18 10 Z" fill="#DC2626"/>
-                      <circle cx="18" cy="13.5" r="0.8" fill="#FBBF24"/>
-                      <path d="M7 19 C10 16 14 17 16 20 C13 21.5 9 21.5 7 19 Z" fill="#FFFFFF" stroke="#1E1B4B" stroke-width="0.7"/>
-                      <circle cx="12" cy="19.2" r="1.6" fill="#18181B"/>
-                      <path d="M6 18 C9 14.5 14.5 15.5 16.5 19" stroke="#18181B" stroke-width="1.2" stroke-linecap="round"/>
-                      <path d="M29 19 C26 16 22 17 20 20 C23 21.5 27 21.5 29 19 Z" fill="#FFFFFF" stroke="#1E1B4B" stroke-width="0.7"/>
-                      <circle cx="24" cy="19.2" r="1.6" fill="#18181B"/>
-                      <path d="M30 18 C27 14.5 21.5 15.5 19.5 19" stroke="#18181B" stroke-width="1.2" stroke-linecap="round"/>
-                      <circle cx="14" cy="27" r="3.2" stroke="#F59E0B" stroke-width="1.1" fill="none"/>
-                      <circle cx="11.5" cy="26" r="1" fill="#EF4444"/>
-                      <path d="M15 28 C16.5 27 19.5 27 21 28 C19 30.5 17 30.5 15 28 Z" fill="#DC2626"/>
-                    </svg>
-                  </span>
+                  <span class="cat-icon" title="Durga Puja">🪔</span>
                   <span class="cat-name">Durga Puja</span>
                 </button>
                 <button type="button" class="pin-cat-option" data-cat="pandal_kali" onclick="selectPinCategory('pandal_kali', this)">
@@ -2928,6 +2918,6 @@
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-storage-compat.js"></script>
 
     <!-- Pure Vanilla Application Logic -->
-    <script src="./app.js?v=17.0"></script>
+    <script src="./app.js?v=21.0"></script>
   </body>
 </html>
