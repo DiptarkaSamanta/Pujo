@@ -408,16 +408,155 @@ const DEFAULT_PANDALS = [
 // ----------------------------------------------------------------------------
 // 1B. Multi-Category Festive Spots Configuration & Master Dataset
 // ----------------------------------------------------------------------------
+const DURGA_MATA_FACE_SVG = `<svg viewBox="0 0 36 36" class="durga-face-svg" width="22" height="22" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <path d="M10 12 L18 3 L26 12 L22 14 L18 8 L14 14 Z" fill="#FBBF24" stroke="#78350F" stroke-width="0.8"/>
+  <circle cx="18" cy="4" r="1.5" fill="#EF4444"/>
+  <circle cx="12" cy="11" r="1" fill="#EF4444"/>
+  <circle cx="24" cy="11" r="1" fill="#EF4444"/>
+  <path d="M18 10 C16.5 12.5 16.5 14.5 18 17 C19.5 14.5 19.5 12.5 18 10 Z" fill="#DC2626"/>
+  <circle cx="18" cy="13.5" r="0.8" fill="#FBBF24"/>
+  <path d="M7 19 C10 16 14 17 16 20 C13 21.5 9 21.5 7 19 Z" fill="#FFFFFF" stroke="#1E1B4B" stroke-width="0.7"/>
+  <circle cx="12" cy="19.2" r="1.6" fill="#18181B"/>
+  <path d="M6 18 C9 14.5 14.5 15.5 16.5 19" stroke="#18181B" stroke-width="1.2" stroke-linecap="round"/>
+  <path d="M29 19 C26 16 22 17 20 20 C23 21.5 27 21.5 29 19 Z" fill="#FFFFFF" stroke="#1E1B4B" stroke-width="0.7"/>
+  <circle cx="24" cy="19.2" r="1.6" fill="#18181B"/>
+  <path d="M30 18 C27 14.5 21.5 15.5 19.5 19" stroke="#18181B" stroke-width="1.2" stroke-linecap="round"/>
+  <circle cx="14" cy="27" r="3.2" stroke="#F59E0B" stroke-width="1.1" fill="none"/>
+  <circle cx="11.5" cy="26" r="1" fill="#EF4444"/>
+  <path d="M15 28 C16.5 27 19.5 27 21 28 C19 30.5 17 30.5 15 28 Z" fill="#DC2626"/>
+</svg>`;
+
 const MARKER_CATEGORY_CONFIG = {
   pandal: {
     id: 'pandal',
-    label: 'Puja Pandal',
+    label: 'All Puja Pandals & Temples',
     icon: '🪔',
     badge: 'PUJA',
     bgGradient: 'linear-gradient(135deg, #b91c1c 0%, #ea580c 50%, #d97706 100%)',
     pinClass: 'marker-pin-pandal',
     shadowColor: 'rgba(185, 28, 28, 0.45)',
     accentColor: '#d97706'
+  },
+  pandal_durga: {
+    id: 'pandal_durga',
+    label: 'Durga Puja (দুর্গাপূজা)',
+    icon: DURGA_MATA_FACE_SVG,
+    iconText: '🔱',
+    badge: 'DURGA',
+    bgGradient: 'linear-gradient(135deg, #991b1b 0%, #dc2626 45%, #ea580c 80%, #f59e0b 100%)',
+    pinClass: 'marker-pin-durga',
+    shadowColor: 'rgba(220, 38, 38, 0.55)',
+    accentColor: '#f59e0b'
+  },
+  pandal_kali: {
+    id: 'pandal_kali',
+    label: 'Kali Puja (কালীপূজা)',
+    icon: '🌺',
+    badge: 'KALI',
+    bgGradient: 'linear-gradient(135deg, #09090b 0%, #450a0a 45%, #991b1b 80%, #dc2626 100%)',
+    pinClass: 'marker-pin-kali',
+    shadowColor: 'rgba(239, 68, 68, 0.65)',
+    accentColor: '#ef4444'
+  },
+  temple: {
+    id: 'temple',
+    label: 'Historic Temple & Mandir (ঐতিহাসিক মন্দির)',
+    icon: '🛕',
+    badge: 'TEMPLE',
+    bgGradient: 'linear-gradient(135deg, #7c2d12 0%, #c2410c 50%, #f59e0b 100%)',
+    pinClass: 'marker-pin-temple',
+    shadowColor: 'rgba(194, 65, 12, 0.55)',
+    accentColor: '#f97316'
+  },
+  pandal_saraswati: {
+    id: 'pandal_saraswati',
+    label: 'Saraswati Puja (সরস্বতী পূজা)',
+    icon: '🎻',
+    badge: 'SARASWATI',
+    bgGradient: 'linear-gradient(135deg, #a16207 0%, #eab308 50%, #fef08a 100%)',
+    pinClass: 'marker-pin-saraswati',
+    shadowColor: 'rgba(234, 179, 8, 0.55)',
+    accentColor: '#facc15'
+  },
+  pandal_laxmi: {
+    id: 'pandal_laxmi',
+    label: 'Laxmi Puja (লক্ষ্মী পূজা)',
+    icon: '🪙',
+    badge: 'LAXMI',
+    bgGradient: 'linear-gradient(135deg, #9a3412 0%, #ea580c 45%, #fbbf24 100%)',
+    pinClass: 'marker-pin-laxmi',
+    shadowColor: 'rgba(245, 158, 11, 0.55)',
+    accentColor: '#fbbf24'
+  },
+  pandal_ratha: {
+    id: 'pandal_ratha',
+    label: 'Jagannath Ratha Jatra (রথযাত্রা)',
+    icon: '🚩',
+    badge: 'RATHA',
+    bgGradient: 'linear-gradient(135deg, #991b1b 0%, #d97706 45%, #1e3a8a 100%)',
+    pinClass: 'marker-pin-ratha',
+    shadowColor: 'rgba(220, 38, 38, 0.55)',
+    accentColor: '#f59e0b'
+  },
+  pandal_ganesh: {
+    id: 'pandal_ganesh',
+    label: 'Ganesh Puja (গণেশ পূজা)',
+    icon: '🐘',
+    badge: 'GANESH',
+    bgGradient: 'linear-gradient(135deg, #c2410c 0%, #ea580c 50%, #fb923c 100%)',
+    pinClass: 'marker-pin-ganesh',
+    shadowColor: 'rgba(234, 88, 12, 0.55)',
+    accentColor: '#fb923c'
+  },
+  pandal_shiva: {
+    id: 'pandal_shiva',
+    label: 'Shiva Puja & Mandir (শিবপূজা)',
+    icon: '🔱',
+    badge: 'SHIVA',
+    bgGradient: 'linear-gradient(135deg, #0f172a 0%, #1e3a8a 50%, #0284c7 100%)',
+    pinClass: 'marker-pin-shiva',
+    shadowColor: 'rgba(2, 132, 199, 0.55)',
+    accentColor: '#38bdf8'
+  },
+  pandal_jagaddhatri: {
+    id: 'pandal_jagaddhatri',
+    label: 'Jagaddhatri Puja (জগদ্ধাত্রী পূজা)',
+    icon: '🦁',
+    badge: 'JAGADDHATRI',
+    bgGradient: 'linear-gradient(135deg, #881337 0%, #be123c 50%, #f59e0b 100%)',
+    pinClass: 'marker-pin-jagaddhatri',
+    shadowColor: 'rgba(225, 29, 72, 0.55)',
+    accentColor: '#f43f5e'
+  },
+  pandal_kartik: {
+    id: 'pandal_kartik',
+    label: 'Kartik Puja (কার্তিক পূজা)',
+    icon: '🦚',
+    badge: 'KARTIK',
+    bgGradient: 'linear-gradient(135deg, #064e3b 0%, #047857 50%, #2563eb 100%)',
+    pinClass: 'marker-pin-kartik',
+    shadowColor: 'rgba(5, 150, 105, 0.55)',
+    accentColor: '#10b981'
+  },
+  pandal_vishwakarma: {
+    id: 'pandal_vishwakarma',
+    label: 'Vishwakarma Puja (বিশ্বকর্মা পূজা)',
+    icon: '⚙️',
+    badge: 'VISHWAKARMA',
+    bgGradient: 'linear-gradient(135deg, #075985 0%, #0284c7 50%, #f59e0b 100%)',
+    pinClass: 'marker-pin-vishwakarma',
+    shadowColor: 'rgba(2, 132, 199, 0.55)',
+    accentColor: '#38bdf8'
+  },
+  bonedi: {
+    id: 'bonedi',
+    label: 'Bonedi Bari Heritage Pujo (বনেদি বাড়ির ঐতিহ্য)',
+    icon: '🏛️',
+    badge: 'BONEDI',
+    bgGradient: 'linear-gradient(135deg, #4c1d95 0%, #6d28d9 50%, #b45309 100%)',
+    pinClass: 'marker-pin-bonedi',
+    shadowColor: 'rgba(109, 40, 217, 0.55)',
+    accentColor: '#c084fc'
   },
   food: {
     id: 'food',
@@ -523,6 +662,31 @@ const MARKER_CATEGORY_CONFIG = {
 
 function getSpotCategoryFallbackImg(category) {
   switch (category) {
+    case 'pandal_durga':
+    case 'pandal':
+      return DEFAULT_DURGA_IDOL_IMG;
+    case 'pandal_kali':
+      return 'https://images.unsplash.com/photo-1609137144813-7d9921338f24?auto=format&fit=crop&w=800&q=80';
+    case 'temple':
+      return 'https://images.unsplash.com/photo-1544816155-12df9643f363?auto=format&fit=crop&w=800&q=80';
+    case 'pandal_saraswati':
+      return 'https://images.unsplash.com/photo-1567157577867-05ccb1388e66?auto=format&fit=crop&w=800&q=80';
+    case 'pandal_laxmi':
+      return 'https://images.unsplash.com/photo-1605371924599-2d0365da1ae0?auto=format&fit=crop&w=800&q=80';
+    case 'pandal_ratha':
+      return 'https://images.unsplash.com/photo-1590073844006-33379778ae09?auto=format&fit=crop&w=800&q=80';
+    case 'pandal_ganesh':
+      return 'https://images.unsplash.com/photo-1567591414240-e221375d3fec?auto=format&fit=crop&w=800&q=80';
+    case 'pandal_shiva':
+      return 'https://images.unsplash.com/photo-1618773928121-c32242e63f39?auto=format&fit=crop&w=800&q=80';
+    case 'pandal_jagaddhatri':
+      return 'https://images.unsplash.com/photo-1571597438372-540dd352bf41?auto=format&fit=crop&w=800&q=80';
+    case 'pandal_kartik':
+      return 'https://images.unsplash.com/photo-1534447677768-be436bb09401?auto=format&fit=crop&w=800&q=80';
+    case 'pandal_vishwakarma':
+      return 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=800&q=80';
+    case 'bonedi':
+      return 'https://images.unsplash.com/photo-1544816155-12df9643f363?auto=format&fit=crop&w=800&q=80';
     case 'food':
       return 'https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?auto=format&fit=crop&w=600&q=80';
     case 'streetfood':
@@ -934,8 +1098,516 @@ const ADDITIONAL_FESTIVE_SPOTS = [
   }
 ];
 
+const FESTIVE_PUJAS_AND_TEMPLES_SPOTS = [
+  // 1. Kali Puja Spots
+  {
+    id: 'spot-kali-1',
+    name: 'Naihati Boro Maa Kali Puja',
+    pujaName: 'Naihati Boro Maa Sarbojanin Kali Puja',
+    clubName: 'Boro Maa Samiti, Naihati',
+    category: 'pandal_kali',
+    pujaType: 'kali',
+    theme: 'World-Renowned 21-ft Divine Boro Maa Dakshina Kali & Lakhs of Devotees',
+    description: 'Bengal’s legendary 21-foot tall Boro Maa idol visited by millions across India. Sacred midnight Puja, divine gold ornaments, and round-the-clock spiritual darshan.',
+    location: { lat: 22.8942, lng: 88.4231 },
+    address: 'Boro Maa Mandir, Station Road, Naihati, North 24 Parganas',
+    zone: 'North 24 Parganas',
+    images: ['https://images.unsplash.com/photo-1609137144813-7d9921338f24?auto=format&fit=crop&w=800&q=80'],
+    thumbnail: 'https://images.unsplash.com/photo-1609137144813-7d9921338f24?auto=format&fit=crop&w=400&q=80',
+    rating: 5.0,
+    reviewCount: 3850,
+    visitCount: 185000,
+    photosPostedCount: 420,
+    trafficLevel: 'heavy',
+    estimatedQueueMins: 45,
+    isBeautyPick: true,
+    isHeritage: true
+  },
+  {
+    id: 'spot-kali-2',
+    name: 'Barasat Pioneer Club Grand Kali Puja',
+    pujaName: 'Barasat Pioneer Club Golden Jubilee Kali Utsav',
+    clubName: 'Barasat Pioneer Club',
+    category: 'pandal_kali',
+    pujaType: 'kali',
+    theme: 'Towering Mythological Palace & Electrifying Laser Illumination',
+    description: 'Barasat is known as Bengal’s Kali Puja capital. Pioneer Club features breathtaking architectural pandals, kinetic Chandannagar lights, and radiant Kali idol.',
+    location: { lat: 22.7214, lng: 88.4839 },
+    address: 'Colony More, Jessore Road, Barasat, North 24 Parganas',
+    zone: 'North 24 Parganas',
+    images: ['https://images.unsplash.com/photo-1609137144813-7d9921338f24?auto=format&fit=crop&w=800&q=80'],
+    thumbnail: 'https://images.unsplash.com/photo-1609137144813-7d9921338f24?auto=format&fit=crop&w=400&q=80',
+    rating: 4.9,
+    reviewCount: 2190,
+    visitCount: 94000,
+    photosPostedCount: 210,
+    trafficLevel: 'heavy',
+    estimatedQueueMins: 35,
+    isBeautyPick: true,
+    isHeritage: true
+  },
+  {
+    id: 'spot-kali-3',
+    name: 'Kalighat Shakti Peeth Deepavali Shyama Puja',
+    pujaName: 'Kalighat Mandir Maha Shyama Puja & Deepotsav',
+    clubName: 'Kalighat Temple Sebayat Committee',
+    category: 'pandal_kali',
+    pujaType: 'kali',
+    theme: '51 Shakti Peeth Midnight Tantrik Maha Pujo & 1008 Diya Deepotsav',
+    description: 'One of the most sacred Shakti Peeths in Hinduism. During Diwali night, Kalighat sparkles with thousands of earthen lamps and deep spiritual Shyama Sangeet.',
+    location: { lat: 22.5204, lng: 88.3426 },
+    address: 'Anami Sangha, Kalighat Road, South Kolkata',
+    zone: 'Kolkata',
+    images: ['https://images.unsplash.com/photo-1609137144813-7d9921338f24?auto=format&fit=crop&w=800&q=80'],
+    thumbnail: 'https://images.unsplash.com/photo-1609137144813-7d9921338f24?auto=format&fit=crop&w=400&q=80',
+    rating: 4.9,
+    reviewCount: 4200,
+    visitCount: 210000,
+    photosPostedCount: 530,
+    trafficLevel: 'heavy',
+    estimatedQueueMins: 40,
+    isBeautyPick: true,
+    isHeritage: true
+  },
+
+  // 2. Historic Temples & Mandirs
+  {
+    id: 'spot-temple-1',
+    name: 'Dakshineswar Bhavatarini Kali Temple',
+    pujaName: 'Dakshineswar Temple Navaratna & Sacred Ganga Ghats',
+    clubName: 'Dakshineswar Temple Trust',
+    category: 'temple',
+    pujaType: 'temple',
+    theme: 'Rani Rashmoni’s 1855 Navaratna Architectural Marvel & Sri Ramakrishna Shrine',
+    description: 'Iconic 19th-century Navaratna temple situated along the Hooghly riverbank, blessed by Sri Ramakrishna Paramahamsa. Features 12 Shiva shrines and Radhakanta temple.',
+    location: { lat: 22.6558, lng: 88.3576 },
+    address: 'Mayadanga, Dakshineswar, Kolkata',
+    zone: 'Kolkata',
+    images: ['https://images.unsplash.com/photo-1544816155-12df9643f363?auto=format&fit=crop&w=800&q=80'],
+    thumbnail: 'https://images.unsplash.com/photo-1544816155-12df9643f363?auto=format&fit=crop&w=400&q=80',
+    rating: 4.9,
+    reviewCount: 5400,
+    visitCount: 320000,
+    photosPostedCount: 890,
+    trafficLevel: 'heavy',
+    estimatedQueueMins: 30,
+    isBeautyPick: true,
+    isHeritage: true
+  },
+  {
+    id: 'spot-temple-2',
+    name: 'Belur Math (Ramakrishna Math & Mission HQ)',
+    pujaName: 'Belur Math International Universal Temple',
+    clubName: 'Ramakrishna Math & Mission',
+    category: 'temple',
+    pujaType: 'temple',
+    theme: 'Swami Vivekananda’s Universal Architecture Synthesizing Hindu, Buddhist & Mughal Motifs',
+    description: 'Spiritual headquarters of Ramakrishna Order founded by Swami Vivekananda. Serene riverside grounds, evening prayer bells (Arati), and celebrated Durga Puja Kumari Puja.',
+    location: { lat: 22.6322, lng: 88.3557 },
+    address: 'Belur, Howrah District, West Bengal',
+    zone: 'Howrah',
+    images: ['https://images.unsplash.com/photo-1544816155-12df9643f363?auto=format&fit=crop&w=800&q=80'],
+    thumbnail: 'https://images.unsplash.com/photo-1544816155-12df9643f363?auto=format&fit=crop&w=400&q=80',
+    rating: 5.0,
+    reviewCount: 6800,
+    visitCount: 450000,
+    photosPostedCount: 980,
+    trafficLevel: 'moderate',
+    estimatedQueueMins: 20,
+    isBeautyPick: true,
+    isHeritage: true
+  },
+  {
+    id: 'spot-temple-3',
+    name: 'Birla Mandir Kolkata (Lakshmi Narayan Temple)',
+    pujaName: 'Birla Mandir White Rajasthani Marble Temple',
+    clubName: 'Birla Temple Trust',
+    category: 'temple',
+    pujaType: 'temple',
+    theme: 'Pure White Carved Marble Shikhara & Divine Geeta Chants',
+    description: 'Stunning white Rajasthani marble landmark built over 26 years. Dedicated to Lord Krishna and Radha, featuring intricate stone carvings, chandeliers, and manicured gardens.',
+    location: { lat: 22.5283, lng: 88.3664 },
+    address: 'Ashutosh Chowdhury Ave, Ballygunge, Kolkata',
+    zone: 'Kolkata',
+    images: ['https://images.unsplash.com/photo-1544816155-12df9643f363?auto=format&fit=crop&w=800&q=80'],
+    thumbnail: 'https://images.unsplash.com/photo-1544816155-12df9643f363?auto=format&fit=crop&w=400&q=80',
+    rating: 4.8,
+    reviewCount: 3100,
+    visitCount: 160000,
+    photosPostedCount: 410,
+    trafficLevel: 'moderate',
+    estimatedQueueMins: 15,
+    isBeautyPick: true,
+    isHeritage: true
+  },
+
+  // 3. Saraswati Puja Spots
+  {
+    id: 'spot-saraswati-1',
+    name: 'Presidency University Heritage Saraswati Pujo',
+    pujaName: 'Presidency University Basant Panchami Celebration',
+    clubName: 'Presidency Students Union & Fine Arts Society',
+    category: 'pandal_saraswati',
+    pujaType: 'saraswati',
+    theme: 'Classical White Filigree Veena Idol & College Street Intellectual Gathering',
+    description: 'Over a century-old cultural tradition on College Street. Students craft magnificent aesthetic eco-friendly idols of Goddess Saraswati, recited slokas, and traditional yellow attire.',
+    location: { lat: 22.5738, lng: 88.3638 },
+    address: '86/1 College Street, Central Kolkata',
+    zone: 'Kolkata',
+    images: ['https://images.unsplash.com/photo-1567157577867-05ccb1388e66?auto=format&fit=crop&w=800&q=80'],
+    thumbnail: 'https://images.unsplash.com/photo-1567157577867-05ccb1388e66?auto=format&fit=crop&w=400&q=80',
+    rating: 4.9,
+    reviewCount: 820,
+    visitCount: 36000,
+    photosPostedCount: 140,
+    trafficLevel: 'moderate',
+    estimatedQueueMins: 10,
+    isBeautyPick: true,
+    isHeritage: true
+  },
+  {
+    id: 'spot-saraswati-2',
+    name: 'Jadavpur University Central Saraswati Puja Pandal',
+    pujaName: 'JU Cultural Fair & Basanta Utsav Saraswati Puja',
+    clubName: 'Jadavpur University Campus Union',
+    category: 'pandal_saraswati',
+    pujaType: 'saraswati',
+    theme: 'Clay Sculptures, Folk Sitar Recitals & Yellow Basanti Carnival',
+    description: 'Renowned for innovative artistic interpretations of Goddess Saraswati using terracotta, bamboo, and cloth. Lively campus celebrations filled with acoustic music and poetry.',
+    location: { lat: 22.4989, lng: 88.3716 },
+    address: '188 Raja S.C. Mallick Road, Jadavpur, Kolkata',
+    zone: 'Kolkata',
+    images: ['https://images.unsplash.com/photo-1567157577867-05ccb1388e66?auto=format&fit=crop&w=800&q=80'],
+    thumbnail: 'https://images.unsplash.com/photo-1567157577867-05ccb1388e66?auto=format&fit=crop&w=400&q=80',
+    rating: 4.8,
+    reviewCount: 760,
+    visitCount: 31000,
+    photosPostedCount: 110,
+    trafficLevel: 'moderate',
+    estimatedQueueMins: 8,
+    isBeautyPick: true,
+    isHeritage: false
+  },
+
+  // 4. Laxmi Puja (Kojagori)
+  {
+    id: 'spot-laxmi-1',
+    name: 'Sovabazar Rajbari Kojagori Laxmi Puja',
+    pujaName: 'Sovabazar Rajbari 300-Yr Heritage Kojagori Laxmi Utsav',
+    clubName: 'Deb Family Trust, Sovabazar',
+    category: 'pandal_laxmi',
+    pujaType: 'laxmi',
+    theme: 'Centuries-Old Royal Alpona, Golden Kalash & Full Moon Kojagori Vigil',
+    description: 'One of the most illustrious household Kojagori Laxmi Pujas in Bengal. The entire Natmandir is adorned with breathtaking intricate white rice-flour Alpona drawings.',
+    location: { lat: 22.5975, lng: 88.3670 },
+    address: '36 Nabakrishna Deb Street, Sovabazar, North Kolkata',
+    zone: 'Kolkata',
+    images: ['https://images.unsplash.com/photo-1605371924599-2d0365da1ae0?auto=format&fit=crop&w=800&q=80'],
+    thumbnail: 'https://images.unsplash.com/photo-1605371924599-2d0365da1ae0?auto=format&fit=crop&w=400&q=80',
+    rating: 5.0,
+    reviewCount: 1240,
+    visitCount: 52000,
+    photosPostedCount: 220,
+    trafficLevel: 'moderate',
+    estimatedQueueMins: 15,
+    isBeautyPick: true,
+    isHeritage: true
+  },
+  {
+    id: 'spot-laxmi-2',
+    name: 'Mallick Bari Kojagori Lakshmi Puja',
+    pujaName: 'Bhowanipore Mallick Bari Royal Kojagori Lakshmi Pujo',
+    clubName: 'Mallick Heritage Trust',
+    category: 'pandal_laxmi',
+    pujaType: 'laxmi',
+    theme: 'Traditional Daaker Saaj Laxmi Idol, Dhaner Shish & Bhog Feast',
+    description: 'Historic Bhowanipore heritage mansion celebration. Features pure traditional Daaker Saaj Lakshmi idol, golden harvest motifs, and centuries-old khichuri & payesh bhog.',
+    location: { lat: 22.5320, lng: 88.3490 },
+    address: 'Mohim Halder Street, Bhowanipore, South Kolkata',
+    zone: 'Kolkata',
+    images: ['https://images.unsplash.com/photo-1605371924599-2d0365da1ae0?auto=format&fit=crop&w=800&q=80'],
+    thumbnail: 'https://images.unsplash.com/photo-1605371924599-2d0365da1ae0?auto=format&fit=crop&w=400&q=80',
+    rating: 4.9,
+    reviewCount: 940,
+    visitCount: 41000,
+    photosPostedCount: 150,
+    trafficLevel: 'low',
+    estimatedQueueMins: 10,
+    isBeautyPick: true,
+    isHeritage: true
+  },
+
+  // 5. Jagannath Ratha Jatra Spots
+  {
+    id: 'spot-ratha-1',
+    name: 'Mahesh Historic Jagannath Ratha Jatra',
+    pujaName: 'Mahesh 628-Year-Old Chariot Procession (Since 1396 AD)',
+    clubName: 'Mahesh Jagannath Mandir Trust',
+    category: 'pandal_ratha',
+    pujaType: 'ratha',
+    theme: 'World’s 2nd Oldest Ratha Jatra with 50-Foot Tall Iron Chariot',
+    description: 'Celebrated continuously for over 628 years in Hooghly. Sri Chaitanya Mahaprabhu and Ramakrishna Paramahamsa visited this festival. Grand 50-ft chariot with lakhs pulling the ropes.',
+    location: { lat: 22.7420, lng: 88.3460 },
+    address: 'GT Road, Mahesh, Serampore, Hooghly District',
+    zone: 'Hooghly',
+    images: ['https://images.unsplash.com/photo-1590073844006-33379778ae09?auto=format&fit=crop&w=800&q=80'],
+    thumbnail: 'https://images.unsplash.com/photo-1590073844006-33379778ae09?auto=format&fit=crop&w=400&q=80',
+    rating: 5.0,
+    reviewCount: 3100,
+    visitCount: 240000,
+    photosPostedCount: 390,
+    trafficLevel: 'heavy',
+    estimatedQueueMins: 30,
+    isBeautyPick: true,
+    isHeritage: true
+  },
+  {
+    id: 'spot-ratha-2',
+    name: 'ISKCON Kolkata Grand Ratha Jatra',
+    pujaName: 'ISKCON Kolkata Chariot Yatra & Brigade Carnival',
+    clubName: 'ISKCON Kolkata Temple',
+    category: 'pandal_ratha',
+    pujaType: 'ratha',
+    theme: 'Three Towering Nandighosa Chariots, Sankirtan & 7-Day Gundicha Fair',
+    description: 'Kolkata’s largest city-center Ratha Jatra. Three splendidly decorated chariots carrying Lord Jagannath, Baladeva, and Subhadra journey from Albert Road to Brigade Parade Grounds.',
+    location: { lat: 22.5458, lng: 88.3532 },
+    address: '3C Albert Road, Minto Park, Central Kolkata',
+    zone: 'Kolkata',
+    images: ['https://images.unsplash.com/photo-1590073844006-33379778ae09?auto=format&fit=crop&w=800&q=80'],
+    thumbnail: 'https://images.unsplash.com/photo-1590073844006-33379778ae09?auto=format&fit=crop&w=400&q=80',
+    rating: 4.9,
+    reviewCount: 2800,
+    visitCount: 195000,
+    photosPostedCount: 340,
+    trafficLevel: 'heavy',
+    estimatedQueueMins: 25,
+    isBeautyPick: true,
+    isHeritage: true
+  },
+
+  // 6. Ganesh Puja
+  {
+    id: 'spot-ganesh-1',
+    name: 'Posta Ganapati Sarbojanin Central Kolkata',
+    pujaName: 'Posta Shree Ganesha Mahotsav',
+    clubName: 'Posta Vyapar Samiti & Ganesha Mandal',
+    category: 'pandal_ganesh',
+    pujaType: 'ganesh',
+    theme: 'Grand Lalbaugcha Raja Style 18-ft Ganesha & 51-kg Maha Modak',
+    description: 'Central Kolkata’s most prestigious and vibrant Ganesh Puja. Crowds gather for the morning Aarti, traditional Dhol-Tasha beats, and grand immersion procession to the Hooghly river.',
+    location: { lat: 22.5855, lng: 88.3582 },
+    address: 'Posta Bazaar, Kalakar Street, Central Kolkata',
+    zone: 'Kolkata',
+    images: ['https://images.unsplash.com/photo-1567591414240-e221375d3fec?auto=format&fit=crop&w=800&q=80'],
+    thumbnail: 'https://images.unsplash.com/photo-1567591414240-e221375d3fec?auto=format&fit=crop&w=400&q=80',
+    rating: 4.8,
+    reviewCount: 1420,
+    visitCount: 65000,
+    photosPostedCount: 180,
+    trafficLevel: 'heavy',
+    estimatedQueueMins: 20,
+    isBeautyPick: true,
+    isHeritage: true
+  },
+  {
+    id: 'spot-ganesh-2',
+    name: 'Triangular Park Ganapati Utsav',
+    pujaName: 'South Kolkata Sarbojanin Ganesha Festival',
+    clubName: 'Triangular Park Cultural Samiti',
+    category: 'pandal_ganesh',
+    pujaType: 'ganesh',
+    theme: 'Eco-Friendly Clay Siddhivinayak & Bhajan Sandhya',
+    description: 'Popular South Kolkata Ganesh festival known for serene Vedic chanting, classical devotional music performances, and exquisite eco-friendly clay idol.',
+    location: { lat: 22.5186, lng: 88.3635 },
+    address: 'Triangular Park, Rashbehari Ave, Ballygunge, Kolkata',
+    zone: 'Kolkata',
+    images: ['https://images.unsplash.com/photo-1567591414240-e221375d3fec?auto=format&fit=crop&w=800&q=80'],
+    thumbnail: 'https://images.unsplash.com/photo-1567591414240-e221375d3fec?auto=format&fit=crop&w=400&q=80',
+    rating: 4.8,
+    reviewCount: 890,
+    visitCount: 38000,
+    photosPostedCount: 95,
+    trafficLevel: 'moderate',
+    estimatedQueueMins: 12,
+    isBeautyPick: true,
+    isHeritage: false
+  },
+
+  // 7. Shiva Temples & Shivaratri
+  {
+    id: 'spot-shiva-1',
+    name: 'Tarakeswar Taraknath Mahadev Temple',
+    pujaName: 'Tarakeswar 18th-Century Atchala Shiva Shrine',
+    clubName: 'Tarakeswar Estate & Sebayat Trust',
+    category: 'pandal_shiva',
+    pujaType: 'shiva',
+    theme: 'Ancient Swayambhu Shivalinga, Dudhpukur Holy Tank & Shravani Mela',
+    description: 'Bengal’s paramount Shiva pilgrimage. Millions of barefoot Bolbom devotees carry holy Ganga water from Sheoraphuli to pour upon Lord Taraknath.',
+    location: { lat: 22.8872, lng: 88.0205 },
+    address: 'Tarakeswar, Hooghly District, West Bengal',
+    zone: 'Hooghly',
+    images: ['https://images.unsplash.com/photo-1618773928121-c32242e63f39?auto=format&fit=crop&w=800&q=80'],
+    thumbnail: 'https://images.unsplash.com/photo-1618773928121-c32242e63f39?auto=format&fit=crop&w=400&q=80',
+    rating: 5.0,
+    reviewCount: 4600,
+    visitCount: 290000,
+    photosPostedCount: 480,
+    trafficLevel: 'heavy',
+    estimatedQueueMins: 35,
+    isBeautyPick: true,
+    isHeritage: true
+  },
+  {
+    id: 'spot-shiva-2',
+    name: 'Bhukailash Twin Shiva Mandir (Kidderpore)',
+    pujaName: 'Bhukailash Rajbari Raktakamaleshwar & Krisnachandreshwar',
+    clubName: 'Bhukailash Debottar Trust',
+    category: 'pandal_shiva',
+    pujaType: 'shiva',
+    theme: 'Bengal’s Largest Monolithic Shivalingas Built by Maharaja Joynarayan Ghoshal (1781)',
+    description: 'Consecrated in 1781 AD. Houses two colossal monolithic Shivalingas carved from single stone blocks, surrounded by a peaceful temple pond and ancient banyan trees.',
+    location: { lat: 22.5385, lng: 88.3245 },
+    address: 'Bhukailash Road, Kidderpore, Kolkata',
+    zone: 'Kolkata',
+    images: ['https://images.unsplash.com/photo-1618773928121-c32242e63f39?auto=format&fit=crop&w=800&q=80'],
+    thumbnail: 'https://images.unsplash.com/photo-1618773928121-c32242e63f39?auto=format&fit=crop&w=400&q=80',
+    rating: 4.8,
+    reviewCount: 980,
+    visitCount: 45000,
+    photosPostedCount: 130,
+    trafficLevel: 'low',
+    estimatedQueueMins: 10,
+    isBeautyPick: true,
+    isHeritage: true
+  },
+
+  // 8. Jagaddhatri Puja
+  {
+    id: 'spot-jagaddhatri-1',
+    name: 'Chandannagar Strand Road Grand Jagaddhatri Utsav',
+    pujaName: 'Chandannagar Central Jagaddhatri Festival & Lightcraft Mela',
+    clubName: 'Chandannagar Central Jagaddhatri Samiti',
+    category: 'pandal_jagaddhatri',
+    pujaType: 'jagaddhatri',
+    theme: 'World-Renowned 30-Foot Majestic Singhabahini Idols & Moving Illumination',
+    description: 'Chandannagar’s crown jewel celebration. Tens of kilometers of animated light gates, colossal golden idols, and the world’s grandest night-long immersion procession.',
+    location: { lat: 22.8675, lng: 88.3695 },
+    address: 'Strand Road, Chandannagar, Hooghly District',
+    zone: 'Hooghly',
+    images: ['https://images.unsplash.com/photo-1571597438372-540dd352bf41?auto=format&fit=crop&w=800&q=80'],
+    thumbnail: 'https://images.unsplash.com/photo-1571597438372-540dd352bf41?auto=format&fit=crop&w=400&q=80',
+    rating: 5.0,
+    reviewCount: 3900,
+    visitCount: 260000,
+    photosPostedCount: 510,
+    trafficLevel: 'heavy',
+    estimatedQueueMins: 30,
+    isBeautyPick: true,
+    isHeritage: true
+  },
+  {
+    id: 'spot-jagaddhatri-2',
+    name: 'Krishnanagar Rajbari Jagaddhatri Puja (Nadia)',
+    pujaName: 'Raja Krishna Chandra Roy Historic Jagaddhatri Pujo',
+    clubName: 'Krishnanagar Raj Estate',
+    category: 'pandal_jagaddhatri',
+    pujaType: 'jagaddhatri',
+    theme: 'Origin of Jagaddhatri Puja in Bengal by Maharaja Krishna Chandra (1766)',
+    description: 'The historic birthplace of Jagaddhatri Puja in Bengal started in 1766 AD. Regal palace ceremonies, traditional guns fired at Sandhi Puja, and clay idol artistry.',
+    location: { lat: 23.4010, lng: 88.5020 },
+    address: 'Rajbari, Krishnanagar, Nadia District',
+    zone: 'Nadia',
+    images: ['https://images.unsplash.com/photo-1571597438372-540dd352bf41?auto=format&fit=crop&w=800&q=80'],
+    thumbnail: 'https://images.unsplash.com/photo-1571597438372-540dd352bf41?auto=format&fit=crop&w=400&q=80',
+    rating: 4.9,
+    reviewCount: 1780,
+    visitCount: 88000,
+    photosPostedCount: 220,
+    trafficLevel: 'moderate',
+    estimatedQueueMins: 20,
+    isBeautyPick: true,
+    isHeritage: true
+  },
+
+  // 9. Kartik Puja
+  {
+    id: 'spot-kartik-1',
+    name: 'Katwa Laddu Kartik Puja & Carnival',
+    pujaName: 'Katwa World-Famous Kartik Mela & Battle Procession',
+    clubName: 'Katwa Central Kartik Puja Samiti',
+    category: 'pandal_kartik',
+    pujaType: 'kartik',
+    theme: 'Celebrated Laddu Kartik, Peacock Rides & Midnight Theatrical Battle Mela',
+    description: 'Katwa is the undisputed Kartik Puja capital of India. Massive colourful processions of Lord Kartik riding magnificent peacocks, accompanied by folk dhak beats.',
+    location: { lat: 23.6520, lng: 88.1340 },
+    address: 'Station Bazar, Katwa, Purba Bardhaman District',
+    zone: 'Purba Bardhaman',
+    images: ['https://images.unsplash.com/photo-1534447677768-be436bb09401?auto=format&fit=crop&w=800&q=80'],
+    thumbnail: 'https://images.unsplash.com/photo-1534447677768-be436bb09401?auto=format&fit=crop&w=400&q=80',
+    rating: 4.9,
+    reviewCount: 1650,
+    visitCount: 92000,
+    photosPostedCount: 210,
+    trafficLevel: 'heavy',
+    estimatedQueueMins: 25,
+    isBeautyPick: true,
+    isHeritage: true
+  },
+
+  // 10. Vishwakarma Puja
+  {
+    id: 'spot-vishwakarma-1',
+    name: 'Howrah Railway Workshop Vishwakarma Pujo & Kite Fest',
+    pujaName: 'Howrah Carriage Works Divine Architect Puja',
+    clubName: 'Eastern Railway Technical Staff Union',
+    category: 'pandal_vishwakarma',
+    pujaType: 'vishwakarma',
+    theme: 'Heavy Locomotive Decoration, Mechanical Marvels & 10,000 Flying Kites',
+    description: 'India’s oldest railway workshop honors the Divine Architect. Decorated electric locomotives, massive mechanical setups, and skies filled with vibrant flying kites.',
+    location: { lat: 22.5840, lng: 88.3410 },
+    address: 'Carriage Workshop, Howrah Station Complex, Howrah',
+    zone: 'Howrah',
+    images: ['https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=800&q=80'],
+    thumbnail: 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=400&q=80',
+    rating: 4.8,
+    reviewCount: 940,
+    visitCount: 48000,
+    photosPostedCount: 140,
+    trafficLevel: 'moderate',
+    estimatedQueueMins: 15,
+    isBeautyPick: true,
+    isHeritage: true
+  },
+
+  // 11. Bonedi Bari Heritage Pujos
+  {
+    id: 'spot-bonedi-1',
+    name: 'Sabarna Roy Choudhury Atchala Puja (Barisha)',
+    pujaName: 'Sabarna Roy Choudhury Paribar 1610 AD Durga & Kali Pujo',
+    clubName: 'Sabarna Roy Choudhury Paribar Parishad',
+    category: 'bonedi',
+    pujaType: 'bonedi',
+    theme: 'Kolkata’s Oldest Recorded Bonedi Puja Dating Back to 1610 AD',
+    description: 'The zamindar family who originally leased Kolkata, Sutanuti, and Govindapur. Over 415 years of uninterrupted traditions inside the historic thatched Atchala courtyard.',
+    location: { lat: 22.4820, lng: 88.3170 },
+    address: 'Diamond Harbour Road, Barisha, South Kolkata',
+    zone: 'Kolkata',
+    images: ['https://images.unsplash.com/photo-1544816155-12df9643f363?auto=format&fit=crop&w=800&q=80'],
+    thumbnail: 'https://images.unsplash.com/photo-1544816155-12df9643f363?auto=format&fit=crop&w=400&q=80',
+    rating: 5.0,
+    reviewCount: 1820,
+    visitCount: 68000,
+    photosPostedCount: 260,
+    trafficLevel: 'moderate',
+    estimatedQueueMins: 15,
+    isBeautyPick: true,
+    isHeritage: true
+  }
+];
+
 const MASTER_DEFAULT_SPOTS = [
-  ...DEFAULT_PANDALS.map(p => ({ ...p, category: p.category || 'pandal' })),
+  ...DEFAULT_PANDALS.map(p => ({ ...p, category: 'pandal_durga', pujaType: 'durga' })),
+  ...FESTIVE_PUJAS_AND_TEMPLES_SPOTS,
   ...ADDITIONAL_FESTIVE_SPOTS
 ];
 
@@ -1171,8 +1843,14 @@ function loadStoredPandals() {
         list.forEach(p => mapById.set(p.id, p));
         parsed.forEach(p => {
           if (p && p.id && !deletedIds.has(p.id)) {
-            if (!p.category) p.category = 'pandal';
-            mapById.set(p.id, p);
+            const defItem = mapById.get(p.id);
+            if (defItem) {
+              const cat = (p.category && p.category !== 'pandal') ? p.category : defItem.category;
+              mapById.set(p.id, { ...defItem, ...p, category: cat, pujaType: p.pujaType || defItem.pujaType });
+            } else {
+              if (!p.category || p.category === 'pandal') p.category = 'pandal_durga';
+              mapById.set(p.id, p);
+            }
           }
         });
         list = Array.from(mapById.values());
@@ -1181,7 +1859,14 @@ function loadStoredPandals() {
   } catch (e) {
     console.error('Failed reading localStorage pandals:', e);
   }
-  list = list.filter(p => !deletedIds.has(p.id)).map(sanitizePandalImages);
+  list = list.filter(p => !deletedIds.has(p.id)).map(p => {
+    // Explicit sync: all recent / existing pandals default to Durga Puja Pandals
+    if (!p.category || p.category === 'pandal') {
+      p.category = 'pandal_durga';
+      p.pujaType = p.pujaType || 'durga';
+    }
+    return sanitizePandalImages(p);
+  });
   localStorage.setItem(STORAGE_KEYS.PANDALS, JSON.stringify(list));
   return list;
 }
@@ -2230,14 +2915,28 @@ function renderPandalMarkers() {
     displayList = displayList.filter(p => p.trafficLevel === 'low' || p.trafficLevel === 'moderate');
   }
 
-  // Multi-Category Map Filter: supports pandals only, food stalls only, grocery only, custom emojis, or any combination!
+  // Multi-Category Map Filter: supports parent pandals, specific puja types, temples, food, stalls, carnivals, or any combination!
   if (activeMapCategories.size > 0 && !activeMapCategories.has('all')) {
     displayList = displayList.filter(p => {
-      const cat = p.category || 'pandal';
-      if (activeMapCategories.has(cat)) return true;
-      if (activeMapCategories.has('other')) {
-        if (cat === 'other' || p.customEmoji || (p.icon && p.icon !== '🪔')) {
+      const cat = p.category || 'pandal_durga';
+      const pType = p.pujaType || '';
+
+      for (const act of activeMapCategories) {
+        if (act === 'pandal') {
+          // Parent 'Puja Pandals' matches any sacred festival, puja or temple
+          if (cat === 'pandal' || cat.startsWith('pandal_') || cat === 'temple' || cat === 'bonedi' || pType) {
+            return true;
+          }
+        } else if (cat === act) {
           return true;
+        } else if (pType && (`pandal_${pType}` === act || pType === act)) {
+          return true;
+        } else if (act === 'pandal_durga' && (cat === 'pandal' || cat === 'pandal_durga')) {
+          return true;
+        } else if (act === 'other') {
+          if (cat === 'other' || p.customEmoji || (p.icon && p.icon !== '🪔')) {
+            return true;
+          }
         }
       }
       return false;
@@ -2245,9 +2944,21 @@ function renderPandalMarkers() {
   }
 
   displayList.forEach(p => {
-    const cat = p.category || 'pandal';
-    const cfg = MARKER_CATEGORY_CONFIG[cat] || MARKER_CATEGORY_CONFIG.pandal;
-    const pinEmoji = p.customEmoji || p.icon || cfg.icon || '🪔';
+    // Explicit sync: default or legacy pandals are all Durga Puja Pandals
+    const cat = (!p.category || p.category === 'pandal' || p.pujaType === 'durga') ? 'pandal_durga' : p.category;
+    const cfg = MARKER_CATEGORY_CONFIG[cat] || MARKER_CATEGORY_CONFIG.pandal_durga || MARKER_CATEGORY_CONFIG.pandal;
+
+    // Use authentic Maa Durga Face for Durga Puja markers
+    let pinIconHtml = '';
+    if (cat === 'pandal_durga' || (!p.category && !p.icon) || p.pujaType === 'durga') {
+      pinIconHtml = DURGA_MATA_FACE_SVG;
+    } else if (p.customEmoji) {
+      pinIconHtml = p.customEmoji;
+    } else if (p.icon && p.icon !== '🪔' && p.icon !== '🔱') {
+      pinIconHtml = p.icon;
+    } else {
+      pinIconHtml = cfg.icon || '🪔';
+    }
 
     const trafficColor = 
       p.trafficLevel === 'low' ? '#10b981' :
@@ -2260,7 +2971,7 @@ function renderPandalMarkers() {
       <div class="pandal-pin-container ${cfg.pinClass || ''}" title="${p.name} (${cfg.label})">
         <div class="marker-halo-ring" style="border-color: ${cfg.accentColor}88;"></div>
         <div class="pandal-pin-inner" style="background: ${cfg.bgGradient}; box-shadow: 0 4px 14px ${cfg.shadowColor};">
-          <span class="marker-cat-icon">${pinEmoji}</span>
+          <span class="marker-cat-icon">${pinIconHtml}</span>
           ${p.isBeautyPick ? '<span class="pandal-star-badge">★</span>' : ''}
           <span class="traffic-dot" style="background-color: ${trafficColor};"></span>
         </div>
@@ -2323,16 +3034,62 @@ function toggleCategoryFilter(cat) {
   } else {
     const labels = Array.from(activeMapCategories).map(c => {
       const cCfg = MARKER_CATEGORY_CONFIG[c];
-      return cCfg ? `${cCfg.icon} ${cCfg.label}` : c;
+      return cCfg ? `${cCfg.icon} ${cCfg.label.split(' ')[0]}` : c;
     });
     showToast(`Filter: ${labels.join(' + ')}`);
   }
 }
 
-function handleToolboxFilterToggle(cat, e) {
-  if (e) {
-    if (typeof e.stopPropagation === 'function') e.stopPropagation();
+function togglePujaSubcategories(e) {
+  if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
+  const drawer = document.getElementById('puja-subcategories-drawer');
+  const arrow = document.getElementById('puja-sub-arrow');
+  if (!drawer) return;
+  const isOpen = drawer.classList.contains('open');
+  if (isOpen) {
+    drawer.classList.remove('open');
+    if (arrow) arrow.textContent = '▼';
+  } else {
+    drawer.classList.add('open');
+    if (arrow) arrow.textContent = '▲';
   }
+}
+
+function selectPujaSubGroup(group, e) {
+  if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
+  activeMapCategories.clear();
+
+  if (group === 'all_pujas') {
+    activeMapCategories.add('pandal');
+    showToast('🪔 Showing all 12 Puja & Temple types');
+  } else if (group === 'durga_kali') {
+    activeMapCategories.add('pandal_durga');
+    activeMapCategories.add('pandal_kali');
+    showToast('🔱 Durga Puja + 🌺 Kali Puja selected');
+  } else if (group === 'temples_only') {
+    activeMapCategories.add('temple');
+    showToast('🛕 Showing Historic Temples & Mandirs');
+  }
+
+  currentMapCategoryFilter = Array.from(activeMapCategories)[0];
+  updateCategoryFilterUI();
+  syncToolboxFilterUI();
+  renderPandalMarkers();
+}
+
+function handleToolboxFilterToggle(cat, e) {
+  if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
+
+  // If user clicks parent 'pandal', make sure drawer is open to explore all options
+  if (cat === 'pandal') {
+    const drawer = document.getElementById('puja-subcategories-drawer');
+    const arrow = document.getElementById('puja-sub-arrow');
+    if (drawer && !drawer.classList.contains('open')) {
+      drawer.classList.add('open');
+      if (arrow) arrow.textContent = '▲';
+    }
+  }
+
   toggleCategoryFilter(cat);
 }
 
@@ -2361,6 +3118,8 @@ function updateToolboxFilterSummary() {
   if (!summaryEl) return;
   if (activeMapCategories.has('all') || activeMapCategories.size === 0) {
     summaryEl.textContent = 'All spots showing';
+  } else if (activeMapCategories.has('pandal')) {
+    summaryEl.textContent = 'All Pujas & Temples';
   } else {
     const list = Array.from(activeMapCategories).map(c => {
       const cfg = MARKER_CATEGORY_CONFIG[c];
@@ -2376,12 +3135,45 @@ function updateToolboxFilterSummary() {
 
 function syncToolboxFilterUI() {
   const isAll = activeMapCategories.has('all');
-  document.querySelectorAll('#toolbox-view-filter .filter-radio-card, #toolbox-category-filter-box .filter-radio-chip').forEach(chip => {
+  const isParentPandal = activeMapCategories.has('pandal');
+  const isAnyPujaSubActive = Array.from(activeMapCategories).some(c => 
+    c.startsWith('pandal_') || c === 'temple' || c === 'bonedi'
+  );
+
+  document.querySelectorAll('#toolbox-view-filter .filter-radio-card, #toolbox-view-filter .filter-sub-card, #toolbox-category-filter-box .filter-radio-chip, .cat-filter-btn').forEach(chip => {
     const cat = chip.dataset.cat;
-    const isSelected = isAll ? (cat === 'all') : activeMapCategories.has(cat);
+    let isSelected = false;
+
+    if (isAll) {
+      isSelected = (cat === 'all');
+    } else if (chip.classList.contains('filter-sub-card')) {
+      isSelected = activeMapCategories.has(cat) || isParentPandal;
+    } else if (cat === 'pandal') {
+      isSelected = isParentPandal || isAnyPujaSubActive;
+    } else {
+      isSelected = activeMapCategories.has(cat);
+    }
+
     chip.classList.toggle('active', isSelected);
     chip.setAttribute('aria-checked', isSelected ? 'true' : 'false');
   });
+
+  // Dynamic counter badge on the parent "Puja Pandals" card
+  const badgeCounter = document.getElementById('puja-pandals-badge-counter');
+  if (badgeCounter) {
+    if (isParentPandal) {
+      badgeCounter.textContent = 'All 12 Active';
+      badgeCounter.style.background = '#f59e0b';
+    } else if (isAnyPujaSubActive) {
+      const activeCount = Array.from(activeMapCategories).filter(c => c.startsWith('pandal_') || c === 'temple' || c === 'bonedi').length;
+      badgeCounter.textContent = `${activeCount} Selected`;
+      badgeCounter.style.background = '#10b981';
+    } else {
+      badgeCounter.textContent = '12 Types';
+      badgeCounter.style.background = 'rgba(255,255,255,0.2)';
+    }
+  }
+
   updateToolboxFilterSummary();
 }
 
@@ -4985,14 +5777,16 @@ function setManualPin(latlng) {
 
   if (tempPinMarker) tempPinMarker.remove();
 
-  const activeCat = (currentMapCategoryFilter && currentMapCategoryFilter !== 'all') ? currentMapCategoryFilter : 'pandal';
-  const cfg = MARKER_CATEGORY_CONFIG[activeCat] || MARKER_CATEGORY_CONFIG.pandal;
+  const activeCat = (currentMapCategoryFilter && currentMapCategoryFilter !== 'all' && currentMapCategoryFilter !== 'pandal') ? currentMapCategoryFilter : 'pandal_durga';
+  const cfg = MARKER_CATEGORY_CONFIG[activeCat] || MARKER_CATEGORY_CONFIG.pandal_durga;
+
+  const pinDisplayHtml = activeCat === 'pandal_durga' ? DURGA_MATA_FACE_SVG : (cfg.icon || '🪔');
 
   const el = document.createElement('div');
   el.className = 'custom-temp-pin';
   el.innerHTML = `
     <div style="display: flex; flex-direction: column; align-items: center;">
-      <div class="temp-pin-emoji-bubble" style="width: 44px; height: 44px; border-radius: 14px; background: ${cfg.bgGradient}; border: 2.5px solid #fff; display: flex; align-items: center; justify-content: center; font-size: 22px; box-shadow: 0 4px 15px ${cfg.shadowColor}; animation: bounce 1s infinite;">${cfg.icon}</div>
+      <div class="temp-pin-emoji-bubble" style="width: 44px; height: 44px; border-radius: 14px; background: ${cfg.bgGradient}; border: 2.5px solid #fff; display: flex; align-items: center; justify-content: center; font-size: 22px; box-shadow: 0 4px 15px ${cfg.shadowColor}; animation: bounce 1s infinite;">${pinDisplayHtml}</div>
     </div>
   `;
 
@@ -5062,7 +5856,7 @@ function setManualPin(latlng) {
 }
 
 function selectPinCategory(cat, btn) {
-  const targetCat = cat || 'pandal';
+  const targetCat = (cat === 'pandal' || !cat) ? 'pandal_durga' : cat;
   const hiddenInput = document.getElementById('add-category');
   if (hiddenInput) hiddenInput.value = targetCat;
 
@@ -5192,11 +5986,132 @@ function selectPinCategory(cat, btn) {
       if (inpClub) inpClub.placeholder = 'e.g. Pujo Hopper';
       break;
 
-    default: // pandal
-      if (lblName) lblName.textContent = 'Puja Pandal Name *';
-      if (inpName) inpName.placeholder = 'e.g. Sreebhumi Sporting Club, Maddox Square';
+    case 'temple':
+      if (lblName) lblName.textContent = 'Temple / Mandir Name *';
+      if (inpName) inpName.placeholder = 'e.g. Kalighat Temple, Dakshineswar, Belur Math, Birla Mandir';
+      if (lblTheme) lblTheme.textContent = 'Deity & Architectural Heritage';
+      if (inpTheme) inpTheme.placeholder = 'e.g. Maa Bhavatarini, 12 Shiva Shrines, Navaratna Shikhara';
+      if (lblDesc) lblDesc.textContent = 'Darshan, Aarti & Bhog Timings';
+      if (inpDesc) inpDesc.placeholder = 'e.g. Morning Aarti 6 AM, Sandhya Aarti 7 PM, Bhog prasad at 12 PM';
+      if (lblClub) lblClub.textContent = 'Temple Trust / Sebayat Committee';
+      if (inpClub) inpClub.placeholder = 'e.g. Temple Trust / Debottar Board';
+      break;
+
+    case 'pandal_kali':
+      if (lblName) lblName.textContent = 'Kali Puja Pandal / Committee Name *';
+      if (inpName) inpName.placeholder = 'e.g. Naihati Boro Maa, Barasat Pioneer Club';
+      if (lblTheme) lblTheme.textContent = 'Idol Form & Lighting Concept';
+      if (inpTheme) inpTheme.placeholder = 'e.g. 21-ft Dakshina Kali, Kinetic Chandannagar Lightcraft';
+      if (lblDesc) lblDesc.textContent = 'Midnight Puja & Darshan Schedule';
+      if (inpDesc) inpDesc.placeholder = 'e.g. Midnight Tantrik Puja, grand fireworks show, open 24 hours';
+      if (lblClub) lblClub.textContent = 'Organizer / Club Name';
+      if (inpClub) inpClub.placeholder = 'e.g. Kali Puja Samiti';
+      break;
+
+    case 'pandal_saraswati':
+      if (lblName) lblName.textContent = 'Saraswati Puja Pandal / Institution *';
+      if (inpName) inpName.placeholder = 'e.g. Presidency University, Sanskrit College, Jadavpur Campus';
+      if (lblTheme) lblTheme.textContent = 'Artistic Concept & Idol Craft';
+      if (inpTheme) inpTheme.placeholder = 'e.g. Eco-Friendly Terracotta Veena Idol, Yellow Basanti Theme';
+      if (lblDesc) lblDesc.textContent = 'Basant Panchami Cultural Events';
+      if (inpDesc) inpDesc.placeholder = 'e.g. Morning Pushpanjali 9 AM, Sitar recitals, student cultural meet';
+      if (lblClub) lblClub.textContent = 'Student Union / Cultural Club';
+      if (inpClub) inpClub.placeholder = 'e.g. Students Union / Fine Arts Society';
+      break;
+
+    case 'pandal_laxmi':
+      if (lblName) lblName.textContent = 'Laxmi Puja / Rajbari / Club Name *';
+      if (inpName) inpName.placeholder = 'e.g. Sovabazar Rajbari Kojagori Laxmi Puja, Mallick Bari';
+      if (lblTheme) lblTheme.textContent = 'Alpona Art & Kojagori Traditions';
+      if (inpTheme) inpTheme.placeholder = 'e.g. Rice-Flour Alpona floor, Golden Kalash, Daaker Saaj';
+      if (lblDesc) lblDesc.textContent = 'Kojagori Purnima Vigil & Bhog Details';
+      if (inpDesc) inpDesc.placeholder = 'e.g. Full moon evening Puja, Khichuri and Narkel Naru bhog';
+      if (lblClub) lblClub.textContent = 'Family Trust / Organizer';
+      if (inpClub) inpClub.placeholder = 'e.g. Heritage Trust / Samiti';
+      break;
+
+    case 'pandal_ratha':
+      if (lblName) lblName.textContent = 'Ratha Jatra / Chariot Festival *';
+      if (inpName) inpName.placeholder = 'e.g. Mahesh Jagannath Ratha Jatra, ISKCON Kolkata';
+      if (lblTheme) lblTheme.textContent = 'Chariot Architecture & Yatra Route';
+      if (inpTheme) inpTheme.placeholder = 'e.g. 50-ft Iron Chariot, 3 Nandighosa Chariots, Gundicha Fair';
+      if (lblDesc) lblDesc.textContent = 'Rope Pulling & Procession Timings';
+      if (inpDesc) inpDesc.placeholder = 'e.g. Chariot pulling starts 3 PM, 7-day fair and Khaja prasad';
+      if (lblClub) lblClub.textContent = 'Temple Trust / Committee';
+      if (inpClub) inpClub.placeholder = 'e.g. Jagannath Mandir Sebayat Trust';
+      break;
+
+    case 'pandal_ganesh':
+      if (lblName) lblName.textContent = 'Ganesh Puja / Mandal Name *';
+      if (inpName) inpName.placeholder = 'e.g. Posta Ganapati Sarbojanin, Triangular Park';
+      if (lblTheme) lblTheme.textContent = 'Ganapati Form & Maha Modak Bhog';
+      if (inpTheme) inpTheme.placeholder = 'e.g. 18-ft Siddhivinayak, 51-kg Modak, Dhol Tasha beats';
+      if (lblDesc) lblDesc.textContent = 'Aarti Timings & Visarjan Procession';
+      if (inpDesc) inpDesc.placeholder = 'e.g. Daily evening Maha Aarti 7 PM, grand immersion route';
+      if (lblClub) lblClub.textContent = 'Ganesha Mandal / Vyapar Samiti';
+      if (inpClub) inpClub.placeholder = 'e.g. Posta Ganesha Samiti';
+      break;
+
+    case 'pandal_shiva':
+      if (lblName) lblName.textContent = 'Shiva Mandir / Puja Spot *';
+      if (inpName) inpName.placeholder = 'e.g. Tarakeswar Taraknath, Bhukailash Twin Shiva Mandir';
+      if (lblTheme) lblTheme.textContent = 'Shivalinga Form & Abhishek';
+      if (inpTheme) inpTheme.placeholder = 'e.g. Swayambhu Linga, Monolithic Stone Shivalinga, Ganga Jal';
+      if (lblDesc) lblDesc.textContent = 'Maha Shivaratri & Darshan Info';
+      if (inpDesc) inpDesc.placeholder = 'e.g. Night-long four prahar pujas, Bel Patra and Milk abhishek';
+      if (lblClub) lblClub.textContent = 'Sebayat Estate / Trust';
+      if (inpClub) inpClub.placeholder = 'e.g. Tarakeswar Estate Board';
+      break;
+
+    case 'pandal_jagaddhatri':
+      if (lblName) lblName.textContent = 'Jagaddhatri Puja Committee *';
+      if (inpName) inpName.placeholder = 'e.g. Chandannagar Strand Road, Krishnanagar Rajbari';
+      if (lblTheme) lblTheme.textContent = 'Colossal Singhabahini Idol & Light Gates';
+      if (inpTheme) inpTheme.placeholder = 'e.g. 30-ft Golden Idol, 10-km Animated Light Circuit';
+      if (lblDesc) lblDesc.textContent = '4-Day Mela & Immersion Spectacle';
+      if (inpDesc) inpDesc.placeholder = 'e.g. Saptami to Dashami mega fair, night-long illumination parade';
+      if (lblClub) lblClub.textContent = 'Central Jagaddhatri Samiti';
+      if (inpClub) inpClub.placeholder = 'e.g. Strand Samiti';
+      break;
+
+    case 'pandal_kartik':
+      if (lblName) lblName.textContent = 'Kartik Puja / Mela *';
+      if (inpName) inpName.placeholder = 'e.g. Katwa Laddu Kartik Puja, Bansberia Kartik Mela';
+      if (lblTheme) lblTheme.textContent = 'Peacock Idol & Battle Procession Theme';
+      if (inpTheme) inpTheme.placeholder = 'e.g. Famous Laddu Kartik, Mythological Battle Floats';
+      if (lblDesc) lblDesc.textContent = 'Carnival Timings & Road Procession';
+      if (inpDesc) inpDesc.placeholder = 'e.g. Vibrant midnight parade with traditional Dhak and joyrides';
+      if (lblClub) lblClub.textContent = 'Puja Committee';
+      if (inpClub) inpClub.placeholder = 'e.g. Katwa Central Samiti';
+      break;
+
+    case 'pandal_vishwakarma':
+      if (lblName) lblName.textContent = 'Vishwakarma Puja / Workshop *';
+      if (inpName) inpName.placeholder = 'e.g. Howrah Railway Workshop, Tram Depot, Shipyard';
+      if (lblTheme) lblTheme.textContent = 'Machinery Decoration & Kite Festival';
+      if (inpTheme) inpTheme.placeholder = 'e.g. Decorated Locomotives, Flying Kite Competitions';
+      if (lblDesc) lblDesc.textContent = 'Workshop Visiting & Bhog Timings';
+      if (inpDesc) inpDesc.placeholder = 'e.g. Public open house, Khichuri prasad distribution';
+      if (lblClub) lblClub.textContent = 'Staff Union / Workshop Committee';
+      if (inpClub) inpClub.placeholder = 'e.g. Carriage Works Union';
+      break;
+
+    case 'bonedi':
+      if (lblName) lblName.textContent = 'Bonedi Bari Heritage Pujo *';
+      if (inpName) inpName.placeholder = 'e.g. Sovabazar Rajbari, Sabarna Roy Choudhury Atchala';
+      if (lblTheme) lblTheme.textContent = 'Centuries-Old Thakur Dalan Traditions';
+      if (inpTheme) inpTheme.placeholder = 'e.g. Founded in 1610 AD, Ekchala Pratima, Sandhi Puja Cannon';
+      if (lblDesc) lblDesc.textContent = 'Heritage Rituals & Visitor Timings';
+      if (inpDesc) inpDesc.placeholder = 'e.g. Open to visitors from Shasthi to Dashami, Sabeki rituals';
+      if (lblClub) lblClub.textContent = 'Heritage Family / Trust';
+      if (inpClub) inpClub.placeholder = 'e.g. Roy Choudhury Paribar Parishad';
+      break;
+
+    default: // pandal / pandal_durga
+      if (lblName) lblName.textContent = 'Durga Puja Pandal Name *';
+      if (inpName) inpName.placeholder = 'e.g. Sreebhumi Sporting Club, Santosh Mitra Square, Bagbazar';
       if (lblTheme) lblTheme.textContent = 'Specialty / Theme / Attractions';
-      if (inpTheme) inpTheme.placeholder = 'e.g. Grand Palace Replica, Traditional Sanatan Idol';
+      if (inpTheme) inpTheme.placeholder = 'e.g. Grand Palace Replica, Traditional Sanatan Idol, 3D Laser';
       if (lblDesc) lblDesc.textContent = 'Short Description / Highlights';
       if (inpDesc) inpDesc.placeholder = 'Tell hoppers about the idol, architecture, and lighting...';
       if (lblClub) lblClub.textContent = 'Organizer / Club Name';
@@ -5301,14 +6216,16 @@ function closeAddModal() {
 
 async function submitNewPandal(e) {
   e.preventDefault();
-  const category = (document.getElementById('add-category') ? document.getElementById('add-category').value : 'pandal') || 'pandal';
+  const rawCat = (document.getElementById('add-category') ? document.getElementById('add-category').value : 'pandal_durga') || 'pandal_durga';
+  const category = (rawCat === 'pandal' || !rawCat) ? 'pandal_durga' : rawCat;
+  const pujaType = category === 'pandal_durga' ? 'durga' : (category.startsWith('pandal_') ? category.replace('pandal_', '') : category);
   const name = document.getElementById('add-name').value.trim();
   const club = document.getElementById('add-club').value.trim();
   const zone = document.getElementById('add-zone').value;
   const city = (document.getElementById('add-city') ? document.getElementById('add-city').value.trim() : '') || '';
-  const cfg = MARKER_CATEGORY_CONFIG[category] || MARKER_CATEGORY_CONFIG.pandal;
+  const cfg = MARKER_CATEGORY_CONFIG[category] || MARKER_CATEGORY_CONFIG.pandal_durga;
 
-  const defaultTheme = category === 'pandal' ? 'Festive Pratima & Illumination' : `${cfg.label} Spot`;
+  const defaultTheme = (category === 'pandal' || category === 'pandal_durga') ? 'Festive Pratima & Illumination' : `${cfg.label} Spot`;
   const defaultDesc = `Community pinned ${cfg.label} for Bengal festival hoppers.`;
   const theme = document.getElementById('add-theme').value.trim() || defaultTheme;
   const desc = document.getElementById('add-desc').value.trim() || defaultDesc;
@@ -5345,9 +6262,10 @@ async function submitNewPandal(e) {
   const newPandal = {
     id: 'pandal-custom-' + Date.now(),
     name: name,
-    pujaName: category === 'pandal' ? `${name} Sarbojanin Durgotsav` : `${name} (${cfg.label})`,
+    pujaName: (category === 'pandal' || category === 'pandal_durga') ? `${name} Sarbojanin Durgotsav` : `${name} (${cfg.label})`,
     clubName: club || name,
     category: category,
+    pujaType: pujaType,
     customEmoji: customEmoji,
     icon: customEmoji,
     theme: theme,

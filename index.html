@@ -25,7 +25,209 @@
     <link href="https://api.mapbox.com/mapbox-gl-js/v3.4.0/mapbox-gl.css" rel="stylesheet" />
 
     <!-- Custom Festive Stylesheet -->
-    <link rel="stylesheet" href="./styles.css?v=17.0" />
+    <link rel="stylesheet" href="./styles.css?v=19.0" />
+
+    <!-- Critical Inline Styles for Festive Puja Subcategories Drawer (immune to CSS cache) -->
+    <style id="puja-subcategories-critical-styles">
+      .puja-subcategories-drawer {
+        display: none !important;
+        flex-direction: column !important;
+        gap: 8px !important;
+        background: linear-gradient(180deg, rgba(15, 23, 42, 0.95) 0%, rgba(30, 27, 75, 0.95) 100%) !important;
+        border: 1.5px solid rgba(250, 204, 21, 0.4) !important;
+        border-radius: 14px !important;
+        padding: 10px 10px 12px 10px !important;
+        margin-top: 6px !important;
+        margin-bottom: 6px !important;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
+        backdrop-filter: blur(14px) !important;
+        -webkit-backdrop-filter: blur(14px) !important;
+      }
+      .puja-subcategories-drawer.open {
+        display: flex !important;
+      }
+      .puja-sub-header {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: space-between !important;
+        flex-wrap: wrap !important;
+        gap: 8px !important;
+        padding-bottom: 8px !important;
+        border-bottom: 1px dashed rgba(250, 204, 21, 0.3) !important;
+      }
+      .puja-sub-header-left {
+        display: flex !important;
+        flex-direction: column !important;
+      }
+      .puja-sub-title {
+        font-size: 12px !important;
+        font-weight: 800 !important;
+        color: #fef08a !important;
+        text-shadow: 0 1px 3px rgba(0,0,0,0.6) !important;
+        letter-spacing: 0.2px !important;
+      }
+      .puja-sub-subtitle {
+        font-size: 9.5px !important;
+        color: #cbd5e1 !important;
+        margin-top: 1px !important;
+      }
+      .puja-sub-quick-actions {
+        display: flex !important;
+        gap: 5px !important;
+        flex-wrap: wrap !important;
+      }
+      .puja-sub-pill-btn {
+        appearance: none !important;
+        -webkit-appearance: none !important;
+        font-size: 10.5px !important;
+        font-weight: 700 !important;
+        padding: 4px 10px !important;
+        border-radius: 999px !important;
+        background: rgba(255, 255, 255, 0.14) !important;
+        border: 1px solid rgba(250, 204, 21, 0.5) !important;
+        color: #fef08a !important;
+        cursor: pointer !important;
+        transition: all 0.16s ease !important;
+        font-family: inherit !important;
+        line-height: 1.2 !important;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.2) !important;
+      }
+      .puja-sub-pill-btn:hover, .puja-sub-pill-btn:focus-visible {
+        background: #facc15 !important;
+        color: #0f172a !important;
+        border-color: #fef08a !important;
+        transform: translateY(-1px) !important;
+        box-shadow: 0 4px 10px rgba(250, 204, 21, 0.4) !important;
+      }
+      .puja-sub-cards-grid {
+        display: grid !important;
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 6px !important;
+        max-height: 300px !important;
+        overflow-y: auto !important;
+        padding-right: 3px !important;
+      }
+      @media (max-width: 480px) {
+        .puja-sub-cards-grid {
+          grid-template-columns: 1fr !important;
+          max-height: 260px !important;
+        }
+      }
+      .filter-sub-card {
+        appearance: none !important;
+        -webkit-appearance: none !important;
+        display: flex !important;
+        align-items: center !important;
+        gap: 8px !important;
+        background: rgba(255, 255, 255, 0.08) !important;
+        border: 1.5px solid rgba(255, 255, 255, 0.18) !important;
+        border-radius: 12px !important;
+        padding: 8px 10px !important;
+        cursor: pointer !important;
+        text-align: left !important;
+        color: #ffffff !important;
+        outline: none !important;
+        font-family: inherit !important;
+        transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1) !important;
+        box-sizing: border-box !important;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.2) !important;
+        width: 100% !important;
+      }
+      .filter-sub-card:hover {
+        background: rgba(255, 255, 255, 0.18) !important;
+        border-color: #facc15 !important;
+        transform: translateY(-1px) !important;
+        box-shadow: 0 4px 12px rgba(250, 204, 21, 0.25) !important;
+      }
+      .filter-sub-card.active {
+        background: linear-gradient(135deg, rgba(234, 88, 12, 0.4) 0%, rgba(185, 28, 28, 0.65) 100%) !important;
+        border-color: #facc15 !important;
+        box-shadow: 0 4px 14px rgba(250, 204, 21, 0.35), inset 0 0 10px rgba(250, 204, 21, 0.18) !important;
+      }
+      .filter-sub-card .chip-custom-radio {
+        width: 15px !important;
+        height: 15px !important;
+        border-radius: 50% !important;
+        border: 1.5px solid #facc15 !important;
+        background: rgba(9, 30, 66, 0.6) !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        flex-shrink: 0 !important;
+      }
+      .filter-sub-card .chip-custom-radio::after {
+        content: '' !important;
+        width: 6px !important;
+        height: 6px !important;
+        border-radius: 50% !important;
+        background: #facc15 !important;
+        transform: scale(0) !important;
+        transition: transform 0.15s ease !important;
+      }
+      .filter-sub-card.active .chip-custom-radio {
+        background: #facc15 !important;
+        border-color: #ffffff !important;
+        box-shadow: 0 0 7px rgba(250, 204, 21, 0.7) !important;
+      }
+      .filter-sub-card.active .chip-custom-radio::after {
+        background: #0f172a !important;
+        transform: scale(1) !important;
+      }
+      .filter-sub-card .sub-card-icon,
+      .filter-sub-card .filter-card-icon {
+        font-size: 17px !important;
+        line-height: 1 !important;
+        flex-shrink: 0 !important;
+        filter: drop-shadow(0 1px 3px rgba(0,0,0,0.5)) !important;
+      }
+      .filter-sub-card .sub-card-text,
+      .filter-sub-card .filter-card-details {
+        display: flex !important;
+        flex-direction: column !important;
+        min-width: 0 !important;
+        flex: 1 !important;
+        overflow: hidden !important;
+      }
+      .filter-sub-card .sub-card-name,
+      .filter-sub-card .filter-card-name {
+        font-size: 11.5px !important;
+        font-weight: 800 !important;
+        color: #ffffff !important;
+        line-height: 1.25 !important;
+        display: flex !important;
+        align-items: center !important;
+        flex-wrap: wrap !important;
+        gap: 3px !important;
+      }
+      .filter-sub-card .bengali-label {
+        font-size: 9.5px !important;
+        font-weight: 600 !important;
+        background: rgba(250, 204, 21, 0.22) !important;
+        color: #fef08a !important;
+        padding: 1px 5px !important;
+        border-radius: 4px !important;
+        border: 1px solid rgba(250, 204, 21, 0.35) !important;
+        white-space: nowrap !important;
+      }
+      .filter-sub-card .sub-card-desc,
+      .filter-sub-card .filter-card-hint {
+        font-size: 9.5px !important;
+        color: #e2e8f0 !important;
+        line-height: 1.2 !important;
+        margin-top: 2px !important;
+        white-space: nowrap !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+      }
+      .durga-face-svg {
+        display: block !important;
+        filter: drop-shadow(0 1px 3px rgba(0,0,0,0.5)) !important;
+      }
+      .marker-pin-durga .durga-face-svg {
+        width: 23px !important;
+        height: 23px !important;
+      }
+    </style>
 
     <!-- Dedicated Styles for Authentic Bengal Dhak Player -->
     <style>
@@ -385,15 +587,173 @@
                     </div>
                   </button>
 
-                  <!-- 2. Puja Pandals -->
-                  <button type="button" class="filter-radio-card" role="checkbox" aria-checked="false" data-cat="pandal" onclick="handleToolboxFilterToggle('pandal', event)">
-                    <span class="chip-custom-radio"></span>
-                    <span class="filter-card-icon">🪔</span>
-                    <div class="filter-card-details">
-                      <span class="filter-card-name">Puja Pandals</span>
-                      <span class="filter-card-hint">Heritage, bonedi bari & community pujos</span>
+                  <!-- 2. Puja Pandals & Temples (Expandable Sub-categories for Durga, Kali, Temples, Saraswati, Laxmi, Ratha Jatra, etc.) -->
+                  <div class="filter-card-expandable-wrap" id="puja-pandals-filter-group">
+                    <button type="button" class="filter-radio-card filter-card-parent" role="checkbox" aria-checked="false" data-cat="pandal" onclick="handleToolboxFilterToggle('pandal', event)">
+                      <span class="chip-custom-radio"></span>
+                      <span class="filter-card-icon">🪔</span>
+                      <div class="filter-card-details">
+                        <div class="filter-card-name-row">
+                          <span class="filter-card-name">Puja Pandals & Temples</span>
+                          <span class="puja-count-badge" id="puja-pandals-badge-counter">12 Types</span>
+                        </div>
+                        <span class="filter-card-hint">Durga, Kali, Temples, Ratha Jatra, Saraswati & more</span>
+                      </div>
+                      <span class="btn-expand-subcategories" id="btn-toggle-puja-sub" onclick="togglePujaSubcategories(event)" title="Expand or collapse Puja & Temple markings">
+                        <span class="expand-icon" id="puja-sub-arrow">▼</span>
+                      </span>
+                    </button>
+
+                    <!-- Subcategories Drawer under Puja Pandals -->
+                    <div class="puja-subcategories-drawer open" id="puja-subcategories-drawer">
+                      <div class="puja-sub-header">
+                        <div class="puja-sub-header-left">
+                          <span class="puja-sub-title">✨ Select Specific Celebrations & Mandirs</span>
+                          <span class="puja-sub-subtitle">Custom spiritual markers appear on map for each puja</span>
+                        </div>
+                      </div>
+
+                      <div class="puja-sub-cards-grid">
+                        <!-- 1. Durga Puja (Maa Durga Face Icon) -->
+                        <button type="button" class="filter-radio-card filter-sub-card" role="checkbox" aria-checked="false" data-cat="pandal_durga" onclick="handleToolboxFilterToggle('pandal_durga', event)">
+                          <span class="chip-custom-radio"></span>
+                          <span class="filter-card-icon sub-card-icon durga-icon" title="Maa Durga Face">
+                            <svg viewBox="0 0 36 36" class="durga-face-svg" width="22" height="22" fill="none" xmlns="http://www.w3.org/2000/svg">
+                              <path d="M10 12 L18 3 L26 12 L22 14 L18 8 L14 14 Z" fill="#FBBF24" stroke="#78350F" stroke-width="0.8"/>
+                              <circle cx="18" cy="4" r="1.5" fill="#EF4444"/>
+                              <circle cx="12" cy="11" r="1" fill="#EF4444"/>
+                              <circle cx="24" cy="11" r="1" fill="#EF4444"/>
+                              <path d="M18 10 C16.5 12.5 16.5 14.5 18 17 C19.5 14.5 19.5 12.5 18 10 Z" fill="#DC2626"/>
+                              <circle cx="18" cy="13.5" r="0.8" fill="#FBBF24"/>
+                              <path d="M7 19 C10 16 14 17 16 20 C13 21.5 9 21.5 7 19 Z" fill="#FFFFFF" stroke="#1E1B4B" stroke-width="0.7"/>
+                              <circle cx="12" cy="19.2" r="1.6" fill="#18181B"/>
+                              <path d="M6 18 C9 14.5 14.5 15.5 16.5 19" stroke="#18181B" stroke-width="1.2" stroke-linecap="round"/>
+                              <path d="M29 19 C26 16 22 17 20 20 C23 21.5 27 21.5 29 19 Z" fill="#FFFFFF" stroke="#1E1B4B" stroke-width="0.7"/>
+                              <circle cx="24" cy="19.2" r="1.6" fill="#18181B"/>
+                              <path d="M30 18 C27 14.5 21.5 15.5 19.5 19" stroke="#18181B" stroke-width="1.2" stroke-linecap="round"/>
+                              <circle cx="14" cy="27" r="3.2" stroke="#F59E0B" stroke-width="1.1" fill="none"/>
+                              <circle cx="11.5" cy="26" r="1" fill="#EF4444"/>
+                              <path d="M15 28 C16.5 27 19.5 27 21 28 C19 30.5 17 30.5 15 28 Z" fill="#DC2626"/>
+                            </svg>
+                          </span>
+                          <div class="filter-card-details sub-card-text">
+                            <span class="filter-card-name sub-card-name">Durga Puja <span class="bengali-label">দুর্গাপূজা</span></span>
+                            <span class="filter-card-hint sub-card-desc">Maa Durga Protima Face • Heritage & theme Durgotsav</span>
+                          </div>
+                        </button>
+
+                        <!-- 2. Kali Puja -->
+                        <button type="button" class="filter-radio-card filter-sub-card" role="checkbox" aria-checked="false" data-cat="pandal_kali" onclick="handleToolboxFilterToggle('pandal_kali', event)">
+                          <span class="chip-custom-radio"></span>
+                          <span class="filter-card-icon sub-card-icon kali-icon">🌺</span>
+                          <div class="filter-card-details sub-card-text">
+                            <span class="filter-card-name sub-card-name">Kali Puja <span class="bengali-label">কালীপূজা</span></span>
+                            <span class="filter-card-hint sub-card-desc">Crimson flame • Barasat, Naihati & midnight Shakti</span>
+                          </div>
+                        </button>
+
+                        <!-- 3. Historic Temples & Mandirs -->
+                        <button type="button" class="filter-radio-card filter-sub-card" role="checkbox" aria-checked="false" data-cat="temple" onclick="handleToolboxFilterToggle('temple', event)">
+                          <span class="chip-custom-radio"></span>
+                          <span class="filter-card-icon sub-card-icon temple-icon">🛕</span>
+                          <div class="filter-card-details sub-card-text">
+                            <span class="filter-card-name sub-card-name">Temples & Mandirs <span class="bengali-label">ঐতিহাসিক মন্দির</span></span>
+                            <span class="filter-card-hint sub-card-desc">Terracotta shikhara • Dakshineswar, Kalighat & Belur Math</span>
+                          </div>
+                        </button>
+
+                        <!-- 4. Saraswati Puja -->
+                        <button type="button" class="filter-radio-card filter-sub-card" role="checkbox" aria-checked="false" data-cat="pandal_saraswati" onclick="handleToolboxFilterToggle('pandal_saraswati', event)">
+                          <span class="chip-custom-radio"></span>
+                          <span class="filter-card-icon sub-card-icon saraswati-icon">🎻</span>
+                          <div class="filter-card-details sub-card-text">
+                            <span class="filter-card-name sub-card-name">Saraswati Puja <span class="bengali-label">সরস্বতী পূজা</span></span>
+                            <span class="filter-card-hint sub-card-desc">Basanti golden aura • Sacred Veena, swan & learning</span>
+                          </div>
+                        </button>
+
+                        <!-- 5. Laxmi Puja -->
+                        <button type="button" class="filter-radio-card filter-sub-card" role="checkbox" aria-checked="false" data-cat="pandal_laxmi" onclick="handleToolboxFilterToggle('pandal_laxmi', event)">
+                          <span class="chip-custom-radio"></span>
+                          <span class="filter-card-icon sub-card-icon laxmi-icon">🪙</span>
+                          <div class="filter-card-details sub-card-text">
+                            <span class="filter-card-name sub-card-name">Laxmi Puja <span class="bengali-label">লক্ষ্মী পূজা</span></span>
+                            <span class="filter-card-hint sub-card-desc">Kojagori purnima • Alpona, Dhaner Shish & wealth</span>
+                          </div>
+                        </button>
+
+                        <!-- 6. Jagannath Ratha Jatra -->
+                        <button type="button" class="filter-radio-card filter-sub-card" role="checkbox" aria-checked="false" data-cat="pandal_ratha" onclick="handleToolboxFilterToggle('pandal_ratha', event)">
+                          <span class="chip-custom-radio"></span>
+                          <span class="filter-card-icon sub-card-icon ratha-icon">🚩</span>
+                          <div class="filter-card-details sub-card-text">
+                            <span class="filter-card-name sub-card-name">Ratha Jatra <span class="bengali-label">জগন্নাথ রথযাত্রা</span></span>
+                            <span class="filter-card-hint sub-card-desc">Sacred chariot wheel • Mahesh, ISKCON & yatra</span>
+                          </div>
+                        </button>
+
+                        <!-- 7. Ganesh Puja -->
+                        <button type="button" class="filter-radio-card filter-sub-card" role="checkbox" aria-checked="false" data-cat="pandal_ganesh" onclick="handleToolboxFilterToggle('pandal_ganesh', event)">
+                          <span class="chip-custom-radio"></span>
+                          <span class="filter-card-icon sub-card-icon ganesh-icon">🐘</span>
+                          <div class="filter-card-details sub-card-text">
+                            <span class="filter-card-name sub-card-name">Ganesh Puja <span class="bengali-label">গণেশ পূজা</span></span>
+                            <span class="filter-card-hint sub-card-desc">Marigold orange • Modak bhog & Siddhivinayak</span>
+                          </div>
+                        </button>
+
+                        <!-- 8. Shivaratri & Shiva Temples -->
+                        <button type="button" class="filter-radio-card filter-sub-card" role="checkbox" aria-checked="false" data-cat="pandal_shiva" onclick="handleToolboxFilterToggle('pandal_shiva', event)">
+                          <span class="chip-custom-radio"></span>
+                          <span class="filter-card-icon sub-card-icon shiva-icon">🔱</span>
+                          <div class="filter-card-details sub-card-text">
+                            <span class="filter-card-name sub-card-name">Shiva Puja & Mandir <span class="bengali-label">শিবপূজা / মহাদেব</span></span>
+                            <span class="filter-card-hint sub-card-desc">Cosmic blue aura • Tarakeswar, Damru & Shivalinga</span>
+                          </div>
+                        </button>
+
+                        <!-- 9. Jagaddhatri Puja -->
+                        <button type="button" class="filter-radio-card filter-sub-card" role="checkbox" aria-checked="false" data-cat="pandal_jagaddhatri" onclick="handleToolboxFilterToggle('pandal_jagaddhatri', event)">
+                          <span class="chip-custom-radio"></span>
+                          <span class="filter-card-icon sub-card-icon jagaddhatri-icon">🦁</span>
+                          <div class="filter-card-details sub-card-text">
+                            <span class="filter-card-name sub-card-name">Jagaddhatri Puja <span class="bengali-label">জগদ্ধাত্রী পূজা</span></span>
+                            <span class="filter-card-hint sub-card-desc">Royal lion gold • Chandannagar lighting spectacle</span>
+                          </div>
+                        </button>
+
+                        <!-- 10. Kartik Puja -->
+                        <button type="button" class="filter-radio-card filter-sub-card" role="checkbox" aria-checked="false" data-cat="pandal_kartik" onclick="handleToolboxFilterToggle('pandal_kartik', event)">
+                          <span class="chip-custom-radio"></span>
+                          <span class="filter-card-icon sub-card-icon kartik-icon">🦚</span>
+                          <div class="filter-card-details sub-card-text">
+                            <span class="filter-card-name sub-card-name">Kartik Puja <span class="bengali-label">কার্তিক পূজা</span></span>
+                            <span class="filter-card-hint sub-card-desc">Peacock emerald • Katwa & Bansberia colorful mela</span>
+                          </div>
+                        </button>
+
+                        <!-- 11. Vishwakarma Puja -->
+                        <button type="button" class="filter-radio-card filter-sub-card" role="checkbox" aria-checked="false" data-cat="pandal_vishwakarma" onclick="handleToolboxFilterToggle('pandal_vishwakarma', event)">
+                          <span class="chip-custom-radio"></span>
+                          <span class="filter-card-icon sub-card-icon vishwakarma-icon">⚙️</span>
+                          <div class="filter-card-details sub-card-text">
+                            <span class="filter-card-name sub-card-name">Vishwakarma Puja <span class="bengali-label">বিশ্বকর্মা পূজা</span></span>
+                            <span class="filter-card-hint sub-card-desc">Artisan azure • Flying kites, workshops & mechanics</span>
+                          </div>
+                        </button>
+
+                        <!-- 12. Bonedi Bari Heritage Pujos -->
+                        <button type="button" class="filter-radio-card filter-sub-card" role="checkbox" aria-checked="false" data-cat="bonedi" onclick="handleToolboxFilterToggle('bonedi', event)">
+                          <span class="chip-custom-radio"></span>
+                          <span class="filter-card-icon sub-card-icon bonedi-icon">🏛️</span>
+                          <div class="filter-card-details sub-card-text">
+                            <span class="filter-card-name sub-card-name">Bonedi Bari Pujos <span class="bengali-label">বনেদি বাড়ির ঐতিহ্য</span></span>
+                            <span class="filter-card-hint sub-card-desc">Thakur Dalan • Sovabazar, Sabarna & centuries history</span>
+                          </div>
+                        </button>
+                      </div>
                     </div>
-                  </button>
+                  </div>
 
                   <!-- 3. Food Hubs -->
                   <button type="button" class="filter-radio-card" role="checkbox" aria-checked="false" data-cat="food" onclick="handleToolboxFilterToggle('food', event)">
@@ -1758,11 +2118,73 @@
 
             <!-- Category Selector Buttons -->
             <div style="margin-top:10px;">
-              <label style="display:block; font-size:12px; font-weight:800; color:#0f172a; margin-bottom:6px;">Select Category *</label>
+              <label style="display:block; font-size:12px; font-weight:800; color:#0f172a; margin-bottom:6px;">Select Category / Puja Type *</label>
               <div class="pin-category-grid" id="pin-category-grid">
-                <button type="button" class="pin-cat-option active" data-cat="pandal" onclick="selectPinCategory('pandal', this)">
-                  <span class="cat-icon">🪔</span>
-                  <span class="cat-name">Pujo Pandal</span>
+                <button type="button" class="pin-cat-option active" data-cat="pandal_durga" onclick="selectPinCategory('pandal_durga', this)">
+                  <span class="cat-icon" title="Maa Durga Face">
+                    <svg viewBox="0 0 36 36" class="durga-face-svg" width="20" height="20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M10 12 L18 3 L26 12 L22 14 L18 8 L14 14 Z" fill="#FBBF24" stroke="#78350F" stroke-width="0.8"/>
+                      <circle cx="18" cy="4" r="1.5" fill="#EF4444"/>
+                      <circle cx="12" cy="11" r="1" fill="#EF4444"/>
+                      <circle cx="24" cy="11" r="1" fill="#EF4444"/>
+                      <path d="M18 10 C16.5 12.5 16.5 14.5 18 17 C19.5 14.5 19.5 12.5 18 10 Z" fill="#DC2626"/>
+                      <circle cx="18" cy="13.5" r="0.8" fill="#FBBF24"/>
+                      <path d="M7 19 C10 16 14 17 16 20 C13 21.5 9 21.5 7 19 Z" fill="#FFFFFF" stroke="#1E1B4B" stroke-width="0.7"/>
+                      <circle cx="12" cy="19.2" r="1.6" fill="#18181B"/>
+                      <path d="M6 18 C9 14.5 14.5 15.5 16.5 19" stroke="#18181B" stroke-width="1.2" stroke-linecap="round"/>
+                      <path d="M29 19 C26 16 22 17 20 20 C23 21.5 27 21.5 29 19 Z" fill="#FFFFFF" stroke="#1E1B4B" stroke-width="0.7"/>
+                      <circle cx="24" cy="19.2" r="1.6" fill="#18181B"/>
+                      <path d="M30 18 C27 14.5 21.5 15.5 19.5 19" stroke="#18181B" stroke-width="1.2" stroke-linecap="round"/>
+                      <circle cx="14" cy="27" r="3.2" stroke="#F59E0B" stroke-width="1.1" fill="none"/>
+                      <circle cx="11.5" cy="26" r="1" fill="#EF4444"/>
+                      <path d="M15 28 C16.5 27 19.5 27 21 28 C19 30.5 17 30.5 15 28 Z" fill="#DC2626"/>
+                    </svg>
+                  </span>
+                  <span class="cat-name">Durga Puja</span>
+                </button>
+                <button type="button" class="pin-cat-option" data-cat="pandal_kali" onclick="selectPinCategory('pandal_kali', this)">
+                  <span class="cat-icon">🌺</span>
+                  <span class="cat-name">Kali Puja</span>
+                </button>
+                <button type="button" class="pin-cat-option" data-cat="temple" onclick="selectPinCategory('temple', this)">
+                  <span class="cat-icon">🛕</span>
+                  <span class="cat-name">Temple / Mandir</span>
+                </button>
+                <button type="button" class="pin-cat-option" data-cat="pandal_saraswati" onclick="selectPinCategory('pandal_saraswati', this)">
+                  <span class="cat-icon">🎻</span>
+                  <span class="cat-name">Saraswati Puja</span>
+                </button>
+                <button type="button" class="pin-cat-option" data-cat="pandal_laxmi" onclick="selectPinCategory('pandal_laxmi', this)">
+                  <span class="cat-icon">🪙</span>
+                  <span class="cat-name">Laxmi Puja</span>
+                </button>
+                <button type="button" class="pin-cat-option" data-cat="pandal_ratha" onclick="selectPinCategory('pandal_ratha', this)">
+                  <span class="cat-icon">🚩</span>
+                  <span class="cat-name">Ratha Jatra</span>
+                </button>
+                <button type="button" class="pin-cat-option" data-cat="pandal_ganesh" onclick="selectPinCategory('pandal_ganesh', this)">
+                  <span class="cat-icon">🐘</span>
+                  <span class="cat-name">Ganesh Puja</span>
+                </button>
+                <button type="button" class="pin-cat-option" data-cat="pandal_shiva" onclick="selectPinCategory('pandal_shiva', this)">
+                  <span class="cat-icon">🔱</span>
+                  <span class="cat-name">Shiva Puja</span>
+                </button>
+                <button type="button" class="pin-cat-option" data-cat="pandal_jagaddhatri" onclick="selectPinCategory('pandal_jagaddhatri', this)">
+                  <span class="cat-icon">🦁</span>
+                  <span class="cat-name">Jagaddhatri</span>
+                </button>
+                <button type="button" class="pin-cat-option" data-cat="pandal_kartik" onclick="selectPinCategory('pandal_kartik', this)">
+                  <span class="cat-icon">🦚</span>
+                  <span class="cat-name">Kartik Puja</span>
+                </button>
+                <button type="button" class="pin-cat-option" data-cat="pandal_vishwakarma" onclick="selectPinCategory('pandal_vishwakarma', this)">
+                  <span class="cat-icon">⚙️</span>
+                  <span class="cat-name">Vishwakarma</span>
+                </button>
+                <button type="button" class="pin-cat-option" data-cat="bonedi" onclick="selectPinCategory('bonedi', this)">
+                  <span class="cat-icon">🏛️</span>
+                  <span class="cat-name">Bonedi Bari</span>
                 </button>
                 <button type="button" class="pin-cat-option" data-cat="food" onclick="selectPinCategory('food', this)">
                   <span class="cat-icon">🍛</span>
@@ -1796,16 +2218,12 @@
                   <span class="cat-icon">📚</span>
                   <span class="cat-name">Book Stall</span>
                 </button>
-                <button type="button" class="pin-cat-option" data-cat="xerox" onclick="selectPinCategory('xerox', this)">
-                  <span class="cat-icon">🖨️</span>
-                  <span class="cat-name">Xerox / Print</span>
-                </button>
                 <button type="button" class="pin-cat-option" data-cat="other" onclick="selectPinCategory('other', this)">
                   <span class="cat-icon">📍</span>
                   <span class="cat-name">Other / Custom</span>
                 </button>
               </div>
-              <input type="hidden" id="add-category" value="pandal" />
+              <input type="hidden" id="add-category" value="pandal_durga" />
             </div>
 
             <!-- Custom Marker Emoji for Mobile & Desktop -->
@@ -1814,30 +2232,35 @@
                 <label style="font-size:12px; font-weight:800; color:#0f172a; margin:0;">
                   Pin Marker Emoji <span style="font-size:11px; font-weight:500; color:#64748b;">(Shown on map pin)</span>
                 </label>
-                <span id="add-marker-emoji-preview" style="display:inline-flex; align-items:center; justify-content:center; width:34px; height:34px; border-radius:10px; background:#fef3c7; border:1.5px solid #fde68a; font-size:20px; box-shadow:0 2px 6px rgba(0,0,0,0.06);">🪔</span>
+                <span id="add-marker-emoji-preview" style="display:inline-flex; align-items:center; justify-content:center; width:34px; height:34px; border-radius:10px; background:#fef3c7; border:1.5px solid #fde68a; font-size:20px; box-shadow:0 2px 6px rgba(0,0,0,0.06);">🔱</span>
               </div>
               <div style="display:flex; gap:8px; align-items:center; margin-bottom:6px;">
-                <input type="text" id="add-marker-emoji" class="form-input" style="font-size:18px; max-width:85px; text-align:center; padding:6px 10px; font-weight:700;" placeholder="🪔" value="🪔" oninput="updatePinEmojiPreview(this.value)" />
+                <input type="text" id="add-marker-emoji" class="form-input" style="font-size:18px; max-width:85px; text-align:center; padding:6px 10px; font-weight:700;" placeholder="🔱" value="🔱" oninput="updatePinEmojiPreview(this.value)" />
                 <span style="font-size:11.5px; color:#475569; line-height:1.35;">Tap quick emoji or type any emoji from your phone keyboard!</span>
               </div>
               <div class="quick-emoji-scroll" id="quick-emoji-bar">
+                <button type="button" class="emoji-chip-btn" onclick="setCustomPinEmoji('🔱')">🔱</button>
+                <button type="button" class="emoji-chip-btn" onclick="setCustomPinEmoji('🌺')">🌺</button>
+                <button type="button" class="emoji-chip-btn" onclick="setCustomPinEmoji('🛕')">🛕</button>
+                <button type="button" class="emoji-chip-btn" onclick="setCustomPinEmoji('🎻')">🎻</button>
+                <button type="button" class="emoji-chip-btn" onclick="setCustomPinEmoji('🪙')">🪙</button>
+                <button type="button" class="emoji-chip-btn" onclick="setCustomPinEmoji('🚩')">🚩</button>
+                <button type="button" class="emoji-chip-btn" onclick="setCustomPinEmoji('🐘')">🐘</button>
+                <button type="button" class="emoji-chip-btn" onclick="setCustomPinEmoji('🦁')">🦁</button>
+                <button type="button" class="emoji-chip-btn" onclick="setCustomPinEmoji('🦚')">🦚</button>
+                <button type="button" class="emoji-chip-btn" onclick="setCustomPinEmoji('⚙️')">⚙️</button>
+                <button type="button" class="emoji-chip-btn" onclick="setCustomPinEmoji('🏛️')">🏛️</button>
                 <button type="button" class="emoji-chip-btn" onclick="setCustomPinEmoji('🪔')">🪔</button>
                 <button type="button" class="emoji-chip-btn" onclick="setCustomPinEmoji('🍛')">🍛</button>
                 <button type="button" class="emoji-chip-btn" onclick="setCustomPinEmoji('🥟')">🥟</button>
                 <button type="button" class="emoji-chip-btn" onclick="setCustomPinEmoji('🍦')">🍦</button>
                 <button type="button" class="emoji-chip-btn" onclick="setCustomPinEmoji('📚')">📚</button>
-                <button type="button" class="emoji-chip-btn" onclick="setCustomPinEmoji('🖨️')">🖨️</button>
                 <button type="button" class="emoji-chip-btn" onclick="setCustomPinEmoji('🛒')">🛒</button>
                 <button type="button" class="emoji-chip-btn" onclick="setCustomPinEmoji('🎡')">🎡</button>
                 <button type="button" class="emoji-chip-btn" onclick="setCustomPinEmoji('💊')">💊</button>
                 <button type="button" class="emoji-chip-btn" onclick="setCustomPinEmoji('🎭')">🎭</button>
                 <button type="button" class="emoji-chip-btn" onclick="setCustomPinEmoji('☕')">☕</button>
-                <button type="button" class="emoji-chip-btn" onclick="setCustomPinEmoji('🥤')">🥤</button>
                 <button type="button" class="emoji-chip-btn" onclick="setCustomPinEmoji('🌸')">🌸</button>
-                <button type="button" class="emoji-chip-btn" onclick="setCustomPinEmoji('🎈')">🎈</button>
-                <button type="button" class="emoji-chip-btn" onclick="setCustomPinEmoji('📸')">📸</button>
-                <button type="button" class="emoji-chip-btn" onclick="setCustomPinEmoji('🅿️')">🅿️</button>
-                <button type="button" class="emoji-chip-btn" onclick="setCustomPinEmoji('🚻')">🚻</button>
                 <button type="button" class="emoji-chip-btn" onclick="setCustomPinEmoji('⭐')">⭐</button>
               </div>
             </div>
