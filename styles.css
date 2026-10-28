@@ -1514,11 +1514,17 @@ h1, h2, h3, .festive-font {
   pointer-events: none;
 }
 
-/* CRITICAL: Guarantee map-top-overlay is completely hidden on Explore, Finder, Itinerary */
+/* CRITICAL: Guarantee map-top-overlay is completely hidden on Explore, Finder, Itinerary & Active Navigation/Pinning/Radar */
 body:not([data-active-tab="map"]) #map-top-overlay,
 body[data-active-tab="explore"] #map-top-overlay,
 body[data-active-tab="finder"] #map-top-overlay,
 body[data-active-tab="itinerary"] #map-top-overlay,
+body.is-navigating #map-top-overlay,
+body.pinning-mode #map-top-overlay,
+body.radar-active #map-top-overlay,
+#main-viewport:has(#active-route-banner:not([style*="display: none"])) #map-top-overlay,
+#main-viewport:has(#pinning-active-banner:not([style*="display: none"])) #map-top-overlay,
+#main-viewport:has(#matrix-radar-map-banner:not([style*="display: none"])) #map-top-overlay,
 #main-viewport:has(.tab-view.active) #map-top-overlay,
 #map-top-overlay.overlay-hidden {
   display: none !important;
@@ -5521,6 +5527,17 @@ body.map-picker-mode #map {
   line-height: 1.2;
 }
 
+.map-traffic-legend .legend-hint {
+  color: #64748b;
+  font-size: 10px;
+  font-weight: 500;
+}
+
+.map-traffic-legend .legend-name {
+  color: #0f172a;
+  font-weight: 800;
+}
+
 /* Quick Mode Switch in Active Banner */
 .banner-mode-quick {
   display: flex;
@@ -7306,6 +7323,349 @@ body[data-active-tab="itinerary"] .matrix-radar-banner,
   background: linear-gradient(135deg, #dc2626, #b91c1c);
   box-shadow: 0 0 10px rgba(220, 38, 38, 0.5);
 }
+
+/* ==========================================================================
+   Comprehensive Mobile View Optimization (Screens <= 768px & <= 640px)
+   Eliminates visual congestion, prevents overlay overlap, ensures spacious map
+   ========================================================================== */
+@media (max-width: 768px) {
+  /* 1. Navbar: Compact & streamlined */
+  #main-navbar {
+    height: 56px;
+    padding: 0 10px;
+  }
+  .brand-icon-circle {
+    width: 36px;
+    height: 36px;
+    font-size: 19px;
+  }
+  .brand-name {
+    font-size: 16px;
+  }
+  .badge-live {
+    font-size: 9px;
+    padding: 2px 5px;
+  }
+  .top-right-capsule-container {
+    transform: scale(0.92);
+    transform-origin: right center;
+  }
+
+  /* 2. Top Pills Overlay: Single-row, non-redundant, compact pills */
+  #map-top-overlay {
+    top: 8px;
+    left: 8px;
+    gap: 6px;
+  }
+  .overlay-row-1 {
+    gap: 6px;
+    flex-wrap: nowrap;
+  }
+  /* Redundant on mobile: bottom center FAB is already 'Pin the Pandal' */
+  .overlay-pill-orange {
+    display: none !important;
+  }
+  .overlay-pill-blue,
+  .overlay-pill-purple,
+  .overlay-pill-white {
+    padding: 6px 12px !important;
+    font-size: 11px !important;
+    font-weight: 700 !important;
+    gap: 4px !important;
+    border-radius: 999px !important;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15) !important;
+  }
+
+  /* 3. Active Road Navigation Banner: Clean, non-blocking mobile card */
+  #active-route-banner {
+    top: 8px !important;
+    left: 8px !important;
+    right: 8px !important;
+    width: auto !important;
+    min-width: 0 !important;
+    max-width: none !important;
+    transform: none !important;
+    padding: 7px 10px !important;
+    border-radius: 13px !important;
+    gap: 8px !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    box-shadow: 0 8px 24px rgba(185, 28, 28, 0.4) !important;
+    z-index: 1100 !important;
+  }
+  #route-banner-info {
+    font-size: 11px !important;
+    font-weight: 700 !important;
+    line-height: 1.25 !important;
+    display: -webkit-box !important;
+    -webkit-line-clamp: 2 !important;
+    -webkit-box-orient: vertical !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    max-width: calc(100vw - 145px) !important;
+  }
+  #route-banner-mode-icon {
+    font-size: 16px !important;
+  }
+  .route-banner-actions {
+    gap: 5px !important;
+    flex-shrink: 0 !important;
+  }
+  .banner-mode-quick {
+    gap: 2px !important;
+    padding: 2px 3px !important;
+    border-radius: 7px !important;
+  }
+  .banner-mode-btn {
+    width: 24px !important;
+    height: 24px !important;
+    font-size: 12px !important;
+    padding: 0 !important;
+    border-radius: 5px !important;
+  }
+  .route-banner-actions button {
+    padding: 4px 8px !important;
+    font-size: 10px !important;
+    border-radius: 6px !important;
+  }
+
+  /* 4. Traffic Legend: Modern horizontal pill strip below active banner (ZERO OVERLAP & 100% VISIBLE!) */
+  .map-traffic-legend {
+    top: 58px !important;
+    left: 8px !important;
+    right: 8px !important;
+    width: auto !important;
+    min-width: 0 !important;
+    max-width: none !important;
+    padding: 4px 6px !important;
+    border-radius: 11px !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 4px !important;
+    background: rgba(255, 255, 255, 0.97) !important;
+    box-shadow: 0 4px 16px rgba(15, 23, 42, 0.15) !important;
+    z-index: 980 !important;
+  }
+  .map-traffic-legend .legend-header {
+    border-bottom: none !important;
+    padding-bottom: 0 !important;
+    margin-bottom: 0 !important;
+    padding-right: 5px !important;
+    margin-right: 2px !important;
+    border-right: 1px solid #cbd5e1 !important;
+    font-size: 10px !important;
+    white-space: nowrap !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 3px !important;
+    flex-shrink: 0 !important;
+  }
+  .map-traffic-legend .legend-city-label {
+    display: none !important;
+  }
+  .map-traffic-legend .legend-hint {
+    display: none !important;
+  }
+  .map-traffic-legend .legend-items {
+    flex-direction: row !important;
+    gap: 3px !important;
+    flex: 1 !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    overflow: visible !important;
+    width: 100% !important;
+  }
+  .map-traffic-legend .legend-item {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 3px 4px !important;
+    font-size: 9.5px !important;
+    white-space: nowrap !important;
+    gap: 3px !important;
+    flex: 1 1 0 !important;
+    min-width: 0 !important;
+    border-radius: 5px !important;
+    background: rgba(0, 0, 0, 0.03) !important;
+    border: 1px solid transparent !important;
+    transition: all 0.15s ease !important;
+  }
+  .map-traffic-legend .legend-item:hover,
+  .map-traffic-legend .legend-item.active {
+    background: #e0f2fe !important;
+    border-color: #7dd3fc !important;
+    box-shadow: 0 1px 4px rgba(2, 132, 199, 0.15) !important;
+  }
+  .map-traffic-legend .legend-name {
+    font-size: 10px !important;
+    font-weight: 700 !important;
+    color: #1e293b !important;
+    white-space: nowrap !important;
+  }
+  .map-traffic-legend .legend-item.active .legend-name {
+    color: #0369a1 !important;
+    font-weight: 800 !important;
+  }
+  .map-traffic-legend .legend-dot {
+    width: 7px !important;
+    height: 7px !important;
+    flex-shrink: 0 !important;
+  }
+  .map-traffic-legend .legend-close {
+    width: 16px !important;
+    height: 16px !important;
+    font-size: 9px !important;
+    flex-shrink: 0 !important;
+    margin-left: 2px !important;
+  }
+
+  /* 5. Matrix Radar Banner on Mobile */
+  .matrix-radar-banner {
+    top: 8px !important;
+    left: 8px !important;
+    right: 8px !important;
+    width: auto !important;
+    min-width: 0 !important;
+    max-width: none !important;
+    transform: none !important;
+    padding: 7px 11px !important;
+    border-radius: 12px !important;
+    gap: 8px !important;
+  }
+  #radar-banner-title {
+    font-size: 11px !important;
+  }
+  #radar-banner-sub {
+    font-size: 9.5px !important;
+  }
+  .btn-radar-pill, .btn-radar-close {
+    padding: 3px 7px !important;
+    font-size: 10px !important;
+  }
+
+  /* 6. Pinning Active Banner on Mobile */
+  #pinning-active-banner {
+    top: 8px !important;
+    left: 8px !important;
+    right: 8px !important;
+    width: auto !important;
+    transform: none !important;
+    padding: 8px 10px !important;
+    border-radius: 14px !important;
+    gap: 6px !important;
+  }
+  .pinning-title {
+    font-size: 11px !important;
+  }
+  .pinning-subtitle {
+    font-size: 9px !important;
+  }
+  .pinning-puja-section {
+    gap: 6px !important;
+    padding-top: 3px !important;
+  }
+  .pinning-puja-chip {
+    padding: 3px 7px !important;
+    font-size: 9.5px !important;
+  }
+
+  /* 7. Bottom Map Controls (Crowd Legend & Zoom & FAB clearance) */
+  .map-crowd-legend {
+    bottom: 18px !important;
+    left: 8px !important;
+    padding: 4px 8px !important;
+    gap: 5px !important;
+    font-size: 9px !important;
+    max-width: calc(50vw - 38px) !important;
+    white-space: nowrap !important;
+    border-radius: 999px !important;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.12) !important;
+  }
+  .map-crowd-legend .legend-title {
+    display: none !important;
+  }
+  .map-crowd-legend .legend-item {
+    gap: 3px !important;
+    font-size: 9px !important;
+  }
+  .map-crowd-legend .legend-dot {
+    width: 6px !important;
+    height: 6px !important;
+  }
+
+  .map-zoom-controls {
+    right: 8px !important;
+    bottom: 68px !important;
+    gap: 4px !important;
+  }
+  .zoom-btn {
+    width: 32px !important;
+    height: 32px !important;
+    font-size: 17px !important;
+    border-radius: 10px !important;
+  }
+
+  .map-radar-ratio-badge {
+    bottom: 42px !important;
+    left: 8px !important;
+    padding: 2px 7px !important;
+  }
+  .ratio-pill-scale, .ratio-pill-measure {
+    font-size: 9px !important;
+  }
+
+  /* 8. Tab Views & Exploration Cards on Mobile */
+  .tab-view {
+    padding: 16px 12px 90px 12px !important;
+  }
+  .explore-features-grid {
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+    margin-bottom: 16px !important;
+  }
+  .explore-feature-box {
+    padding: 12px !important;
+    gap: 10px !important;
+    border-radius: 14px !important;
+  }
+  .box-icon-wrap {
+    width: 40px !important;
+    height: 40px !important;
+    font-size: 20px !important;
+  }
+  .box-title {
+    font-size: 14px !important;
+  }
+  .box-desc {
+    font-size: 11px !important;
+    line-height: 1.35 !important;
+  }
+  .pandal-grid {
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+  }
+
+  /* 9. Bottom Navigation on Mobile */
+  #bottom-navigation {
+    height: 60px;
+  }
+  .bottom-nav-item .nav-icon {
+    font-size: 18px !important;
+  }
+  .bottom-nav-item .nav-label {
+    font-size: 10px !important;
+  }
+  .fab-circle {
+    width: 52px !important;
+    height: 52px !important;
+  }
+  .fab-label {
+    font-size: 10px !important;
+  }
+}
+
 
 
 

@@ -962,25 +962,25 @@
         <!-- On-Map Road Traffic Color Legend -->
         <div id="map-traffic-legend" class="map-traffic-legend" style="display:none;">
           <div class="legend-header">
-            <span>🚦 Kolkata Road Traffic</span>
+            <span>🚦 <span class="legend-city-label">Kolkata </span>Traffic</span>
             <button type="button" onclick="toggleTrafficLegend()" class="legend-close" title="Hide Legend">✕</button>
           </div>
           <div class="legend-items">
-            <div class="legend-item" onclick="selectAlternativeRoute(0)" title="Select Best Road (Green)">
+            <div class="legend-item active" onclick="selectAlternativeRoute(0)" title="Select Best Road (Green • Fastest)">
               <span class="legend-dot green"></span>
-              <span class="legend-text"><strong>Best Road</strong> (Green • Fastest)</span>
+              <span class="legend-text"><strong class="legend-name">Best</strong><span class="legend-hint"> (Fastest)</span></span>
             </div>
-            <div class="legend-item" onclick="selectAlternativeRoute(1)" title="Select Arterial Route (Yellow)">
+            <div class="legend-item" onclick="selectAlternativeRoute(1)" title="Select Arterial Route (Yellow • Moderate)">
               <span class="legend-dot yellow"></span>
-              <span class="legend-text"><strong>Moderate</strong> (Yellow • Arterial)</span>
+              <span class="legend-text"><strong class="legend-name">Moderate</strong><span class="legend-hint"> (Arterial)</span></span>
             </div>
-            <div class="legend-item" onclick="selectAlternativeRoute(2)" title="Select Bypass Route (Orange)">
+            <div class="legend-item" onclick="selectAlternativeRoute(2)" title="Select Bypass Route (Orange • Slower)">
               <span class="legend-dot orange"></span>
-              <span class="legend-text"><strong>Slower</strong> (Orange • Bypass)</span>
+              <span class="legend-text"><strong class="legend-name">Slower</strong><span class="legend-hint"> (Bypass)</span></span>
             </div>
-            <div class="legend-item" onclick="selectAlternativeRoute(3)" title="Select Pandal Rush Route (Red)">
+            <div class="legend-item" onclick="selectAlternativeRoute(3)" title="Select Pandal Rush Route (Red • Congested)">
               <span class="legend-dot red"></span>
-              <span class="legend-text"><strong>Pandal Rush</strong> (Red • Congested)</span>
+              <span class="legend-text"><strong class="legend-name">Rush</strong><span class="legend-hint"> (Congested)</span></span>
             </div>
           </div>
         </div>

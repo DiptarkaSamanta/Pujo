@@ -5760,6 +5760,7 @@ async function startNavigationTo(pandal) {
     info.textContent = `${meta.icon} Navigating to ${pandal.name} (~${bestRoute.durationMins}m • ${bestRoute.distKm} km) • [Best Road 🟢]`;
   }
   if (banner) banner.style.display = 'flex';
+  document.body.classList.add('is-navigating');
 
   document.querySelectorAll('.banner-mode-quick .banner-mode-btn').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.mode === mode);
@@ -5775,6 +5776,7 @@ function clearActiveRoute() {
   if (banner) banner.style.display = 'none';
   const legend = document.getElementById('map-traffic-legend');
   if (legend) legend.style.display = 'none';
+  document.body.classList.remove('is-navigating');
   showToast('Navigation closed');
 }
 
@@ -6956,6 +6958,7 @@ function drawMatrixRadarCirclesOnMap(autoSwitchTab = true) {
 
   if (banner) {
     banner.style.display = 'flex';
+    document.body.classList.add('radar-active');
     if (bannerTitle) bannerTitle.textContent = `🎯 5 Concentric Rings (${totalInsideCount} Pandals Inside)`;
     if (bannerSub) bannerSub.textContent = `Rings: ${formatDistanceValue(baseR)} to ${formatDistanceValue(maxRadarRadius)} from ${origin.name}`;
   }
@@ -7005,6 +7008,7 @@ function clearMatrixRadarFromMap(notify = false) {
 
   const banner = document.getElementById('matrix-radar-map-banner');
   if (banner) banner.style.display = 'none';
+  document.body.classList.remove('radar-active');
 
   const clearBtn = document.getElementById('btn-matrix-clear-map');
   if (clearBtn) clearBtn.style.display = 'none';
@@ -10660,6 +10664,10 @@ function selectAlternativeRoute(index) {
     }
   });
 
+  document.querySelectorAll('.map-traffic-legend .legend-item').forEach((item, idx) => {
+    item.classList.toggle('active', idx === index);
+  });
+
   renderRouteStopages(selectedRoute);
   drawAllRoutesOnMap(activeMultiRoutes, index);
 
@@ -10728,6 +10736,7 @@ function startSelectedRouteNavigation() {
     info.textContent = `${meta.icon} Navigating to ${dest.name} (~${selectedRoute.durationMins}m • ${selectedRoute.distKm} km) • [${selectedRoute.tag.split('•')[0].trim()}]`;
   }
   if (banner) banner.style.display = 'flex';
+  document.body.classList.add('is-navigating');
 
   document.querySelectorAll('.banner-mode-quick .banner-mode-btn').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.mode === mode);
